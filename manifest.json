@@ -1,0 +1,15 @@
+{
+  "name": "MixApp",
+  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
+  "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
+  "subfiles": [
+    "src/api/spotify.js",
+    "src/api/features.js",
+    "src/state/undoStack.js",
+    "src/state/columnConfig.js",
+    "src/ui/PlaylistPicker.js",
+    "src/ui/Toolbar.js",
+    "src/ui/Arranger.js",
+    "src/App.js"
+  ]
+}
