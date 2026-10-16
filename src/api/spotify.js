@@ -54,18 +54,48 @@ const MixAppApi = (() => {
       "musical-key",
       "camelot"
     ) ?? pickAttr(track, "key", "musicalKey") ?? pickAttr(raw, "key");
+    const artistList = Array.isArray(artists) ? artists : [];
+    const release =
+      album?.date?.isoString ||
+      album?.release_date ||
+      album?.date ||
+      raw?.addedAt ||
+      null;
+    let year = null;
+    if (release) {
+      const y = parseInt(String(release).slice(0, 4), 10);
+      if (Number.isFinite(y)) year = y;
+    }
+    const id =
+      track?.id ||
+      (uri && String(uri).includes(":track:")
+        ? String(uri).split(":").pop()
+        : null);
+
     return {
       uri,
       uid: String(uid),
+      id,
       name: track?.name || raw?.name || "Unknown",
-      artists: (Array.isArray(artists) ? artists : [])
+      artists: artistList
         .map((a) => a?.name || a)
         .filter(Boolean)
         .join(", "),
+      artistIds: artistList
+        .map((a) => a?.id || (a?.uri ? String(a.uri).split(":").pop() : null))
+        .filter(Boolean),
       album: album?.name || raw?.albumName || "",
+      albumId:
+        album?.id ||
+        (album?.uri && String(album.uri).includes(":album:")
+          ? String(album.uri).split(":").pop()
+          : null) ||
+        null,
+      albumUri: album?.uri || null,
       durationMs: track?.duration?.milliseconds ?? track?.duration_ms ?? raw?.durationMs ?? 0,
       explicit: !!(track?.explicit || raw?.explicit),
       addedAt: raw?.addedAt || raw?.added_at || track?.addedAt || null,
+      year,
       bpm: bpm != null ? (typeof bpm === "number" ? Math.round(bpm) : String(bpm)) : null,
       key: key != null ? String(key) : null,
     };

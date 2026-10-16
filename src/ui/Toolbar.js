@@ -9,10 +9,20 @@ function MixAppToolbar(props) {
     canUndo,
     canRedo,
     saving,
+    searchOpen,
+    statsOpen,
+    seedCount,
+    playlists,
+    selectedUri,
+    listLoading,
+    onSelectPlaylist,
+    onRefreshPlaylists,
     onUndo,
     onRedo,
     onSave,
     onSaveAsNew,
+    onToggleSearch,
+    onToggleStats,
   } = props;
 
   const owned = !!(playlist?.isOwnedBySelf || playlist?.collaborative);
@@ -23,14 +33,24 @@ function MixAppToolbar(props) {
     { className: "mixapp-toolbar" },
     react.createElement(
       "div",
-      { className: "mixapp-toolbar-meta" },
-      react.createElement(
-        "strong",
-        { className: "mixapp-toolbar-title" },
-        playlist?.name || "No playlist loaded"
-      ),
+      { className: "mixapp-toolbar-left" },
+      react.createElement(MixAppPlaylistPicker, {
+        playlists,
+        selectedUri,
+        loading: listLoading,
+        compact: true,
+        onSelect: onSelectPlaylist,
+        onRefresh: onRefreshPlaylists,
+      }),
       dirty
         ? react.createElement("span", { className: "mixapp-badge" }, "Unsaved")
+        : null,
+      seedCount > 0
+        ? react.createElement(
+            "span",
+            { className: "mixapp-badge mixapp-badge-seed" },
+            seedCount + " seed" + (seedCount === 1 ? "" : "s")
+          )
         : null
     ),
     react.createElement(
@@ -57,6 +77,28 @@ function MixAppToolbar(props) {
           title: "Redo",
         },
         "Redo"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-btn" + (searchOpen ? " mixapp-btn-active" : ""),
+          onClick: onToggleSearch,
+          disabled: !playlist || !hasTracks,
+          title: "Open search filters",
+        },
+        searchOpen ? "Close Search" : "Open Search"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-btn" + (statsOpen ? " mixapp-btn-active" : ""),
+          onClick: onToggleStats,
+          disabled: !playlist || !hasTracks,
+          title: "Feature charts and summary",
+        },
+        statsOpen ? "Hide Stats" : "Stats"
       ),
       react.createElement(
         "button",

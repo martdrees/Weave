@@ -36,5 +36,17 @@ function MixAppCreateUndoStack(limit) {
       past = [];
       future = [];
     },
+    exportState() {
+      return {
+        past: past.map(cloneTracks),
+        future: future.map(cloneTracks),
+      };
+    },
+    importState(data) {
+      past = Array.isArray(data?.past) ? data.past.map(cloneTracks) : [];
+      future = Array.isArray(data?.future) ? data.future.map(cloneTracks) : [];
+      if (past.length > max) past = past.slice(past.length - max);
+      if (future.length > max) future = future.slice(future.length - max);
+    },
   };
 }

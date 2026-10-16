@@ -2,16 +2,31 @@
 
 function MixAppPlaylistPicker(props) {
   const react = Spicetify.React;
-  const { playlists, selectedUri, loading, onSelect, onRefresh } = props;
+  const {
+    playlists,
+    selectedUri,
+    loading,
+    compact,
+    onSelect,
+    onRefresh,
+  } = props;
 
   return react.createElement(
     "div",
-    { className: "mixapp-picker" },
-    react.createElement(
-      "label",
-      { className: "mixapp-picker-label", htmlFor: "mixapp-playlist-select" },
-      "Playlist"
-    ),
+    {
+      className:
+        "mixapp-picker" + (compact ? " mixapp-picker-compact" : ""),
+    },
+    compact
+      ? null
+      : react.createElement(
+          "label",
+          {
+            className: "mixapp-picker-label",
+            htmlFor: "mixapp-playlist-select",
+          },
+          "Playlist"
+        ),
     react.createElement(
       "div",
       { className: "mixapp-picker-row" },
@@ -19,15 +34,22 @@ function MixAppPlaylistPicker(props) {
         "select",
         {
           id: "mixapp-playlist-select",
-          className: "mixapp-select",
+          className:
+            "mixapp-select" + (compact ? " mixapp-select-toolbar" : ""),
           value: selectedUri || "",
           disabled: loading || !playlists?.length,
           onChange: (e) => onSelect(e.target.value || null),
+          "aria-label": "Playlist",
+          title: "Choose playlist",
         },
         react.createElement(
           "option",
           { value: "" },
-          loading ? "Loading…" : playlists?.length ? "Select a playlist…" : "No playlists found"
+          loading
+            ? "Loading…"
+            : playlists?.length
+              ? "Select playlist…"
+              : "No playlists"
         ),
         (playlists || []).map((p) =>
           react.createElement(
@@ -41,12 +63,15 @@ function MixAppPlaylistPicker(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn mixapp-btn-ghost",
+          className: compact
+            ? "mixapp-icon-btn mixapp-icon-btn-compact"
+            : "mixapp-btn mixapp-btn-ghost",
           onClick: onRefresh,
           disabled: loading,
           title: "Refresh playlist list",
+          "aria-label": "Refresh playlist list",
         },
-        "Refresh"
+        compact ? "↻" : "Refresh"
       )
     )
   );

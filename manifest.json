@@ -5,11 +5,16 @@
   "subfiles": [
     "src/api/spotify.js",
     "src/api/features.js",
+    "src/api/recommend.js",
     "src/state/undoStack.js",
+    "src/state/sessionStore.js",
     "src/state/columnConfig.js",
     "src/ui/PlaylistPicker.js",
     "src/ui/Toolbar.js",
     "src/ui/Arranger.js",
+    "src/ui/StatsPanel.js",
+    "src/ui/SearchPanel.js",
+    "src/ui/SearchResults.js",
     "src/App.js"
   ]
 }
