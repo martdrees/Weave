@@ -1,4 +1,5 @@
 .mixapp-root {
+  --mixapp-table-min-height: min(42vh, 360px);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -9,6 +10,11 @@
   padding: 24px 32px 32px;
   color: var(--spice-text);
   box-sizing: border-box;
+}
+
+/* Search open: let the page grow so Spotify’s outer scroll shows all tracks */
+.mixapp-root:has(.mixapp-search-panel) {
+  height: auto;
 }
 
 .mixapp-header h1 {
@@ -49,6 +55,14 @@
   gap: 6px;
   align-items: center;
   min-width: 0;
+}
+
+.mixapp-picker-count {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--spice-subtext);
+  padding: 0 2px;
 }
 
 .mixapp-picker-compact .mixapp-picker-row {
@@ -199,7 +213,7 @@
 
 .mixapp-main {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: var(--mixapp-table-min-height);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -214,47 +228,44 @@
 .mixapp-main-arranger {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 0;
+  min-height: var(--mixapp-table-min-height);
   display: flex;
   flex-direction: column;
 }
 
 .mixapp-arranger-wrap {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: var(--mixapp-table-min-height);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.mixapp-arranger-toolbar {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.mixapp-arranger-filters {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--spice-card);
-}
-
 .mixapp-arranger {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: var(--mixapp-table-min-height);
   display: flex;
   flex-direction: column;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: auto;
   background: var(--spice-card);
+}
+
+/* With search open, don’t trap scroll in a squeezed table — expand and scroll the view */
+.mixapp-root:has(.mixapp-search-panel) .mixapp-main,
+.mixapp-root:has(.mixapp-search-panel) .mixapp-main-arranger,
+.mixapp-root:has(.mixapp-search-panel) .mixapp-arranger-wrap {
+  flex: 1 0 auto;
+  min-height: var(--mixapp-table-min-height);
+}
+
+.mixapp-root:has(.mixapp-search-panel) .mixapp-arranger {
+  flex: 1 0 auto;
+  min-height: var(--mixapp-table-min-height);
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .mixapp-col-sort {
@@ -277,11 +288,48 @@
 }
 
 .mixapp-col-feat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  text-align: right;
-  border-radius: 4px;
-  padding: 2px 4px;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+  min-width: 0;
+}
+
+.mixapp-feat-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  max-width: 100%;
+  height: 1.15rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--spice-text);
+  box-sizing: border-box;
+}
+
+.mixapp-col-feat-head {
+  padding: 0 1px;
+  overflow: hidden;
+}
+
+.mixapp-col-feat-head .mixapp-col-sort {
+  width: 100%;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.02em;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mixapp-arranger-empty {
@@ -297,15 +345,18 @@
 .mixapp-arranger-head,
 .mixapp-track-row {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  /* Same column sizing base for head + rows (avoids ch/font drift) */
+  font-variant-numeric: tabular-nums;
 }
 
 .mixapp-arranger-head {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--spice-subtext);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.15);
@@ -313,7 +364,7 @@
 
 .mixapp-track-row {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .mixapp-track-row:hover {
@@ -346,18 +397,36 @@
 }
 
 .mixapp-col-bpm {
-  text-align: right;
+  text-align: center;
+  background: transparent;
+  color: var(--spice-subtext);
 }
 
 .mixapp-col-key {
-  text-align: center;
+  background: transparent;
+  padding: 2px 0;
+}
+
+.mixapp-key-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--spice-text);
-  border-radius: 4px;
-  padding: 3px 6px;
-  min-width: 2.4em;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.mixapp-key-circle.is-empty {
+  color: var(--spice-subtext);
+  text-shadow: none;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .mixapp-drag-handle {
@@ -366,26 +435,82 @@
 }
 
 .mixapp-col-title,
-.mixapp-col-artist,
-.mixapp-col-album,
 .mixapp-col-added {
   overflow: hidden;
+  min-width: 0;
+}
+
+.mixapp-col-added {
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mixapp-col-dur {
+  text-align: right;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+.mixapp-col-dur.is-current {
+  color: var(--spice-button, #1db954);
+  font-weight: 600;
+}
+
+.mixapp-col-title {
+  min-width: 0;
 }
 
 .mixapp-title-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
-.mixapp-title-cell .mixapp-linkish {
+.mixapp-track-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.mixapp-track-meta-title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--spice-text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
+}
+
+.mixapp-track-meta-title:hover {
+  text-decoration: underline;
+}
+
+.mixapp-track-meta-title.is-seed {
+  color: var(--spice-button, #1db954);
+}
+
+.mixapp-track-meta-sub {
+  color: var(--spice-subtext);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mixapp-play-btn {
@@ -393,14 +518,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: var(--spice-subtext);
   cursor: pointer;
+  font-size: 0.75rem;
 }
 
 .mixapp-play-btn:hover {
@@ -507,6 +633,11 @@
   color: var(--spice-text);
 }
 
+.mixapp-icon-btn-danger:hover:not(:disabled) {
+  background: rgba(255, 80, 80, 0.18);
+  color: #ff6b6b;
+}
+
 .mixapp-icon-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
@@ -525,6 +656,13 @@
   width: 100%;
   max-width: none;
   box-sizing: border-box;
+}
+
+/* Allow outer Spotify scroll when MixApp grows past the viewport (search open) */
+.main-view-container__scroll-node-child:has(> .mixapp-root:has(.mixapp-search-panel)),
+.main-view-container__scroll-node-child:has(> .mixapp-root:has(.mixapp-search-panel)) > div {
+  height: auto;
+  min-height: 100%;
 }
 
 .mixapp-search-panel {
@@ -569,26 +707,26 @@
   gap: 6px;
 }
 
-.mixapp-search-panel-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(200px, 1fr);
-  gap: 12px;
+.mixapp-search-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mixapp-search-panel-block h3 {
-  margin: 0 0 6px;
-  font-size: 0.72rem;
+  margin: 0 0 4px;
+  font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--spice-subtext);
 }
 
 .mixapp-feature-sliders-wide {
-  max-height: 168px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 3px;
-  overflow: auto;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2px 10px;
+  max-height: none;
+  overflow: visible;
 }
 
 .mixapp-results-overlay {
@@ -619,6 +757,218 @@
   color: var(--spice-text);
 }
 
+/* Phase 5 — Add Track / Copy from Playlist */
+.mixapp-find-modal {
+  max-width: min(1200px, 100%);
+  max-height: min(900px, 94vh);
+  height: auto;
+  margin: auto;
+  width: min(1200px, 100%);
+}
+
+.mixapp-add-track-modal {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.mixapp-add-track-modal .mixapp-track-row.is-in-playlist {
+  opacity: 0.55;
+}
+
+.mixapp-copy-modal {
+  max-width: 1080px;
+  width: min(1080px, 100%);
+}
+
+.mixapp-find-search-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mixapp-find-search-bar-stack {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 0 12px;
+  border-bottom: none;
+}
+
+.mixapp-find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--spice-text);
+  font-size: 0.9rem;
+}
+
+.mixapp-find-input:focus {
+  outline: none;
+  border-color: var(--spice-button, #1db954);
+}
+
+.mixapp-find-error {
+  flex: 0 0 auto;
+  padding: 8px 18px;
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+.mixapp-find-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 12px;
+}
+
+.mixapp-find-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 3.2rem auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mixapp-copy-modal .mixapp-find-row {
+  grid-template-columns: 22px 36px minmax(0, 1fr) 3.2rem auto;
+}
+
+.mixapp-find-row.is-in-playlist {
+  opacity: 0.55;
+}
+
+.mixapp-find-meta {
+  min-width: 0;
+}
+
+.mixapp-find-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mixapp-find-sub {
+  font-size: 0.78rem;
+  color: var(--spice-subtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mixapp-find-dur {
+  font-size: 0.8rem;
+  color: var(--spice-subtext);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.mixapp-btn-compact {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+}
+
+.mixapp-copy-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+}
+
+.mixapp-copy-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.mixapp-copy-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mixapp-copy-playlist-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mixapp-copy-playlist-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mixapp-copy-playlist-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mixapp-copy-playlist-item.is-active {
+  background: rgba(29, 185, 84, 0.18);
+}
+
+.mixapp-copy-playlist-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.mixapp-copy-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.mixapp-copy-main-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mixapp-copy-main-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.mixapp-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .mixapp-recommend-header {
   flex: 0 0 auto;
   display: flex;
@@ -636,6 +986,32 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+
+.mixapp-search-waiting {
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mixapp-search-waiting-label {
+  margin: 0;
+  color: var(--spice-subtext);
+  font-size: 0.95rem;
+}
+
+.mixapp-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--spice-button, #1db954);
+  animation: mixapp-spin 0.75s linear infinite;
+}
+
+@keyframes mixapp-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mixapp-results-table {
@@ -771,20 +1147,20 @@
 .mixapp-feature-sliders {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  max-height: 168px;
-  overflow: auto;
+  gap: 2px;
+  max-height: none;
+  overflow: visible;
 }
 
 .mixapp-feature-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 3px 6px;
+  gap: 6px;
+  padding: 1px 4px;
   border-radius: 4px;
   opacity: 0.55;
-  min-height: 28px;
+  min-height: 22px;
 }
 
 .mixapp-feature-row.is-enabled {
@@ -795,11 +1171,11 @@
 .mixapp-feature-enable {
   display: flex;
   align-items: center;
-  gap: 5px;
-  flex: 0 0 108px;
-  width: 108px;
+  gap: 4px;
+  flex: 0 0 96px;
+  width: 96px;
   min-width: 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   cursor: pointer;
 }
 
@@ -918,10 +1294,10 @@
 }
 
 .mixapp-feature-values {
-  flex: 0 0 72px;
-  width: 72px;
+  flex: 0 0 64px;
+  width: 64px;
   text-align: right;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-variant-numeric: tabular-nums;
   color: var(--spice-subtext);
   white-space: nowrap;
@@ -978,10 +1354,84 @@
   font-variant-numeric: tabular-nums;
 }
 
-.mixapp-recommend-filters {
+.mixapp-tip {
+  position: relative;
+}
+
+.mixapp-tip[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 40;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 18, 0.96);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: var(--spice-text, #fff);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.mixapp-tip[data-tip]::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 2px);
+  z-index: 41;
+  border: 5px solid transparent;
+  border-top-color: rgba(18, 18, 18, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.mixapp-tip[data-tip]:hover::after,
+.mixapp-tip[data-tip]:hover::before,
+.mixapp-tip[data-tip]:focus-within::after,
+.mixapp-tip[data-tip]:focus-within::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mixapp-filters-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  width: 100%;
+}
+
+.mixapp-filters-bar .mixapp-filter-chips {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.mixapp-filters-end {
+  flex: 0 0 200px;
+  margin-left: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.mixapp-filters-bar .mixapp-year-row {
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 
 .mixapp-check {
@@ -992,13 +1442,18 @@
   cursor: pointer;
 }
 
+.mixapp-check-compact {
+  gap: 5px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 .mixapp-check input {
   accent-color: var(--spice-button, #1db954);
 }
 
-.mixapp-camelot-filters {
-  margin-top: 6px;
-  padding-top: 8px;
+.mixapp-camelot-block {
+  padding-top: 2px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -1006,71 +1461,80 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.mixapp-camelot-filters-head h4 {
+.mixapp-camelot-filters-head h3 {
   margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--spice-subtext);
-}
-
-.mixapp-camelot-filters-hint {
-  margin: 0 0 6px;
-  font-size: 0.7rem;
-  color: var(--spice-subtext);
-  line-height: 1.35;
 }
 
 .mixapp-camelot-moves {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 3px;
-}
-
-.mixapp-camelot-move {
-  align-items: flex-start;
-  gap: 6px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  font-size: 0.78rem;
-}
-
-.mixapp-camelot-move.is-on {
-  background: rgba(29, 185, 84, 0.1);
-}
-
-.mixapp-camelot-move input {
-  margin-top: 2px;
-}
-
-.mixapp-camelot-move-text {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mixapp-camelot-chip {
+  display: inline-flex;
   flex-direction: column;
-  gap: 1px;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--spice-text);
+  cursor: pointer;
+  line-height: 1.2;
   min-width: 0;
 }
 
-.mixapp-camelot-move-label {
-  color: var(--spice-text);
-  line-height: 1.25;
+.mixapp-camelot-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.mixapp-camelot-move-example {
-  font-size: 0.68rem;
+.mixapp-camelot-chip.is-on {
+  border-color: rgba(29, 185, 84, 0.55);
+  background: rgba(29, 185, 84, 0.14);
+}
+
+.mixapp-camelot-chip-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.mixapp-camelot-chip-example {
+  font-size: 0.62rem;
   color: var(--spice-subtext);
   font-variant-numeric: tabular-nums;
 }
 
+.mixapp-camelot-chip.is-on .mixapp-camelot-chip-example {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mixapp-filters-bar {
+  padding-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .mixapp-year-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
+  grid-template-columns: 72px 72px;
+  gap: 6px;
+  margin-top: 2px;
+  width: max-content;
+}
+
+.mixapp-year-row .mixapp-feature-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.65rem;
+  color: var(--spice-subtext);
 }
 
 .mixapp-recommend-generate {
@@ -1281,8 +1745,11 @@
     display: none;
   }
 
-  .mixapp-search-panel-grid,
   .mixapp-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mixapp-feature-sliders-wide {
     grid-template-columns: 1fr;
   }
 
@@ -1292,10 +1759,24 @@
 
   .mixapp-results-table-head,
   .mixapp-results-table-row {
-    grid-template-columns: 40px minmax(120px, 2fr) minmax(90px, 1.2fr) 56px 48px 100px !important;
+    grid-template-columns: 36px minmax(120px, 1fr) minmax(80px, 0.9fr) 2.6rem 2.4rem 84px !important;
   }
 
   .mixapp-results-optional {
     display: none !important;
+  }
+
+  .mixapp-copy-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(140px, 32%) minmax(0, 1fr);
+  }
+
+  .mixapp-copy-sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mixapp-find-modal {
+    max-height: 96vh;
   }
 }

@@ -99,7 +99,6 @@ const MixAppSession = (() => {
       searchFeatures: session.searchFeatures || null,
       searchFilters: session.searchFilters || null,
       resultLimit: session.resultLimit ?? 100,
-      arrangerFilters: session.arrangerFilters || null,
       searchOpen: !!session.searchOpen,
       statsOpen: !!session.statsOpen,
       resultsOpen: !!session.resultsOpen,

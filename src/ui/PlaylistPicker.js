@@ -7,6 +7,7 @@ function MixAppPlaylistPicker(props) {
     selectedUri,
     loading,
     compact,
+    trackCount,
     onSelect,
     onRefresh,
   } = props;
@@ -59,6 +60,16 @@ function MixAppPlaylistPicker(props) {
           )
         )
       ),
+      trackCount != null && selectedUri
+        ? react.createElement(
+            "span",
+            {
+              className: "mixapp-picker-count",
+              title: trackCount + " tracks",
+            },
+            trackCount + " tracks"
+          )
+        : null,
       react.createElement(
         "button",
         {

@@ -8,11 +8,10 @@ function MixAppArranger(props) {
     playingUri,
     isPlaying,
     seedUris,
-    filters,
-    onFiltersChange,
     onReorder,
     onPlay,
     onToggleSeed,
+    onRemove,
   } = props;
   const seedSet = new Set(seedUris || []);
   const [dragIndex, setDragIndex] = react.useState(null);
@@ -21,7 +20,6 @@ function MixAppArranger(props) {
   );
   const [menu, setMenu] = react.useState(null);
   const [sort, setSort] = react.useState({ key: null, dir: null });
-  const [filtersOpen, setFiltersOpen] = react.useState(false);
   const menuRef = react.useRef(null);
 
   react.useEffect(() => {
@@ -46,36 +44,70 @@ function MixAppArranger(props) {
     };
   }, [menu]);
 
+  // Keep the menu inside the viewport after mount (size known).
+  const useLayout =
+    react.useLayoutEffect || react.useEffect;
+  useLayout(() => {
+    if (!menu || !menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    let x = menu.x;
+    let y = menu.y;
+    const pad = 8;
+    if (x + rect.width > window.innerWidth - pad) {
+      x = Math.max(pad, window.innerWidth - rect.width - pad);
+    }
+    if (y + rect.height > window.innerHeight - pad) {
+      y = Math.max(pad, window.innerHeight - rect.height - pad);
+    }
+    if (x < pad) x = pad;
+    if (y < pad) y = pad;
+    if (x !== menu.x || y !== menu.y) setMenu({ x, y });
+  }, [menu]);
+
+  // Cumulative playlist start time (ms) for each playlist-order index.
+  const startOffsetsMs = [];
+  {
+    let sum = 0;
+    for (const t of tracks || []) {
+      startOffsetsMs.push(sum);
+      sum += Number(t?.durationMs) || 0;
+    }
+  }
+
   const show = (id) => MixAppColumnConfig.isVisible(visibility, id);
   const toggleable = MixAppColumnConfig.COLUMNS.filter((c) => !c.always);
 
   const featureCols = [
-    { id: "BPM", label: "BPM", sortKey: "bpm", width: "52px" },
-    { id: "KEY", label: "Key", sortKey: "key", width: "64px" },
-    { id: "ENERGY", label: "Energy", sortKey: "energy", width: "64px", metricId: "energy" },
-    { id: "DANCEABILITY", label: "Dance", sortKey: "danceability", width: "64px", metricId: "danceability" },
-    { id: "VALENCE", label: "Valence", sortKey: "valence", width: "64px", metricId: "valence" },
-    { id: "ACOUSTICNESS", label: "Acoustic", sortKey: "acousticness", width: "64px", metricId: "acousticness" },
+    { id: "BPM", label: "BPM", sortKey: "bpm" },
+    { id: "KEY", label: "Key", sortKey: "key" },
+    { id: "ENERGY", label: "Energy", sortKey: "energy", metricId: "energy" },
+    { id: "DANCEABILITY", label: "Dance", sortKey: "danceability", metricId: "danceability" },
+    { id: "VALENCE", label: "Valence", sortKey: "valence", metricId: "valence" },
+    { id: "ACOUSTICNESS", label: "Acoustic", sortKey: "acousticness", metricId: "acousticness" },
   ];
 
+  function featureColWidth(col) {
+    // Narrow fixed cols — color lives on a small pill, not the whole cell.
+    if (col.id === "KEY") return "2.4rem";
+    if (col.id === "BPM") return "2.6rem";
+    return "2.8rem";
+  }
+
   const gridTemplate = [
-    show("INDEX") ? "48px" : null,
-    show("TITLE_AND_ARTIST") ? "minmax(140px, 2fr)" : null,
-    show("TITLE_AND_ARTIST") ? "minmax(100px, 1.2fr)" : null,
-    show("ALBUM") ? "minmax(90px, 1fr)" : null,
-    show("ADDED_AT") ? "minmax(90px, 0.8fr)" : null,
-    ...featureCols.map((c) => (show(c.id) ? c.width : null)),
-    show("DURATION") ? "56px" : null,
-    show("ACTIONS") ? "64px" : null,
+    show("INDEX") ? "36px" : null,
+    show("TITLE_AND_ARTIST") ? "minmax(140px, 1fr)" : null,
+    show("ADDED_AT") ? "minmax(72px, 0.4fr)" : null,
+    ...featureCols.map((c) => (show(c.id) ? featureColWidth(c) : null)),
+    show("DURATION") ? "52px" : null,
+    show("ACTIONS") ? "84px" : null,
   ]
     .filter(Boolean)
     .join(" ");
 
-  const filtered = MixAppFeatures.filterTracks(tracks, filters);
   const displayTracks =
     sort.key && sort.dir
-      ? MixAppFeatures.sortTracks(filtered, sort.key, sort.dir)
-      : filtered;
+      ? MixAppFeatures.sortTracks(tracks, sort.key, sort.dir)
+      : tracks || [];
 
   const metricRanges = {};
   for (const col of featureCols) {
@@ -90,6 +122,14 @@ function MixAppArranger(props) {
     return (tracks || []).findIndex(
       (t) => t.uid === track.uid || t.uri === track.uri
     );
+  }
+
+  function removeDisplay(displayIndex) {
+    const track = displayTracks[displayIndex];
+    if (!track) return;
+    const full = indexInFull(track);
+    if (full < 0) return;
+    onRemove?.(full, track);
   }
 
   function moveDisplay(fromDisplay, toDisplay) {
@@ -168,50 +208,111 @@ function MixAppArranger(props) {
       );
       return cell(
         "mixapp-col-feat mixapp-col-key",
-        track.key || "—",
-        bg ? { background: bg } : null
+        react.createElement(
+          "span",
+          {
+            className:
+              "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+            style: bg ? { background: bg } : undefined,
+          },
+          track.key || "—"
+        )
       );
     }
-    const metricId = col.metricId || (col.id === "BPM" ? "tempo" : null);
+    if (col.id === "BPM") {
+      const text =
+        track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
+      return cell(
+        "mixapp-col-feat mixapp-col-bpm",
+        react.createElement("span", { className: "mixapp-feat-pill" }, text)
+      );
+    }
+    const metricId = col.metricId;
     const metric = MixAppFeatures.METRICS.find((m) => m.id === metricId);
     const range = metricRanges[metricId];
     const v = MixAppFeatures.metricValue(track, metric);
-    const text =
-      col.id === "BPM"
-        ? track.bpm != null && track.bpm !== ""
-          ? String(track.bpm)
-          : "—"
-        : MixAppFeatures.formatMetric(metric, v);
+    const text = MixAppFeatures.formatMetric(metric, v);
     const norm = MixAppFeatures.relativeNorm(v, range?.min, range?.max);
     const bg = MixAppFeatures.relativeColor(norm);
     return cell(
       "mixapp-col-feat mixapp-col-" + (metricId || col.id.toLowerCase()),
-      text,
-      bg ? { background: bg } : null
+      react.createElement(
+        "span",
+        {
+          className: "mixapp-feat-pill",
+          style: bg ? { background: bg } : undefined,
+        },
+        text
+      )
     );
   }
 
   function headCells() {
     const cells = [];
-    if (show("INDEX")) cells.push(cell("mixapp-col-num", "#"));
-    if (show("TITLE_AND_ARTIST")) {
-      cells.push(cell("mixapp-col-title", headButton("Title", "name")));
-      cells.push(cell("mixapp-col-artist", headButton("Artists", "artists")));
+    if (show("INDEX")) {
+      cells.push(cell("mixapp-col-num", headButton("#", "index")));
     }
-    if (show("ALBUM")) cells.push(cell("mixapp-col-album", headButton("Album", "album")));
+    if (show("TITLE_AND_ARTIST")) {
+      cells.push(cell("mixapp-col-title", headButton("Track", "name")));
+    }
     if (show("ADDED_AT")) cells.push(cell("mixapp-col-added", "Date added"));
     for (const col of featureCols) {
       if (show(col.id)) {
         cells.push(
-          cell("mixapp-col-feat", headButton(col.label, col.sortKey))
+          cell(
+            "mixapp-col-feat mixapp-col-feat-head",
+            headButton(col.label, col.sortKey)
+          )
         );
       }
     }
     if (show("DURATION")) {
-      cells.push(cell("mixapp-col-dur", headButton("Time", "duration")));
+      cells.push(cell("mixapp-col-dur", headButton("Time", "index")));
     }
     if (show("ACTIONS")) cells.push(cell("mixapp-col-actions", ""));
     return cells;
+  }
+
+  function trackMetaBox(track) {
+    const isSeed = seedSet.has(track.uri);
+    const subParts = [];
+    if (track.artists) subParts.push(track.artists);
+    if (show("ALBUM") && track.album) subParts.push(track.album);
+    const duration = MixAppApi.formatDuration(track.durationMs);
+    const titleText =
+      (track.name || "Unknown") +
+      (duration && duration !== "—" ? " (" + duration + ")" : "");
+    return react.createElement(
+      "div",
+      { className: "mixapp-track-meta" },
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-track-meta-title" + (isSeed ? " is-seed" : ""),
+          onClick: (e) => {
+            e.stopPropagation();
+            onToggleSeed?.(track.uri);
+          },
+          title: isSeed ? "Remove seed" : "Mark as seed track",
+        },
+        titleText
+      ),
+      subParts.length
+        ? react.createElement(
+            "div",
+            { className: "mixapp-track-meta-sub", title: subParts.join(" · ") },
+            subParts.join(" · ")
+          )
+        : null
+    );
+  }
+
+  function startTimeLabel(track) {
+    const fullIndex = indexInFull(track);
+    const startMs =
+      fullIndex >= 0 ? startOffsetsMs[fullIndex] ?? 0 : 0;
+    return MixAppApi.formatDuration(startMs);
   }
 
   function rowCells(track, index) {
@@ -272,28 +373,11 @@ function MixAppArranger(props) {
                     })
               )
             ),
-            react.createElement(
-              "button",
-              {
-                type: "button",
-                className:
-                  "mixapp-linkish" + (seedSet.has(track.uri) ? " is-seed" : ""),
-                onClick: (e) => {
-                  e.stopPropagation();
-                  onToggleSeed?.(track.uri);
-                },
-                title: seedSet.has(track.uri)
-                  ? "Remove seed"
-                  : "Mark as seed track",
-              },
-              track.name
-            )
+            trackMetaBox(track)
           )
         )
       );
-      cells.push(cell("mixapp-col-artist", track.artists || "—"));
     }
-    if (show("ALBUM")) cells.push(cell("mixapp-col-album", track.album || "—"));
     if (show("ADDED_AT")) {
       cells.push(
         cell(
@@ -306,8 +390,12 @@ function MixAppArranger(props) {
       if (show(col.id)) cells.push(featureCell(track, col));
     }
     if (show("DURATION")) {
+      const isCurrent = !!(track.uri && track.uri === playingUri);
       cells.push(
-        cell("mixapp-col-dur", MixAppApi.formatDuration(track.durationMs))
+        cell(
+          "mixapp-col-dur" + (isCurrent ? " is-current" : ""),
+          startTimeLabel(track)
+        )
       );
     }
     if (show("ACTIONS")) {
@@ -320,7 +408,10 @@ function MixAppArranger(props) {
               type: "button",
               className: "mixapp-icon-btn",
               disabled: index === 0,
-              onClick: () => moveDisplay(index, index - 1),
+              onClick: (e) => {
+                e.stopPropagation();
+                moveDisplay(index, index - 1);
+              },
               title: "Move up",
             },
             "↑"
@@ -332,10 +423,41 @@ function MixAppArranger(props) {
               type: "button",
               className: "mixapp-icon-btn",
               disabled: index >= displayTracks.length - 1,
-              onClick: () => moveDisplay(index, index + 1),
+              onClick: (e) => {
+                e.stopPropagation();
+                moveDisplay(index, index + 1);
+              },
               title: "Move down",
             },
             "↓"
+          ),
+          react.createElement(
+            "button",
+            {
+              key: "remove",
+              type: "button",
+              className: "mixapp-icon-btn mixapp-icon-btn-danger",
+              onClick: (e) => {
+                e.stopPropagation();
+                removeDisplay(index);
+              },
+              title: "Remove from playlist",
+              "aria-label": "Remove from playlist",
+            },
+            react.createElement(
+              "svg",
+              {
+                viewBox: "0 0 16 16",
+                width: 14,
+                height: 14,
+                "aria-hidden": "true",
+                focusable: "false",
+              },
+              react.createElement("path", {
+                fill: "currentColor",
+                d: "M5.5 1a1 1 0 0 0-.9.55L4.1 2H2.5a.5.5 0 0 0 0 1h11a.5.5 0 0 0 0-1H11.9l-.5-.45A1 1 0 0 0 10.5 1h-5zM3.5 4v9.5A1.5 1.5 0 0 0 5 15h6a1.5 1.5 0 0 0 1.5-1.5V4h-9zm2 2.5a.5.5 0 0 1 1 0v6a.5.5 0 0 1-1 0v-6zm3 0a.5.5 0 0 1 1 0v6a.5.5 0 0 1-1 0v-6z",
+              })
+            )
           ),
         ])
       );
@@ -343,81 +465,56 @@ function MixAppArranger(props) {
     return cells;
   }
 
-  function filterField(label, key, placeholder, step) {
-    return react.createElement(
-      "label",
-      { className: "mixapp-feature-field" },
-      label,
-      react.createElement("input", {
-        type: key === "query" || key === "keyQuery" ? "text" : "number",
-        placeholder: placeholder || "",
-        step: step || undefined,
-        value: filters?.[key] ?? "",
-        onChange: (e) =>
-          onFiltersChange?.({ ...(filters || {}), [key]: e.target.value }),
-      })
-    );
-  }
-
-  const filterBar = react.createElement(
-    "div",
-    { className: "mixapp-arranger-toolbar" },
-    react.createElement(
-      "button",
-      {
-        type: "button",
-        className:
-          "mixapp-btn mixapp-btn-ghost" +
-          (filtersOpen || MixAppFeatures.filtersActive(filters)
-            ? " mixapp-btn-active"
-            : ""),
-        onClick: () => setFiltersOpen((v) => !v),
-      },
-      filtersOpen ? "Hide filters" : "Show filters"
-    ),
-    react.createElement(
-      "span",
-      { className: "mixapp-recommend-meta" },
-      displayTracks.length === tracks.length
-        ? tracks.length + " tracks"
-        : displayTracks.length + " of " + tracks.length + " tracks",
-      MixAppFeatures.filtersActive(filters) ? " · filtered" : "",
-      sort.key ? " · sorted by " + sort.key : ""
-    ),
-    MixAppFeatures.filtersActive(filters)
-      ? react.createElement(
-          "button",
-          {
-            type: "button",
-            className: "mixapp-btn mixapp-btn-ghost",
-            onClick: () =>
-              onFiltersChange?.(MixAppFeatures.defaultArrangerFilters()),
-          },
-          "Clear filters"
-        )
-      : null
-  );
-
-  const filterPanel = filtersOpen
+  const columnMenu = menu
     ? react.createElement(
         "div",
-        { className: "mixapp-arranger-filters" },
-        filterField("Search", "query", "title, artist, album"),
-        filterField("Key", "keyQuery", "e.g. 8A"),
-        filterField("BPM min", "bpmMin", "80"),
-        filterField("BPM max", "bpmMax", "140"),
-        filterField("Energy min", "energyMin", "0", "0.01"),
-        filterField("Energy max", "energyMax", "1", "0.01"),
-        filterField("Valence min", "valenceMin", "0", "0.01"),
-        filterField("Valence max", "valenceMax", "1", "0.01")
+        {
+          ref: menuRef,
+          className: "mixapp-column-menu",
+          style: { left: menu.x + "px", top: menu.y + "px" },
+          role: "menu",
+        },
+        react.createElement(
+          "div",
+          { className: "mixapp-column-menu-title" },
+          "Columns"
+        ),
+        toggleable.map((col) =>
+          react.createElement(
+            "label",
+            {
+              key: col.id,
+              className: "mixapp-column-menu-item",
+              role: "menuitemcheckbox",
+              "aria-checked": show(col.id),
+              onMouseDown: (e) => e.stopPropagation(),
+            },
+            react.createElement("input", {
+              type: "checkbox",
+              checked: show(col.id),
+              onMouseDown: (e) => e.stopPropagation(),
+              onClick: (e) => e.stopPropagation(),
+              onChange: (e) => {
+                e.stopPropagation();
+                handleToggleColumn(col.id);
+              },
+            }),
+            react.createElement("span", null, col.label)
+          )
+        )
       )
     : null;
+
+  // Portal to body so position:fixed tracks the cursor (Spotify ancestors often
+  // use transform, which otherwise offsets fixed coordinates).
+  const menuPortal =
+    columnMenu && Spicetify.ReactDOM?.createPortal
+      ? Spicetify.ReactDOM.createPortal(columnMenu, document.body)
+      : columnMenu;
 
   return react.createElement(
     "div",
     { className: "mixapp-arranger-wrap" },
-    filterBar,
-    filterPanel,
     react.createElement(
       "div",
       { className: "mixapp-arranger" },
@@ -435,7 +532,7 @@ function MixAppArranger(props) {
         ? react.createElement(
             "div",
             { className: "mixapp-arranger-empty" },
-            "No tracks match the current filters."
+            "Select a playlist to edit its track order."
           )
         : displayTracks.map((track, index) =>
             react.createElement(
@@ -480,40 +577,8 @@ function MixAppArranger(props) {
               },
               ...rowCells(track, index)
             )
-          ),
-      menu
-        ? react.createElement(
-            "div",
-            {
-              ref: menuRef,
-              className: "mixapp-column-menu",
-              style: { left: menu.x, top: menu.y },
-              role: "menu",
-            },
-            react.createElement(
-              "div",
-              { className: "mixapp-column-menu-title" },
-              "Columns"
-            ),
-            toggleable.map((col) =>
-              react.createElement(
-                "label",
-                {
-                  key: col.id,
-                  className: "mixapp-column-menu-item",
-                  role: "menuitemcheckbox",
-                  "aria-checked": show(col.id),
-                },
-                react.createElement("input", {
-                  type: "checkbox",
-                  checked: show(col.id),
-                  onChange: () => handleToggleColumn(col.id),
-                }),
-                react.createElement("span", null, col.label)
-              )
-            )
           )
-        : null
-    )
+    ),
+    menuPortal
   );
 }

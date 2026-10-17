@@ -28,15 +28,15 @@ function MixAppSearchResults(props) {
 
   // Match Arranger column widths for a consistent table look.
   const gridTemplate = [
-    "48px",
-    "minmax(140px, 2fr)",
-    "minmax(100px, 1.2fr)",
-    "minmax(90px, 1fr)",
-    "64px",
-    "56px",
-    "64px",
-    "56px",
-    "120px",
+    "40px",
+    "minmax(140px, 1fr)",
+    "minmax(100px, 0.9fr)",
+    "minmax(80px, 0.6fr)",
+    "2.6rem",
+    "2.4rem",
+    "2.8rem",
+    "2.8rem",
+    "100px",
   ].join(" ");
 
   const tempoMetric = MixAppFeatures.METRICS.find((m) => m.id === "tempo");
@@ -261,20 +261,36 @@ function MixAppSearchResults(props) {
       react.createElement(
         "div",
         { className: "mixapp-search-results-body" },
-        !results?.length
+        loading
           ? react.createElement(
               "div",
-              { className: "mixapp-arranger-empty" },
-              loading
-                ? "Searching…"
-                : "No results yet. Adjust filters and press Search."
+              {
+                className: "mixapp-arranger-empty mixapp-search-waiting",
+                role: "status",
+                "aria-live": "polite",
+              },
+              react.createElement("div", {
+                className: "mixapp-spinner",
+                "aria-hidden": "true",
+              }),
+              react.createElement(
+                "p",
+                { className: "mixapp-search-waiting-label" },
+                "Searching…"
+              )
             )
-          : react.createElement(
-              "div",
-              { className: "mixapp-results-table" },
-              head(),
-              results.map((track, index) => row(track, index))
-            )
+          : !results?.length
+            ? react.createElement(
+                "div",
+                { className: "mixapp-arranger-empty" },
+                "No results. Adjust filters and press Search."
+              )
+            : react.createElement(
+                "div",
+                { className: "mixapp-results-table" },
+                head(),
+                results.map((track, index) => row(track, index))
+              )
       )
     )
   );

@@ -46,9 +46,6 @@ function MixAppPage() {
     () => !!saved?.resultsOpen
   );
   const [statsOpen, setStatsOpen] = react.useState(() => !!saved?.statsOpen);
-  const [arrangerFilters, setArrangerFilters] = react.useState(() =>
-    saved?.arrangerFilters || MixAppFeatures.defaultArrangerFilters()
-  );
   const [seedUris, setSeedUris] = react.useState(() =>
     Array.isArray(saved?.seedUris) ? saved.seedUris : []
   );
@@ -81,11 +78,16 @@ function MixAppPage() {
     Array.isArray(saved?.searchResults) ? saved.searchResults : []
   );
   const [searchLoading, setSearchLoading] = react.useState(false);
+  const searchGenRef = react.useRef(0);
+  /** URIs shown in recent searches — prefer fresh tracks on the next run. */
+  const searchSeenUrisRef = react.useRef(new Set());
   const [searchFitting, setSearchFitting] = react.useState(false);
   const [searchError, setSearchError] = react.useState(null);
   const [bannedUris, setBannedUris] = react.useState(() =>
     Array.isArray(saved?.bannedUris) ? saved.bannedUris : []
   );
+  const [addTrackOpen, setAddTrackOpen] = react.useState(false);
+  const [copyPlaylistOpen, setCopyPlaylistOpen] = react.useState(false);
 
   function syncUndoFlags() {
     setCanUndo(undoRef.current.canUndo());
@@ -103,7 +105,6 @@ function MixAppPage() {
       searchFeatures,
       searchFilters,
       resultLimit,
-      arrangerFilters,
       searchOpen,
       statsOpen,
       resultsOpen,
@@ -175,7 +176,6 @@ function MixAppPage() {
     searchFeatures,
     searchFilters,
     resultLimit,
-    arrangerFilters,
     searchOpen,
     statsOpen,
     resultsOpen,
@@ -225,7 +225,6 @@ function MixAppPage() {
       setSearchResults([]);
       setResultsOpen(false);
       setSearchOpen(false);
-      setArrangerFilters(MixAppFeatures.defaultArrangerFilters());
       undoRef.current.clear();
       syncUndoFlags();
       MixAppSession.clear();
@@ -244,7 +243,7 @@ function MixAppPage() {
     setBannedUris([]);
     setSearchResults([]);
     setResultsOpen(false);
-    setArrangerFilters(MixAppFeatures.defaultArrangerFilters());
+    searchSeenUrisRef.current = new Set();
     try {
       const [meta, items] = await Promise.all([
         MixAppApi.getPlaylistMeta(uri),
@@ -302,6 +301,17 @@ function MixAppPage() {
     commitTracks(next);
   }
 
+  function handleRemoveTrack(index, track) {
+    if (index == null || index < 0 || index >= tracks.length) return;
+    const removed = track || tracks[index];
+    const next = tracks.slice();
+    next.splice(index, 1);
+    commitTracks(next);
+    if (removed?.uri) {
+      setSeedUris((prev) => prev.filter((u) => u !== removed.uri));
+    }
+  }
+
   function handleUndo() {
     const prev = undoRef.current.undo(tracks);
     if (!prev) return;
@@ -322,7 +332,29 @@ function MixAppPage() {
     if (!playlist?.uri || !dirty) return;
     setSaving(true);
     try {
-      await MixAppApi.saveOverwrite(playlist.uri, tracks);
+      const savedTracks = await MixAppApi.saveOverwrite(playlist.uri, tracks);
+      // Refresh uids from Spotify; keep local feature enrichments when possible.
+      if (Array.isArray(savedTracks) && savedTracks.length) {
+        const byUri = new Map();
+        for (const t of tracks) {
+          if (!t?.uri) continue;
+          if (!byUri.has(t.uri)) byUri.set(t.uri, []);
+          byUri.get(t.uri).push(t);
+        }
+        setTracks(
+          savedTracks.map((t) => {
+            const queue = byUri.get(t.uri);
+            const prev = queue && queue.length ? queue.shift() : null;
+            if (!prev) return t;
+            return {
+              ...t,
+              bpm: prev.bpm ?? t.bpm,
+              key: prev.key ?? t.key,
+              year: prev.year ?? t.year,
+            };
+          })
+        );
+      }
       setDirty(false);
       undoRef.current.clear();
       syncUndoFlags();
@@ -363,9 +395,16 @@ function MixAppPage() {
     );
   }
 
+  function closeResultsPanel() {
+    searchGenRef.current += 1;
+    setSearchLoading(false);
+    setSearchResults([]);
+    setResultsOpen(false);
+  }
+
   function handleToggleSearch() {
     setSearchOpen((open) => {
-      if (open) setResultsOpen(false);
+      if (open) closeResultsPanel();
       return !open;
     });
   }
@@ -400,45 +439,66 @@ function MixAppPage() {
     const seedTrackIds = seedUris
       .map((uri) => MixAppRecommend.trackIdFromUri(uri))
       .filter(Boolean);
-    if (!seedTrackIds.length) {
-      MixAppApi.notify("Click playlist tracks to mark seeds first", true);
+    if (!seedTrackIds.length && !tracks.length) {
+      MixAppApi.notify("Load a playlist or mark seed tracks first", true);
       return;
     }
 
+    const gen = ++searchGenRef.current;
+    // Drop previous results so the panel always starts a fresh search.
+    setSearchResults([]);
     setSearchLoading(true);
     setSearchError(null);
     setResultsOpen(true);
+
+    // Snapshot current settings so this run isn't affected by later UI edits.
+    const featuresSnap = searchFeatures;
+    const filtersSnap = searchFilters;
+    const bannedSnap = bannedUris;
+    const tracksSnap = tracks;
+    const seedUrisSnap = seedUris;
+    const resultLimitSnap = resultLimit;
+
     try {
-      const existingSet = new Set(tracks.map((t) => t.uri).filter(Boolean));
-      const hideExistingUris = searchFilters.hideExisting
-        ? [...existingSet]
+      const hideExistingOn = !!filtersSnap.hideExisting;
+      const hideExistingUris = hideExistingOn
+        ? (tracksSnap || []).map((t) => t.uri).filter(Boolean)
         : [];
+      const excludeTrackIds = hideExistingOn
+        ? (tracksSnap || [])
+            .map((t) => t.id || MixAppRecommend.trackIdFromUri(t.uri))
+            .filter(Boolean)
+        : [];
+      const hideExistingTracks = hideExistingOn ? tracksSnap || [] : [];
 
       let excludeArtistIds = [];
-      if (searchFilters.hideExistingArtists) {
+      if (filtersSnap.hideExistingArtists) {
         const ids = new Set();
-        for (const t of tracks || []) {
+        for (const t of tracksSnap || []) {
           for (const id of t.artistIds || []) ids.add(id);
         }
         excludeArtistIds = [...ids];
       }
 
       const yearMin =
-        searchFilters.yearMin === ""
+        filtersSnap.yearMin === ""
           ? null
-          : parseInt(searchFilters.yearMin, 10);
+          : parseInt(filtersSnap.yearMin, 10);
       const yearMax =
-        searchFilters.yearMax === ""
+        filtersSnap.yearMax === ""
           ? null
-          : parseInt(searchFilters.yearMax, 10);
+          : parseInt(filtersSnap.yearMax, 10);
 
-      const seedTracks = (tracks || []).filter((t) =>
-        seedUris.includes(t.uri)
+      const seedTracks = (tracksSnap || []).filter((t) =>
+        seedUrisSnap.includes(t.uri)
       );
-      const camelotMoves = Array.isArray(searchFilters.camelotMoves)
-        ? searchFilters.camelotMoves.filter(Boolean)
+      // Mix-in-key without marked seeds: use the playlist as harmonic context.
+      const camelotSeeds = seedTracks.length ? seedTracks : tracksSnap;
+      const camelotMoves = Array.isArray(filtersSnap.camelotMoves)
+        ? filtersSnap.camelotMoves.filter(Boolean)
         : [];
-      const wantLimit = Number(resultLimit) || MixAppRecommend.DEFAULT_LIMIT;
+      const wantLimit =
+        Number(resultLimitSnap) || MixAppRecommend.DEFAULT_LIMIT;
       // Camelot filters thin results a lot — over-fetch then cut to Max results.
       const fetchLimit = camelotMoves.length
         ? Math.min(
@@ -447,22 +507,33 @@ function MixAppPage() {
           )
         : wantLimit;
 
+      const postFilters = {
+        yearMin: Number.isFinite(yearMin) ? yearMin : null,
+        yearMax: Number.isFinite(yearMax) ? yearMax : null,
+        excludeExplicit: !!filtersSnap.excludeExplicit,
+        excludeAberrant: !!filtersSnap.excludeAberrant,
+        excludeArtistIds,
+        excludeTrackIds,
+        hideExistingUris,
+        hideExistingTracks,
+        bannedUris: bannedSnap,
+        includeSeedTracks: false,
+        seedTrackIds: [],
+      };
+
+      const avoidUris = [...searchSeenUrisRef.current];
+
       const result = await MixAppRecommend.recommend({
         seedTrackIds,
         seedTracks,
-        features: searchFeatures,
+        contextTracks: tracksSnap,
+        features: featuresSnap,
         limit: fetchLimit,
-        filters: {
-          yearMin: Number.isFinite(yearMin) ? yearMin : null,
-          yearMax: Number.isFinite(yearMax) ? yearMax : null,
-          excludeExplicit: searchFilters.excludeExplicit,
-          excludeAberrant: searchFilters.excludeAberrant,
-          excludeArtistIds,
-          hideExistingUris,
-          bannedUris,
-          includeSeedTracks: false,
-        },
+        avoidUris,
+        filters: postFilters,
       });
+
+      if (gen !== searchGenRef.current) return;
 
       let list = Array.isArray(result?.tracks) ? result.tracks : [];
       try {
@@ -471,12 +542,33 @@ function MixAppPage() {
         console.warn("MixApp: result key enrich failed", featErr);
       }
 
+      if (gen !== searchGenRef.current) return;
+
       if (camelotMoves.length) {
         list = MixAppFeatures.filterTracksByCamelotMoves(
           list,
-          seedTracks,
+          camelotSeeds,
           camelotMoves
-        ).slice(0, wantLimit);
+        );
+      }
+
+      // Re-apply after enrich / Camelot so playlist tracks can't slip back in.
+      list = MixAppRecommend.applyPostFilters(list, postFilters);
+      // Camelot / post-filter may leave more than Max results — resample randomly.
+      if (list.length > wantLimit) {
+        list = MixAppRecommend.sampleResults
+          ? MixAppRecommend.sampleResults(list, wantLimit, avoidUris)
+          : list.slice(0, wantLimit);
+      }
+
+      for (const t of list) {
+        if (t?.uri) searchSeenUrisRef.current.add(t.uri);
+      }
+      // Cap memory so old avoids eventually rotate out.
+      if (searchSeenUrisRef.current.size > 800) {
+        searchSeenUrisRef.current = new Set(
+          [...searchSeenUrisRef.current].slice(-400)
+        );
       }
 
       setSearchResults(list);
@@ -487,6 +579,7 @@ function MixAppPage() {
         );
       }
     } catch (err) {
+      if (gen !== searchGenRef.current) return;
       console.error(err);
       const msg =
         err?.message ||
@@ -496,7 +589,7 @@ function MixAppPage() {
       setSearchResults([]);
       MixAppApi.notify(msg, true);
     } finally {
-      setSearchLoading(false);
+      if (gen === searchGenRef.current) setSearchLoading(false);
     }
   }
 
@@ -508,15 +601,24 @@ function MixAppPage() {
     setSearchResults((prev) => prev.filter((t) => t.uri !== track.uri));
   }
 
-  function handleAddRecommended(track) {
-    if (!track?.uri) return;
-    if (tracks.some((t) => t.uri === track.uri)) {
-      MixAppApi.notify("Track already in playlist", true);
-      return;
-    }
-    const nextTrack = {
+  function trackAlreadyInPlaylist(track, list) {
+    if (!track?.uri) return true;
+    const id = track.id || MixAppRecommend.trackIdFromUri(track.uri);
+    const fp = MixAppRecommend.trackFingerprint?.(track);
+    return (list || []).some((t) => {
+      if (t?.uri && t.uri === track.uri) return true;
+      const tid = t?.id || MixAppRecommend.trackIdFromUri(t?.uri);
+      if (id && tid && tid === id) return true;
+      const tfp = MixAppRecommend.trackFingerprint?.(t);
+      if (fp && tfp && fp === tfp) return true;
+      return false;
+    });
+  }
+
+  function toPlaylistTrack(track, stamp) {
+    return {
       uri: track.uri,
-      uid: `added:${track.uri}:${Date.now()}`,
+      uid: `added:${track.uri}:${stamp}`,
       id: track.id || MixAppRecommend.trackIdFromUri(track.uri),
       name: track.name || "Unknown",
       artists: track.artists || "",
@@ -529,20 +631,70 @@ function MixAppPage() {
       bpm: track.bpm ?? null,
       key: track.key ?? null,
     };
-    commitTracks([...tracks, nextTrack]);
-    setSearchResults((prev) => prev.filter((t) => t.uri !== track.uri));
-    MixAppApi.notify(`Added “${nextTrack.name}”`);
-    MixAppFeatures.enrichTracks([nextTrack])
+  }
+
+  function enrichAdded(nextTracks) {
+    MixAppFeatures.enrichTracks(nextTracks.slice())
       .then(() => {
+        const byUid = new Map(nextTracks.map((t) => [t.uid, t]));
         setTracks((prev) =>
-          prev.map((t) =>
-            t.uid === nextTrack.uid
-              ? { ...t, bpm: nextTrack.bpm, key: nextTrack.key }
-              : t
-          )
+          prev.map((t) => {
+            const n = byUid.get(t.uid);
+            return n ? { ...t, bpm: n.bpm ?? t.bpm, key: n.key ?? t.key } : t;
+          })
         );
       })
       .catch(() => {});
+  }
+
+  function handleAddRecommended(track) {
+    if (!track?.uri) return;
+    if (trackAlreadyInPlaylist(track, tracks)) {
+      MixAppApi.notify("Track already in playlist", true);
+      return;
+    }
+    const nextTrack = toPlaylistTrack(track, Date.now());
+    commitTracks([...tracks, nextTrack]);
+    setSearchResults((prev) => prev.filter((t) => t.uri !== track.uri));
+    MixAppApi.notify(`Added “${nextTrack.name}”`);
+    enrichAdded([nextTrack]);
+  }
+
+  function handleAddCatalogTrack(track) {
+    if (!track?.uri) return;
+    if (trackAlreadyInPlaylist(track, tracks)) {
+      MixAppApi.notify("Track already in playlist", true);
+      return;
+    }
+    const nextTrack = toPlaylistTrack(track, Date.now());
+    commitTracks([...tracks, nextTrack]);
+    MixAppApi.notify(`Added “${nextTrack.name}”`);
+    enrichAdded([nextTrack]);
+  }
+
+  function handleAddCatalogTracks(batch) {
+    const list = Array.isArray(batch) ? batch : [];
+    const stamp = Date.now();
+    const added = [];
+    let working = tracks.slice();
+    for (let i = 0; i < list.length; i++) {
+      const track = list[i];
+      if (!track?.uri || trackAlreadyInPlaylist(track, working)) continue;
+      const next = toPlaylistTrack(track, stamp + i);
+      working.push(next);
+      added.push(next);
+    }
+    if (!added.length) {
+      MixAppApi.notify("No new tracks to add", true);
+      return;
+    }
+    commitTracks(working);
+    MixAppApi.notify(
+      added.length === 1
+        ? `Added “${added[0].name}”`
+        : `Added ${added.length} tracks`
+    );
+    enrichAdded(added);
   }
 
   function handlePlay(track, index) {
@@ -616,7 +768,7 @@ function MixAppPage() {
       react.createElement(
         "p",
         { className: "mixapp-subtitle" },
-        "Load a playlist, mark seed tracks, search for similar tracks, and save back to Spotify."
+        "Load a playlist, optionally mark seed tracks, search for similar tracks, and save back to Spotify."
       )
     ),
     react.createElement(MixAppToolbar, {
@@ -640,6 +792,14 @@ function MixAppPage() {
       onSaveAsNew: handleSaveAsNew,
       onToggleSearch: handleToggleSearch,
       onToggleStats: () => setStatsOpen((v) => !v),
+      onOpenAddTrack: () => {
+        setCopyPlaylistOpen(false);
+        setAddTrackOpen(true);
+      },
+      onOpenCopyPlaylist: () => {
+        setAddTrackOpen(false);
+        setCopyPlaylistOpen(true);
+      },
     }),
     react.createElement(MixAppStatsPanel, {
       open: statsOpen,
@@ -658,7 +818,7 @@ function MixAppPage() {
       error: searchError,
       onClose: () => {
         setSearchOpen(false);
-        setResultsOpen(false);
+        closeResultsPanel();
       },
       onFeaturesChange: setSearchFeatures,
       onFiltersChange: setSearchFilters,
@@ -683,21 +843,11 @@ function MixAppPage() {
           playingUri,
           isPlaying,
           seedUris,
-          filters: arrangerFilters,
-          onFiltersChange: setArrangerFilters,
           onReorder: handleReorder,
           onPlay: handlePlay,
           onToggleSeed: handleToggleSeed,
-        }),
-        playlist
-          ? react.createElement(
-              "p",
-              { className: "mixapp-footer-hint" },
-              tracks.length + " tracks",
-              seedUris.length ? " · " + seedUris.length + " seeds" : "",
-              dirty ? " · local changes not saved" : ""
-            )
-          : null
+          onRemove: handleRemoveTrack,
+        })
       )
     ),
     react.createElement(MixAppSearchResults, {
@@ -706,9 +856,30 @@ function MixAppPage() {
       loading: searchLoading,
       playingUri,
       isPlaying,
-      onClose: () => setResultsOpen(false),
+      onClose: closeResultsPanel,
       onAddTrack: handleAddRecommended,
       onHideTrack: handleHideResult,
+      onPlay: handlePlay,
+    }),
+    react.createElement(MixAppAddTrackModal, {
+      open: addTrackOpen,
+      playlistTracks: tracks,
+      playingUri,
+      isPlaying,
+      onClose: () => setAddTrackOpen(false),
+      onAddTrack: handleAddCatalogTrack,
+      onPlay: handlePlay,
+    }),
+    react.createElement(MixAppCopyPlaylistModal, {
+      open: copyPlaylistOpen,
+      libraryPlaylists: playlists,
+      currentPlaylistUri: selectedUri,
+      playlistTracks: tracks,
+      playingUri,
+      isPlaying,
+      onClose: () => setCopyPlaylistOpen(false),
+      onAddTrack: handleAddCatalogTrack,
+      onAddTracks: handleAddCatalogTracks,
       onPlay: handlePlay,
     })
   );

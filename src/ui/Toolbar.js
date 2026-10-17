@@ -23,10 +23,13 @@ function MixAppToolbar(props) {
     onSaveAsNew,
     onToggleSearch,
     onToggleStats,
+    onOpenAddTrack,
+    onOpenCopyPlaylist,
   } = props;
 
   const owned = !!(playlist?.isOwnedBySelf || playlist?.collaborative);
   const hasTracks = Array.isArray(tracks) && tracks.length > 0;
+  const hasPlaylist = !!playlist;
 
   return react.createElement(
     "div",
@@ -39,6 +42,7 @@ function MixAppToolbar(props) {
         selectedUri,
         loading: listLoading,
         compact: true,
+        trackCount: hasTracks ? tracks.length : selectedUri ? 0 : null,
         onSelect: onSelectPlaylist,
         onRefresh: onRefreshPlaylists,
       }),
@@ -82,12 +86,34 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
+          className: "mixapp-btn",
+          onClick: onOpenAddTrack,
+          disabled: !hasPlaylist || saving,
+          title: "Search Spotify and add a track",
+        },
+        "Add Track"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
           className: "mixapp-btn" + (searchOpen ? " mixapp-btn-active" : ""),
           onClick: onToggleSearch,
-          disabled: !playlist || !hasTracks,
-          title: "Open search filters",
+          disabled: !hasPlaylist || !hasTracks || saving,
+          title: "Recommend tracks from seeds / feature ranges",
         },
-        searchOpen ? "Close Search" : "Open Search"
+        "Recommendations"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-btn",
+          onClick: onOpenCopyPlaylist,
+          disabled: !hasPlaylist || saving,
+          title: "Copy tracks from another playlist",
+        },
+        "Copy from Playlist"
       ),
       react.createElement(
         "button",
@@ -95,7 +121,7 @@ function MixAppToolbar(props) {
           type: "button",
           className: "mixapp-btn" + (statsOpen ? " mixapp-btn-active" : ""),
           onClick: onToggleStats,
-          disabled: !playlist || !hasTracks,
+          disabled: !hasPlaylist || !hasTracks,
           title: "Feature charts and summary",
         },
         statsOpen ? "Hide Stats" : "Stats"

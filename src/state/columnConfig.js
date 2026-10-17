@@ -1,34 +1,33 @@
 //@ts-check
 /**
- * Playlist column visibility.
- * Spotify-native columns share LocalStorageAPI "column-config" → "playlist-tracklist".
- * MixApp feature columns live under "mixapp-feature-columns".
+ * Playlist column visibility for MixApp.
+ * Toggleable columns are stored under LocalStorageAPI "mixapp-feature-columns"
+ * (with an in-memory cache) so Spotify’s own column-config cannot overwrite them.
+ * On first run, Spotify playlist-tracklist values are used as defaults when present.
  */
 
 const MixAppColumnConfig = (() => {
-  const STORAGE_KEY = "column-config";
+  const SPOTIFY_KEY = "column-config";
   const SCOPE = "playlist-tracklist";
   const MIXAPP_KEY = "mixapp-feature-columns";
 
-  /** Columns MixApp can show. */
+  /** @type {Record<string, { visible: boolean }> | null} */
+  let memory = null;
+
   const COLUMNS = [
     { id: "INDEX", label: "#", always: true },
-    { id: "TITLE_AND_ARTIST", label: "Title", always: true },
-    { id: "ALBUM", label: "Album", always: false, defaultVisible: true },
+    { id: "TITLE_AND_ARTIST", label: "Track", always: true },
+    { id: "ALBUM", label: "Album (in track)", always: false, defaultVisible: true },
     { id: "ADDED_AT", label: "Date added", always: false, defaultVisible: false },
-    { id: "BPM", label: "BPM", always: false, defaultVisible: true, feature: true },
-    { id: "KEY", label: "Key", always: false, defaultVisible: true, feature: true },
-    { id: "ENERGY", label: "Energy", always: false, defaultVisible: true, feature: true, metricId: "energy" },
-    { id: "DANCEABILITY", label: "Dance", always: false, defaultVisible: true, feature: true, metricId: "danceability" },
-    { id: "VALENCE", label: "Valence", always: false, defaultVisible: false, feature: true, metricId: "valence" },
-    { id: "ACOUSTICNESS", label: "Acoustic", always: false, defaultVisible: false, feature: true, metricId: "acousticness" },
+    { id: "BPM", label: "BPM", always: false, defaultVisible: true },
+    { id: "KEY", label: "Key", always: false, defaultVisible: true },
+    { id: "ENERGY", label: "Energy", always: false, defaultVisible: true, metricId: "energy" },
+    { id: "DANCEABILITY", label: "Dance", always: false, defaultVisible: true, metricId: "danceability" },
+    { id: "VALENCE", label: "Valence", always: false, defaultVisible: false, metricId: "valence" },
+    { id: "ACOUSTICNESS", label: "Acoustic", always: false, defaultVisible: false, metricId: "acousticness" },
     { id: "DURATION", label: "Time", always: false, defaultVisible: true },
     { id: "ACTIONS", label: "Actions", always: true },
   ];
-
-  function isMixAppColumn(col) {
-    return !!(col?.feature || col?.mixapp);
-  }
 
   function defaults() {
     /** @type {Record<string, { visible: boolean }>} */
@@ -39,71 +38,88 @@ const MixAppColumnConfig = (() => {
     return out;
   }
 
-  function readSpotifyRaw() {
+  function readSpotifyScoped() {
     try {
       const api = Spicetify?.Platform?.LocalStorageAPI;
-      if (api?.getItem) {
-        const all = api.getItem(STORAGE_KEY);
-        if (all && typeof all === "object") return all;
-      }
-    } catch (err) {
-      console.warn("MixApp: column-config read failed", err);
+      const all = api?.getItem?.(SPOTIFY_KEY);
+      if (all && typeof all === "object") return all[SCOPE] || {};
+    } catch {
+      /* ignore */
     }
     return {};
   }
 
-  function writeSpotifyRaw(all) {
+  function readPersistedMix() {
     try {
       const api = Spicetify?.Platform?.LocalStorageAPI;
-      if (api?.setItem) {
-        api.setItem(STORAGE_KEY, all);
-      }
-    } catch (err) {
-      console.warn("MixApp: column-config write failed", err);
+      const all = api?.getItem?.(MIXAPP_KEY);
+      if (all && typeof all === "object") return all;
+    } catch {
+      /* ignore */
+    }
+    try {
+      const raw = localStorage.getItem("mixapp:" + MIXAPP_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  function writePersistedMix(all) {
+    try {
+      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(MIXAPP_KEY, all);
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.setItem("mixapp:" + MIXAPP_KEY, JSON.stringify(all));
+    } catch {
+      /* ignore */
     }
   }
 
-  function readMixAppRaw() {
-    try {
-      const api = Spicetify?.Platform?.LocalStorageAPI;
-      if (api?.getItem) {
-        const all = api.getItem(MIXAPP_KEY);
-        if (all && typeof all === "object") return all;
-      }
-    } catch (err) {
-      console.warn("MixApp: feature-columns read failed", err);
-    }
-    return {};
-  }
+  function ensureMemory() {
+    if (memory) return memory;
+    const base = defaults();
+    const spotify = readSpotifyScoped();
+    const saved = readPersistedMix();
 
-  function writeMixAppRaw(all) {
-    try {
-      const api = Spicetify?.Platform?.LocalStorageAPI;
-      if (api?.setItem) {
-        api.setItem(MIXAPP_KEY, all);
+    for (const col of COLUMNS) {
+      if (col.always) continue;
+      // Prefer MixApp-saved prefs; else seed once from Spotify playlist columns.
+      const fromMix = saved?.[col.id];
+      if (fromMix && typeof fromMix.visible === "boolean") {
+        base[col.id] = { visible: fromMix.visible };
+        continue;
       }
-    } catch (err) {
-      console.warn("MixApp: feature-columns write failed", err);
+      const fromSpotify = spotify[col.id];
+      if (fromSpotify && typeof fromSpotify.visible === "boolean") {
+        base[col.id] = { visible: fromSpotify.visible };
+      }
     }
+
+    // Persist only MixApp toggleable entries
+    /** @type {Record<string, { visible: boolean }>} */
+    const toSave = {};
+    for (const col of COLUMNS) {
+      if (col.always) continue;
+      toSave[col.id] = { visible: !!base[col.id].visible };
+    }
+    memory = toSave;
+    writePersistedMix(toSave);
+    return memory;
   }
 
   function getVisibility() {
+    const mix = ensureMemory();
     const base = defaults();
-    const scoped = readSpotifyRaw()?.[SCOPE] || {};
-    const mix = readMixAppRaw() || {};
     for (const col of COLUMNS) {
       if (col.always) {
         base[col.id] = { visible: true };
         continue;
       }
-      if (isMixAppColumn(col)) {
-        const entry = mix[col.id];
-        if (entry && typeof entry.visible === "boolean") {
-          base[col.id] = { visible: entry.visible };
-        }
-        continue;
-      }
-      const entry = scoped[col.id];
+      const entry = mix[col.id];
       if (entry && typeof entry.visible === "boolean") {
         base[col.id] = { visible: entry.visible };
       }
@@ -119,18 +135,10 @@ const MixAppColumnConfig = (() => {
     const col = COLUMNS.find((c) => c.id === columnId);
     if (!col || col.always) return getVisibility();
 
-    if (isMixAppColumn(col)) {
-      const all = { ...readMixAppRaw() };
-      all[columnId] = { visible: !!visible };
-      writeMixAppRaw(all);
-      return getVisibility();
-    }
-
-    const all = { ...readSpotifyRaw() };
-    const scoped = { ...(all[SCOPE] || {}) };
-    scoped[columnId] = { visible: !!visible };
-    all[SCOPE] = scoped;
-    writeSpotifyRaw(all);
+    const mix = { ...ensureMemory() };
+    mix[columnId] = { visible: !!visible };
+    memory = mix;
+    writePersistedMix(mix);
     return getVisibility();
   }
 
@@ -140,25 +148,21 @@ const MixAppColumnConfig = (() => {
   }
 
   function subscribe(onChange) {
+    // No polling — React state is updated directly on toggle.
+    // Still listen if Spotify storage changes elsewhere.
     const api = Spicetify?.Platform?.LocalStorageAPI;
-    if (!api) return () => {};
-
-    const handler = () => onChange(getVisibility());
-
+    if (!api || typeof api.addListener !== "function") return () => {};
+    const handler = () => {
+      // Refresh from disk only if we have no memory yet
+      if (!memory) onChange(getVisibility());
+    };
     try {
-      if (typeof api.listenToStorageEvents === "function") {
-        api.listenToStorageEvents();
-      }
-      if (typeof api.addListener === "function") {
-        api.addListener("update", handler);
-        return () => api.removeListener?.("update", handler);
-      }
-    } catch (err) {
-      console.warn("MixApp: column-config subscribe failed", err);
+      api.listenToStorageEvents?.();
+      api.addListener("update", handler);
+      return () => api.removeListener?.("update", handler);
+    } catch {
+      return () => {};
     }
-
-    const timer = setInterval(() => onChange(getVisibility()), 2000);
-    return () => clearInterval(timer);
   }
 
   function formatAddedAt(iso) {
@@ -183,7 +187,7 @@ const MixAppColumnConfig = (() => {
   }
 
   return {
-    STORAGE_KEY,
+    STORAGE_KEY: MIXAPP_KEY,
     SCOPE,
     MIXAPP_KEY,
     COLUMNS,

@@ -95,50 +95,50 @@ const MixAppFeatures = (() => {
   const CAMELOT_MOVES = [
     {
       id: "same",
-      label: "Same key",
+      label: "Harmonic",
       hint: "Stay in the harmonic (exact key)",
       example: "8A → 8A",
     },
     {
       id: "plus1",
-      label: "Number +1",
-      hint: "More energy",
+      label: "More Energie",
+      hint: "Number +1 · more energy",
       example: "7A → 8A",
     },
     {
       id: "minus1",
-      label: "Number −1",
-      hint: "Less energy",
+      label: "Less Energie",
+      hint: "Number −1 · less energy",
       example: "7A → 6A",
     },
     {
       id: "brighter",
-      label: "Letter → B",
-      hint: "Brighter mood (minor → major)",
+      label: "Brighter Mood",
+      hint: "Letter → B · minor → major",
       example: "7A → 7B",
     },
     {
       id: "darker",
-      label: "Letter → A",
-      hint: "Darker mood (major → minor)",
+      label: "Darker Mood",
+      hint: "Letter → A · major → minor",
       example: "7B → 7A",
     },
     {
       id: "plus2",
-      label: "Jump +2",
-      hint: "Energy boost",
+      label: "Energie Boost",
+      hint: "Jump +2 · energy boost",
       example: "8A → 10A",
     },
     {
       id: "diagonal",
-      label: "Diagonal",
-      hint: "Recognizable mood shift (±1 + letter flip)",
+      label: "Mood Shift",
+      hint: "Diagonal (±1 + letter flip)",
       example: "8A → 9B / 7B",
     },
     {
       id: "jaws",
-      label: "Jaws (±5)",
-      hint: "Dramatic harmonic drop/shift",
+      label: "Harmonic Shift",
+      hint: "Jaws (±5) · dramatic harmonic drop/shift",
       example: "8A → 3A",
     },
   ];
@@ -587,9 +587,19 @@ const MixAppFeatures = (() => {
     const dir = direction === "desc" ? -1 : 1;
     const metric = METRICS.find((m) => m.id === sortKey || m.field === sortKey);
     const list = (tracks || []).slice();
+    // Original playlist order for “#” sorting
+    const order = new Map();
+    (tracks || []).forEach((t, i) => {
+      order.set(t.uid || t.uri || i, i);
+    });
     list.sort((a, b) => {
       let av;
       let bv;
+      if (sortKey === "index" || sortKey === "INDEX" || sortKey === "#") {
+        av = order.get(a.uid || a.uri) ?? 0;
+        bv = order.get(b.uid || b.uri) ?? 0;
+        return (av - bv) * dir;
+      }
       if (sortKey === "name") {
         av = a.name || "";
         bv = b.name || "";

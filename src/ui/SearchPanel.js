@@ -26,6 +26,8 @@ function MixAppSearchPanel(props) {
 
   const defs = MixAppRecommend.FEATURE_DEFS;
   const seedCount = (seedUris || []).length;
+  const hasPlaylistTracks = Array.isArray(tracks) && tracks.length > 0;
+  const canSearch = seedCount > 0 || hasPlaylistTracks;
   const seedNames = (tracks || [])
     .filter((t) => seedUris?.includes(t.uri))
     .map((t) => t.name)
@@ -130,7 +132,9 @@ function MixAppSearchPanel(props) {
                 (seedNames.length
                   ? ": " + seedNames.join(", ") + (seedCount > 8 ? "…" : "")
                   : "")
-            : "Click tracks in the playlist to mark seeds"
+            : hasPlaylistTracks
+              ? "No seeds — searching from this playlist"
+              : "Load a playlist or mark seed tracks"
         )
       ),
       react.createElement(
@@ -180,7 +184,12 @@ function MixAppSearchPanel(props) {
             type: "button",
             className: "mixapp-btn mixapp-btn-primary",
             onClick: onSearch,
-            disabled: loading || !seedCount,
+            disabled: loading || !canSearch,
+            title: canSearch
+              ? seedCount
+                ? "Search from marked seed tracks"
+                : "Search using this playlist as context (no seeds marked)"
+              : "Load a playlist or mark seed tracks",
           },
           loading ? "Searching…" : "Search"
         ),
@@ -204,7 +213,7 @@ function MixAppSearchPanel(props) {
 
     react.createElement(
       "div",
-      { className: "mixapp-search-panel-grid" },
+      { className: "mixapp-search-panel-body" },
       react.createElement(
         "div",
         { className: "mixapp-search-panel-block" },
@@ -281,169 +290,203 @@ function MixAppSearchPanel(props) {
           })
         )
       ),
+
       react.createElement(
         "div",
-        { className: "mixapp-search-panel-block" },
-        react.createElement("h3", null, "Filters"),
+        { className: "mixapp-search-panel-block mixapp-camelot-block" },
         react.createElement(
           "div",
-          { className: "mixapp-recommend-filters" },
+          { className: "mixapp-camelot-filters-head" },
           react.createElement(
-            "label",
-            { className: "mixapp-check" },
-            react.createElement("input", {
-              type: "checkbox",
-              checked: filters.hideExisting,
-              onChange: (e) =>
-                onFiltersChange?.({
-                  ...filters,
-                  hideExisting: e.target.checked,
-                }),
-            }),
-            "Hide tracks already in playlist"
+            "h3",
+            {
+              className: "mixapp-tip",
+              "data-tip":
+                "Keep results that mix harmonically with your seed (or playlist) keys on the Camelot wheel. Select any combination — a track matches if any selected move reaches it. Leave all off to skip key filtering.",
+            },
+            "Mix in key"
           ),
           react.createElement(
-            "label",
-            { className: "mixapp-check" },
-            react.createElement("input", {
-              type: "checkbox",
-              checked: filters.hideExistingArtists,
-              onChange: (e) =>
-                onFiltersChange?.({
-                  ...filters,
-                  hideExistingArtists: e.target.checked,
-                }),
-            }),
-            "Hide existing artists"
-          ),
-          react.createElement(
-            "label",
-            { className: "mixapp-check" },
-            react.createElement("input", {
-              type: "checkbox",
-              checked: filters.excludeExplicit,
-              onChange: (e) =>
-                onFiltersChange?.({
-                  ...filters,
-                  excludeExplicit: e.target.checked,
-                }),
-            }),
-            "Exclude explicit"
-          ),
-          react.createElement(
-            "label",
-            { className: "mixapp-check" },
-            react.createElement("input", {
-              type: "checkbox",
-              checked: filters.excludeAberrant,
-              onChange: (e) =>
-                onFiltersChange?.({
-                  ...filters,
-                  excludeAberrant: e.target.checked,
-                }),
-            }),
-            "Exclude aberrant titles"
-          ),
-          react.createElement(
-            "div",
-            { className: "mixapp-camelot-filters" },
-            react.createElement(
-              "div",
-              { className: "mixapp-camelot-filters-head" },
-              react.createElement("h4", null, "Camelot / Mix In Key"),
+            "span",
+            { className: "mixapp-recommend-meta" },
+            (() => {
+              const seeds = (tracks || [])
+                .filter((t) => seedUris?.includes(t.uri))
+                .map((t) => MixAppFeatures.parseCamelot(t)?.label)
+                .filter(Boolean);
+              const unique = [...new Set(seeds)];
+              return unique.length
+                ? "from " + unique.join(", ")
+                : seedCount
+                  ? "needs seed keys · leave all off to skip"
+                  : hasPlaylistTracks
+                    ? "from playlist keys · leave all off to skip"
+                    : "needs keys · leave all off to skip";
+            })()
+          )
+        ),
+        react.createElement(
+          "div",
+          { className: "mixapp-camelot-moves", role: "group", "aria-label": "Camelot moves" },
+          MixAppFeatures.CAMELOT_MOVES.map((move) => {
+            const selected = Array.isArray(filters.camelotMoves)
+              ? filters.camelotMoves.includes(move.id)
+              : false;
+            return react.createElement(
+              "button",
+              {
+                key: move.id,
+                type: "button",
+                className:
+                  "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
+                "data-tip": move.hint + " · Example: " + move.example,
+                "aria-pressed": selected,
+                onClick: () => {
+                  const prev = Array.isArray(filters.camelotMoves)
+                    ? filters.camelotMoves
+                    : [];
+                  const next = selected
+                    ? prev.filter((id) => id !== move.id)
+                    : [...new Set([...prev, move.id])];
+                  onFiltersChange?.({ ...filters, camelotMoves: next });
+                },
+              },
               react.createElement(
                 "span",
-                { className: "mixapp-recommend-meta" },
-                (() => {
-                  const seeds = (tracks || [])
-                    .filter((t) => seedUris?.includes(t.uri))
-                    .map((t) => MixAppFeatures.parseCamelot(t)?.label)
-                    .filter(Boolean);
-                  const unique = [...new Set(seeds)];
-                  return unique.length
-                    ? "from " + unique.join(", ")
-                    : "needs seed keys";
-                })()
+                { className: "mixapp-camelot-chip-label" },
+                move.label
+              ),
+              react.createElement(
+                "span",
+                { className: "mixapp-camelot-chip-example" },
+                move.example
               )
-            ),
-            react.createElement(
-              "p",
-              { className: "mixapp-camelot-filters-hint" },
-              "Relative to seed keys. Leave all off to skip key filtering."
-            ),
-            react.createElement(
-              "div",
-              { className: "mixapp-camelot-moves" },
-              MixAppFeatures.CAMELOT_MOVES.map((move) => {
-                const selected = Array.isArray(filters.camelotMoves)
-                  ? filters.camelotMoves.includes(move.id)
-                  : false;
-                return react.createElement(
-                  "label",
-                  {
-                    key: move.id,
-                    className:
-                      "mixapp-check mixapp-camelot-move" +
-                      (selected ? " is-on" : ""),
-                    title: move.hint + " · " + move.example,
-                  },
-                  react.createElement("input", {
-                    type: "checkbox",
-                    checked: selected,
-                    onChange: (e) => {
-                      const prev = Array.isArray(filters.camelotMoves)
-                        ? filters.camelotMoves
-                        : [];
-                      const next = e.target.checked
-                        ? [...new Set([...prev, move.id])]
-                        : prev.filter((id) => id !== move.id);
-                      onFiltersChange?.({ ...filters, camelotMoves: next });
-                    },
+            );
+          })
+        )
+      ),
+
+      react.createElement(
+        "div",
+        { className: "mixapp-search-panel-block mixapp-filters-bar" },
+        react.createElement(
+          "h3",
+          {
+            className: "mixapp-tip",
+            "data-tip":
+              "Post-filters applied after candidates are fetched. They remove tracks that don’t match these rules.",
+          },
+          "Filters"
+        ),
+        react.createElement(
+          "div",
+          { className: "mixapp-filters-row" },
+          react.createElement(
+            "div",
+            {
+              className: "mixapp-camelot-moves mixapp-filter-chips",
+              role: "group",
+              "aria-label": "Result filters",
+            },
+            [
+              {
+                key: "hideExisting",
+                label: "Hide in playlist",
+                tip: "Hide tracks that are already in the current playlist so results only suggest new additions.",
+                on: !!filters.hideExisting,
+                toggle: () =>
+                  onFiltersChange?.({
+                    ...filters,
+                    hideExisting: !filters.hideExisting,
                   }),
-                  react.createElement(
-                    "span",
-                    { className: "mixapp-camelot-move-text" },
-                    react.createElement(
-                      "span",
-                      { className: "mixapp-camelot-move-label" },
-                      move.label
-                    ),
-                    react.createElement(
-                      "span",
-                      { className: "mixapp-camelot-move-example" },
-                      move.example
-                    )
-                  )
-                );
-              })
+              },
+              {
+                key: "hideExistingArtists",
+                label: "Hide artists",
+                tip: "Hide any track by an artist who already appears on the playlist — useful for more variety.",
+                on: !!filters.hideExistingArtists,
+                toggle: () =>
+                  onFiltersChange?.({
+                    ...filters,
+                    hideExistingArtists: !filters.hideExistingArtists,
+                  }),
+              },
+              {
+                key: "excludeExplicit",
+                label: "No explicit",
+                tip: "Exclude tracks marked explicit by Spotify.",
+                on: !!filters.excludeExplicit,
+                toggle: () =>
+                  onFiltersChange?.({
+                    ...filters,
+                    excludeExplicit: !filters.excludeExplicit,
+                  }),
+              },
+              {
+                key: "excludeAberrant",
+                label: "No aberrant",
+                tip: "Exclude odd versions and mix titles — sped up, slowed + reverb, nightcore, DJ/continuous mixes, TikTok edits, and similar.",
+                on: !!filters.excludeAberrant,
+                toggle: () =>
+                  onFiltersChange?.({
+                    ...filters,
+                    excludeAberrant: !filters.excludeAberrant,
+                  }),
+              },
+            ].map((f) =>
+              react.createElement(
+                "button",
+                {
+                  key: f.key,
+                  type: "button",
+                  className:
+                    "mixapp-camelot-chip mixapp-tip" + (f.on ? " is-on" : ""),
+                  "data-tip": f.tip,
+                  "aria-pressed": f.on,
+                  onClick: f.toggle,
+                },
+                react.createElement(
+                  "span",
+                  { className: "mixapp-camelot-chip-label" },
+                  f.label
+                )
+              )
             )
           ),
           react.createElement(
             "div",
-            { className: "mixapp-year-row" },
+            { className: "mixapp-filters-end" },
             react.createElement(
-              "label",
-              { className: "mixapp-feature-field" },
-              "Year from",
-              react.createElement("input", {
-                type: "number",
-                placeholder: "e.g. 1990",
-                value: filters.yearMin,
-                onChange: (e) =>
-                  onFiltersChange?.({ ...filters, yearMin: e.target.value }),
-              })
-            ),
-            react.createElement(
-              "label",
-              { className: "mixapp-feature-field" },
-              "Year to",
-              react.createElement("input", {
-                type: "number",
-                placeholder: "e.g. 2024",
-                value: filters.yearMax,
-                onChange: (e) =>
-                  onFiltersChange?.({ ...filters, yearMax: e.target.value }),
-              })
+              "div",
+              {
+                className: "mixapp-year-row mixapp-tip",
+                "data-tip":
+                  "Only keep tracks whose album release year falls between these values. Leave blank for no year limit.",
+              },
+              react.createElement(
+                "label",
+                { className: "mixapp-feature-field" },
+                "Year",
+                react.createElement("input", {
+                  type: "number",
+                  placeholder: "from",
+                  value: filters.yearMin,
+                  onChange: (e) =>
+                    onFiltersChange?.({ ...filters, yearMin: e.target.value }),
+                })
+              ),
+              react.createElement(
+                "label",
+                { className: "mixapp-feature-field" },
+                "\u00a0",
+                react.createElement("input", {
+                  type: "number",
+                  placeholder: "to",
+                  value: filters.yearMax,
+                  onChange: (e) =>
+                    onFiltersChange?.({ ...filters, yearMax: e.target.value }),
+                })
+              )
             )
           )
         )

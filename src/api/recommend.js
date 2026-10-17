@@ -50,6 +50,84 @@ const MixAppRecommend = (() => {
     return String(uri).split(":").pop() || null;
   }
 
+  function shuffleInPlace(arr) {
+    const a = arr;
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  }
+
+  function sampleRandom(arr, n) {
+    if (!arr?.length || n <= 0) return [];
+    if (arr.length <= n) return shuffleInPlace(arr.slice());
+    return shuffleInPlace(arr.slice()).slice(0, n);
+  }
+
+  /**
+   * Prefer tracks not in avoidUris when the pool is large enough; always
+   * random-sample so repeated searches don't return the same head slice.
+   */
+  function sampleResults(pool, target, avoidUris) {
+    if (!pool?.length) return [];
+    if (pool.length <= target) return shuffleInPlace(pool.slice());
+
+    const avoid = new Set((avoidUris || []).filter(Boolean));
+    if (avoid.size) {
+      const fresh = pool.filter((t) => t?.uri && !avoid.has(t.uri));
+      // Need a decent fresh set; otherwise fall back to full pool.
+      if (fresh.length >= Math.max(8, Math.ceil(target * 0.6))) {
+        if (fresh.length >= target) return sampleRandom(fresh, target);
+        const rest = pool.filter((t) => !t?.uri || avoid.has(t.uri));
+        return sampleRandom(fresh, fresh.length).concat(
+          sampleRandom(rest, target - fresh.length)
+        );
+      }
+    }
+    return sampleRandom(pool, target);
+  }
+
+  /** Normalize to spotify:track:{id} so playlist vs radio URIs compare equal. */
+  function canonicalTrackUri(uri) {
+    const id = trackIdFromUri(uri);
+    if (id) return "spotify:track:" + id;
+    return uri ? String(uri) : null;
+  }
+
+  function normalizeFingerprintPart(s) {
+    return String(s || "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\(.*?\)/g, " ")
+      .replace(/\[.*?\]/g, " ")
+      .replace(/\b(feat\.?|ft\.?|featuring|with)\b.*$/i, " ")
+      .replace(/[^a-z0-9]+/g, "");
+  }
+
+  /**
+   * Same-song identity across different Spotify track IDs (album vs single, etc.).
+   * name + primary artist, stripped of feat./parentheses noise.
+   */
+  function trackFingerprint(t) {
+    if (!t) return null;
+    const name = normalizeFingerprintPart(t.name);
+    const artistStr =
+      typeof t.artists === "string"
+        ? t.artists
+        : Array.isArray(t.artists)
+          ? t.artists.map((a) => a?.name || a).filter(Boolean).join(", ")
+          : "";
+    const primary = normalizeFingerprintPart(
+      String(artistStr).split(",")[0] || ""
+    );
+    if (!name || !primary) return null;
+    return name + "|" + primary;
+  }
+
   function defaultFeatureState() {
     const state = {};
     for (const def of FEATURE_DEFS) {
@@ -96,37 +174,75 @@ const MixAppRecommend = (() => {
       excludeTrackIds = [],
       excludeArtistIds = [],
       hideExistingUris = [],
+      hideExistingTracks = [],
       bannedUris = [],
       seedTrackIds = [],
       includeSeedTracks = false,
     } = filters;
 
     const excludeTracks = new Set(
-      [...excludeTrackIds, ...(seedTrackIds || [])].filter(Boolean)
+      [...excludeTrackIds, ...(seedTrackIds || [])]
+        .map((id) => (id != null ? String(id) : null))
+        .filter(Boolean)
     );
     if (includeSeedTracks) {
-      for (const id of seedTrackIds || []) excludeTracks.delete(id);
+      for (const id of seedTrackIds || []) excludeTracks.delete(String(id));
     }
-    const excludeArtists = new Set((excludeArtistIds || []).filter(Boolean));
-    const hideUris = new Set([
-      ...(hideExistingUris || []),
-      ...(bannedUris || []),
-    ]);
+    const excludeArtists = new Set(
+      (excludeArtistIds || []).map((id) => String(id)).filter(Boolean)
+    );
+
+    const hideUris = new Set();
+    const hideIds = new Set(excludeTracks);
+    const hideFingerprints = new Set();
+
+    function absorbExistingTrack(t) {
+      if (!t) return;
+      if (typeof t === "string") {
+        const uri = canonicalTrackUri(t);
+        if (uri) hideUris.add(uri);
+        const id = trackIdFromUri(t);
+        if (id) hideIds.add(id);
+        return;
+      }
+      const uri = canonicalTrackUri(t.uri);
+      if (uri) hideUris.add(uri);
+      const id = t.id || trackIdFromUri(t.uri);
+      if (id) hideIds.add(String(id));
+      const fp = trackFingerprint(t);
+      if (fp) hideFingerprints.add(fp);
+    }
+
+    for (const raw of [...(hideExistingUris || []), ...(bannedUris || [])]) {
+      absorbExistingTrack(raw);
+    }
+    for (const t of hideExistingTracks || []) {
+      absorbExistingTrack(t);
+    }
 
     return (candidates || []).filter((t) => {
-      if (!t?.uri) return false;
-      if (hideUris.has(t.uri)) return false;
+      if (!t?.uri && !t?.name) return false;
+      const uri = canonicalTrackUri(t.uri);
       const id = t.id || trackIdFromUri(t.uri);
-      if (id && excludeTracks.has(id)) return false;
+      const fp = trackFingerprint(t);
+      if (uri && hideUris.has(uri)) return false;
+      if (id && hideIds.has(String(id))) return false;
+      if (fp && hideFingerprints.has(fp)) return false;
       if (excludeExplicit && t.explicit) return false;
       if (excludeAberrant && isAberrantTitle(t.name)) return false;
-      if (yearMin != null && t.year != null && t.year < yearMin) return false;
-      if (yearMax != null && t.year != null && t.year > yearMax) return false;
-      if (
-        excludeArtists.size &&
-        t.artistIds?.some((a) => excludeArtists.has(a))
-      ) {
-        return false;
+      // Year unknown → drop when a year bound is set (don't let nulls bypass the filter)
+      if (yearMin != null || yearMax != null) {
+        if (t.year == null) return false;
+        if (yearMin != null && t.year < yearMin) return false;
+        if (yearMax != null && t.year > yearMax) return false;
+      }
+      if (excludeArtists.size) {
+        const aids = (t.artistIds || [])
+          .map((a) => String(a))
+          .filter(Boolean);
+        // No artist ids → can't verify; drop when hiding existing artists
+        if (!aids.length) return false;
+        if (aids.some((a) => excludeArtists.has(a))) return false;
       }
       return true;
     });
@@ -284,17 +400,25 @@ const MixAppRecommend = (() => {
       if (!id) return;
       const key = kind + ":" + id;
       if (usedSeeds.has(key)) return;
+      // Skip if already waiting in queue.
+      if (queue.some((q) => q.key === key)) return;
       queue.push({ kind, id, key });
     }
 
-    for (const id of seedTrackIds || []) enqueue("track", id);
+    // Random seed order → different radios get fetched before rawTarget fills.
+    for (const id of shuffleInPlace([...(seedTrackIds || [])])) {
+      enqueue("track", id);
+    }
 
     // Seed artist / album radios from the playlist rows when available.
-    for (const t of seedTracks || []) {
-      for (const aid of t.artistIds || []) enqueue("artist", aid);
+    for (const t of shuffleInPlace([...(seedTracks || [])])) {
+      for (const aid of shuffleInPlace([...(t.artistIds || [])])) {
+        enqueue("artist", aid);
+      }
       const albumId = albumIdFromTrack(t);
       if (albumId) enqueue("album", albumId);
     }
+    shuffleInPlace(queue);
 
     async function ensureMarket() {
       if (!market) market = await getUserMarket();
@@ -309,17 +433,23 @@ const MixAppRecommend = (() => {
       radios += 1;
       let added = 0;
       try {
-        const items = await MixAppApi.getPlaylistTracks(playlistUri);
+        const items = shuffleInPlace(
+          (await MixAppApi.getPlaylistTracks(playlistUri)).slice()
+        );
         for (let i = 0; i < items.length; i++) {
           const t = items[i];
+          // Random skips diversify which radio rows enter the pool.
+          if (Math.random() < 0.2) continue;
           if (!ingestTrack(byUri, t, "radio:")) continue;
           added += 1;
           const tid = t.id || trackIdFromUri(t.uri);
-          // Sparse track expansion — prefer artists/albums for diversity.
-          if (tid && added % 4 === 0) enqueue("track", tid);
-          for (const aid of t.artistIds || []) enqueue("artist", aid);
+          // Sparse, random expansion — explore different graph branches per run.
+          if (tid && Math.random() < 0.28) enqueue("track", tid);
+          for (const aid of t.artistIds || []) {
+            if (Math.random() < 0.45) enqueue("artist", aid);
+          }
           const albumId = albumIdFromTrack(t);
-          if (albumId) enqueue("album", albumId);
+          if (albumId && Math.random() < 0.35) enqueue("album", albumId);
           if (byUri.size >= rawTarget) break;
         }
       } catch (err) {
@@ -332,15 +462,22 @@ const MixAppRecommend = (() => {
       if (artistFetches >= MAX_ARTIST_FETCHES) return 0;
       artistFetches += 1;
       const m = await ensureMarket();
-      const tops = await fetchArtistTopTracks(artistId, m);
+      const tops = shuffleInPlace(
+        (await fetchArtistTopTracks(artistId, m)).slice()
+      );
       let added = 0;
       for (const t of tops) {
+        if (Math.random() < 0.15) continue;
         if (ingestTrack(byUri, t, "top:")) added += 1;
         if (byUri.size >= rawTarget) break;
       }
       if (byUri.size < rawTarget && artistFetches < MAX_ARTIST_FETCHES) {
-        const related = await fetchRelatedArtistIds(artistId);
-        for (const rid of related) enqueue("artist", rid);
+        const related = shuffleInPlace(
+          (await fetchRelatedArtistIds(artistId)).slice()
+        );
+        for (const rid of related) {
+          if (Math.random() < 0.7) enqueue("artist", rid);
+        }
       }
       return added;
     }
@@ -349,7 +486,9 @@ const MixAppRecommend = (() => {
     const maxSteps = 120;
     while (queue.length > 0 && byUri.size < rawTarget && steps < maxSteps) {
       steps += 1;
-      const next = queue.shift();
+      // Pop a random queued seed so exploration order differs each search.
+      const idx = Math.floor(Math.random() * queue.length);
+      const next = queue.splice(idx, 1)[0];
       if (!next || usedSeeds.has(next.key)) continue;
       usedSeeds.add(next.key);
 
@@ -375,10 +514,59 @@ const MixAppRecommend = (() => {
     };
   }
 
+  /**
+   * Pick a diverse subset of playlist tracks as soft seeds when the user
+   * didn't mark any (MixMoose allows feature/filter search without seeds).
+   * Randomized each call so seedless search explores different radios.
+   */
+  function pickSoftSeeds(tracks, limit = 8) {
+    const list = shuffleInPlace(
+      (tracks || []).filter(
+        (t) => t?.uri && (t.id || trackIdFromUri(t.uri))
+      )
+    );
+    const picked = [];
+    const seenArtist = new Set();
+    for (const t of list) {
+      const aid = t.artistIds?.[0] || "";
+      if (aid && seenArtist.has(aid)) continue;
+      if (aid) seenArtist.add(aid);
+      picked.push(t);
+      if (picked.length >= limit) break;
+    }
+    for (const t of list) {
+      if (picked.length >= limit) break;
+      if (!picked.includes(t)) picked.push(t);
+    }
+    return {
+      ids: picked
+        .map((t) => t.id || trackIdFromUri(t.uri))
+        .filter(Boolean),
+      tracks: picked,
+    };
+  }
+
   async function recommend(opts = {}) {
-    const seedTrackIds = [...new Set((opts.seedTrackIds || []).filter(Boolean))];
+    let seedTrackIds = [...new Set((opts.seedTrackIds || []).filter(Boolean))];
+    let seedTracks = Array.isArray(opts.seedTracks) ? opts.seedTracks.slice() : [];
+    const contextTracks = Array.isArray(opts.contextTracks)
+      ? opts.contextTracks
+      : [];
+    const usedSoftSeeds = !seedTrackIds.length;
+
     if (!seedTrackIds.length) {
-      throw new Error("Select at least one seed track");
+      const soft = pickSoftSeeds(contextTracks, 8);
+      seedTrackIds = soft.ids;
+      seedTracks = soft.tracks.length ? soft.tracks : contextTracks.slice(0, 12);
+    }
+
+    if (
+      !seedTrackIds.length &&
+      !(seedTracks || []).some((t) => t?.artistIds?.length)
+    ) {
+      throw new Error(
+        "Mark seed tracks or load a playlist with tracks to search"
+      );
     }
 
     const target = Math.min(
@@ -387,38 +575,70 @@ const MixAppRecommend = (() => {
     );
     const filters = {
       ...(opts.filters || {}),
-      seedTrackIds,
+      // Soft seeds are only for discovery — don't exclude them as "seed tracks"
+      // unless the user explicitly marked them.
+      seedTrackIds: usedSoftSeeds ? [] : seedTrackIds,
     };
+
+    // Soft-seed / playlist-context search: Song Radio often echoes the playlist
+    // (sometimes under different track IDs). Exclude by URI, id, and fingerprint.
+    const hidingExisting =
+      (filters.hideExistingUris || []).length > 0 ||
+      (filters.hideExistingTracks || []).length > 0 ||
+      (filters.excludeTrackIds || []).length > 0;
+    if (hidingExisting && contextTracks.length) {
+      const ctxUris = contextTracks.map((t) => t.uri).filter(Boolean);
+      const ctxIds = contextTracks
+        .map((t) => t.id || trackIdFromUri(t.uri))
+        .filter(Boolean);
+      filters.hideExistingUris = [
+        ...new Set([...(filters.hideExistingUris || []), ...ctxUris]),
+      ];
+      filters.excludeTrackIds = [
+        ...new Set([...(filters.excludeTrackIds || []), ...ctxIds]),
+      ];
+      filters.hideExistingTracks = [
+        ...(filters.hideExistingTracks || []),
+        ...contextTracks,
+      ];
+    }
+
     const features = cloneFeatures(opts.features || defaultFeatureState());
 
     // Over-fetch so post-filters can still leave up to `target` rows.
+    // Soft-seed + hide-existing drops a large share of radio echoes — fetch more.
+    const overFetch = usedSoftSeeds && hidingExisting ? 3.2 : 1.8;
     const rawTarget = Math.min(
       MAX_LIMIT,
-      Math.max(target + 20, Math.ceil(target * 1.8))
+      Math.max(target + 40, Math.ceil(target * overFetch))
     );
 
     const { tracks, radios, rawTotal, playlistsUsed } = await collectCandidates({
       seedTrackIds,
-      seedTracks: opts.seedTracks || [],
+      seedTracks,
       rawTarget,
     });
 
     if (!rawTotal) {
       throw new Error(
-        "Song Radio returned no playlists for the selected seeds"
+        usedSoftSeeds
+          ? "No candidates from this playlist — try marking seed tracks"
+          : "Song Radio returned no playlists for the selected seeds"
       );
     }
 
     let pool = applyPostFilters(tracks, filters);
     pool = await filterByLocalFeatures(pool, features);
+    pool = sampleResults(pool, target, opts.avoidUris || []);
 
     return {
-      tracks: pool.slice(0, target),
+      tracks: pool,
       featuresUsed: features,
       engine: "song-radio",
       radioCount: radios,
       playlistsUsed,
       rawTotal,
+      usedSoftSeeds,
     };
   }
 
@@ -459,8 +679,10 @@ const MixAppRecommend = (() => {
     defaultFeatureState,
     recommend,
     applyPostFilters,
+    sampleResults,
     isAberrantTitle,
     trackIdFromUri,
+    trackFingerprint,
     featuresFromSamples,
   };
 })();
