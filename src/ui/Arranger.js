@@ -8,24 +8,49 @@ function MixAppArranger(props) {
     playingUri,
     isPlaying,
     seedUris,
+    flashUids,
+    listFlashKey,
     onReorder,
     onPlay,
     onToggleSeed,
     onRemove,
   } = props;
   const seedSet = new Set(seedUris || []);
+  const flashSet = new Set(flashUids || []);
   const [dragIndex, setDragIndex] = react.useState(null);
+  const [dragOverIndex, setDragOverIndex] = react.useState(null);
+  const [dragRowHeight, setDragRowHeight] = react.useState(40);
+  const [listFlashOn, setListFlashOn] = react.useState(false);
+  /** Display-index of keyboard/mouse selection (R6.2). */
+  const [activeIndex, setActiveIndex] = react.useState(null);
+  const [followId, setFollowId] = react.useState(null);
   const [visibility, setVisibility] = react.useState(() =>
     MixAppColumnConfig.getVisibility()
   );
   const [menu, setMenu] = react.useState(null);
   const [sort, setSort] = react.useState({ key: null, dir: null });
   const menuRef = react.useRef(null);
+  const listRef = react.useRef(null);
 
   react.useEffect(() => {
     setVisibility(MixAppColumnConfig.getVisibility());
     return MixAppColumnConfig.subscribe((next) => setVisibility({ ...next }));
   }, []);
+
+  // R5.4 — whole-list pulse after Flowify (etc.)
+  react.useEffect(() => {
+    if (!listFlashKey) return undefined;
+    setListFlashOn(true);
+    const t = setTimeout(() => setListFlashOn(false), 700);
+    return () => clearTimeout(t);
+  }, [listFlashKey]);
+
+  // Scroll first newly added row into view.
+  react.useEffect(() => {
+    if (!flashUids?.length) return;
+    const el = document.querySelector(".mixapp-track-row.is-flash");
+    el?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [flashUids]);
 
   react.useEffect(() => {
     if (!menu) return undefined;
@@ -87,14 +112,18 @@ function MixAppArranger(props) {
   ];
 
   function featureColWidth(col) {
-    // Narrow fixed cols — color lives on a small pill, not the whole cell.
+    // Fixed cols sized for full header labels (no ellipsis).
     if (col.id === "KEY") return "2.4rem";
     if (col.id === "BPM") return "2.6rem";
-    return "2.8rem";
+    if (col.id === "DANCEABILITY") return "3.25rem";
+    if (col.id === "ENERGY") return "3.5rem";
+    if (col.id === "VALENCE") return "3.5rem";
+    if (col.id === "ACOUSTICNESS") return "4rem";
+    return "3.5rem";
   }
 
   const gridTemplate = [
-    show("INDEX") ? "36px" : null,
+    show("INDEX") ? "52px" : null,
     show("TITLE_AND_ARTIST") ? "minmax(140px, 1fr)" : null,
     show("ADDED_AT") ? "minmax(72px, 0.4fr)" : null,
     ...featureCols.map((c) => (show(c.id) ? featureColWidth(c) : null)),
@@ -108,6 +137,32 @@ function MixAppArranger(props) {
     sort.key && sort.dir
       ? MixAppFeatures.sortTracks(tracks, sort.key, sort.dir)
       : tracks || [];
+
+  // After reorder (esp. while sorted), re-select the same track by uid/uri.
+  react.useEffect(() => {
+    if (!followId) return;
+    const di = displayTracks.findIndex(
+      (t) => t.uid === followId || t.uri === followId
+    );
+    setFollowId(null);
+    if (di >= 0) setActiveIndex(di);
+  }, [displayTracks, followId]);
+
+  // Keep selection in range when the list shrinks / sorts.
+  react.useEffect(() => {
+    if (followId) return;
+    setActiveIndex((idx) => {
+      if (idx == null) return idx;
+      if (!displayTracks.length) return null;
+      return Math.min(idx, displayTracks.length - 1);
+    });
+  }, [displayTracks.length, sort.key, sort.dir, followId]);
+
+  react.useEffect(() => {
+    if (activeIndex == null) return;
+    const el = document.getElementById("mixapp-arranger-row-" + activeIndex);
+    el?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex]);
 
   const metricRanges = {};
   for (const col of featureCols) {
@@ -142,6 +197,158 @@ function MixAppArranger(props) {
     onReorder(from, to);
   }
 
+  function selectDisplay(index) {
+    if (index == null || index < 0 || index >= displayTracks.length) return;
+    setActiveIndex(index);
+    listRef.current?.focus?.({ preventScroll: true });
+  }
+
+  function clearDrag() {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }
+
+  /** Live shift other rows while dragging (HTML5 DnD keeps DOM order stable). */
+  function rowDragStyle(index) {
+    const base = { gridTemplateColumns: gridTemplate };
+    if (dragIndex == null || dragOverIndex == null || dragIndex === dragOverIndex) {
+      return base;
+    }
+    if (index === dragIndex) return base;
+
+    let ty = 0;
+    if (dragIndex < dragOverIndex) {
+      if (index > dragIndex && index <= dragOverIndex) ty = -dragRowHeight;
+    } else if (index >= dragOverIndex && index < dragIndex) {
+      ty = dragRowHeight;
+    }
+    if (ty) {
+      base.transform = "translateY(" + ty + "px)";
+      base.zIndex = 1;
+    }
+    return base;
+  }
+
+  function onRowDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragIndex == null) return;
+    if (index !== dragOverIndex) setDragOverIndex(index);
+  }
+
+  function beginRowDrag(e, index) {
+    const row = e.currentTarget?.closest?.(".mixapp-track-row");
+    const hgt = row?.offsetHeight || e.currentTarget?.offsetHeight || 40;
+    setDragRowHeight(hgt);
+    setDragIndex(index);
+    setDragOverIndex(index);
+    selectDisplay(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+    if (row) {
+      try {
+        e.dataTransfer.setDragImage(row, 28, hgt / 2);
+      } catch (_) {
+        /* some embeds block setDragImage */
+      }
+    }
+  }
+
+  function finishRowDrop(e, index) {
+    e.preventDefault();
+    const fromRaw = e.dataTransfer.getData("text/plain");
+    const from =
+      dragIndex != null
+        ? dragIndex
+        : fromRaw !== ""
+          ? Number(fromRaw)
+          : NaN;
+    const to = dragOverIndex != null ? dragOverIndex : index;
+    if (Number.isFinite(from) && Number.isFinite(to) && from !== to) {
+      const moved = displayTracks[from];
+      const id = moved?.uid || moved?.uri || null;
+      moveDisplay(from, to);
+      if (id) setFollowId(id);
+      else setActiveIndex(to);
+    }
+    clearDrag();
+  }
+
+  const dragGripIcon = h(
+    "svg",
+    {
+      width: 12,
+      height: 16,
+      viewBox: "0 0 12 16",
+      "aria-hidden": "true",
+      focusable: "false",
+    },
+    h("circle", { cx: 3, cy: 3, r: 1.35, fill: "currentColor" }),
+    h("circle", { cx: 9, cy: 3, r: 1.35, fill: "currentColor" }),
+    h("circle", { cx: 3, cy: 8, r: 1.35, fill: "currentColor" }),
+    h("circle", { cx: 9, cy: 8, r: 1.35, fill: "currentColor" }),
+    h("circle", { cx: 3, cy: 13, r: 1.35, fill: "currentColor" }),
+    h("circle", { cx: 9, cy: 13, r: 1.35, fill: "currentColor" })
+  );
+
+  function handleListKeyDown(e) {
+    if (menu) return;
+    const n = displayTracks.length;
+    if (!n) return;
+    if (e.ctrlKey || e.metaKey) return;
+
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      const cur = activeIndex == null ? (e.key === "ArrowDown" ? -1 : n) : activeIndex;
+      if (e.altKey) {
+        if (activeIndex == null) {
+          setActiveIndex(e.key === "ArrowDown" ? 0 : n - 1);
+          return;
+        }
+        const to = e.key === "ArrowDown" ? activeIndex + 1 : activeIndex - 1;
+        if (to < 0 || to >= n) return;
+        const moved = displayTracks[activeIndex];
+        const id = moved?.uid || moved?.uri || null;
+        moveDisplay(activeIndex, to);
+        if (id) setFollowId(id);
+        else setActiveIndex(to);
+        return;
+      }
+      const next =
+        e.key === "ArrowDown"
+          ? Math.min(n - 1, cur + 1)
+          : Math.max(0, cur - 1);
+      setActiveIndex(next);
+      return;
+    }
+
+    if (e.key === "Home") {
+      e.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      setActiveIndex(n - 1);
+      return;
+    }
+
+    if (
+      (e.key === "Delete" || e.key === "Backspace") &&
+      activeIndex != null &&
+      !e.altKey
+    ) {
+      e.preventDefault();
+      const removeAt = activeIndex;
+      removeDisplay(removeAt);
+      setActiveIndex((idx) => {
+        if (!displayTracks.length || displayTracks.length <= 1) return null;
+        return Math.min(removeAt, displayTracks.length - 2);
+      });
+    }
+  }
+
   function openColumnMenu(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -164,7 +371,7 @@ function MixAppArranger(props) {
   function headButton(label, sortKey, className) {
     const active = sort.key === sortKey;
     const arrow = !active ? "" : sort.dir === "asc" ? " ↑" : " ↓";
-    return react.createElement(
+    return h(
       "button",
       {
         type: "button",
@@ -180,19 +387,19 @@ function MixAppArranger(props) {
   }
 
   if (loading) {
-    return react.createElement(
+    return h(
       "div",
       { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
-      react.createElement("div", {
+      h("div", {
         className: "mixapp-spinner",
         "aria-hidden": "true",
       }),
-      react.createElement(
+      h(
         "p",
         { className: "mixapp-empty-title" },
         "Loading tracks…"
       ),
-      react.createElement(
+      h(
         "p",
         { className: "mixapp-empty-hint" },
         "Fetching playlist contents from Spotify."
@@ -201,20 +408,20 @@ function MixAppArranger(props) {
   }
 
   if (!tracks?.length) {
-    return react.createElement(
+    return h(
       "div",
       { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
-      react.createElement(
+      h(
         "p",
         { className: "mixapp-empty-title" },
         "No tracks yet"
       ),
-      react.createElement(
+      h(
         "p",
         { className: "mixapp-empty-hint" },
         "Pick a playlist from the toolbar, or use Add Track / Generator once one is loaded."
       ),
-      react.createElement(
+      h(
         "p",
         { className: "mixapp-empty-hint" },
         "Press ? for keyboard shortcuts."
@@ -223,7 +430,7 @@ function MixAppArranger(props) {
   }
 
   function cell(className, children, style) {
-    return react.createElement("div", { className, style: style || undefined }, children);
+    return h("div", { className, style: style || undefined }, children);
   }
 
   function featureCell(track, col) {
@@ -235,7 +442,7 @@ function MixAppArranger(props) {
       );
       return cell(
         "mixapp-col-feat mixapp-col-key",
-        react.createElement(
+        h(
           "span",
           {
             className:
@@ -251,7 +458,7 @@ function MixAppArranger(props) {
         track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
       return cell(
         "mixapp-col-feat mixapp-col-bpm",
-        react.createElement("span", { className: "mixapp-feat-pill" }, text)
+        h("span", { className: "mixapp-feat-pill" }, text)
       );
     }
     const metricId = col.metricId;
@@ -263,7 +470,7 @@ function MixAppArranger(props) {
     const bg = MixAppFeatures.relativeColor(norm);
     return cell(
       "mixapp-col-feat mixapp-col-" + (metricId || col.id.toLowerCase()),
-      react.createElement(
+      h(
         "span",
         {
           className: "mixapp-feat-pill",
@@ -309,16 +516,20 @@ function MixAppArranger(props) {
     const titleText =
       (track.name || "Unknown") +
       (duration && duration !== "—" ? " (" + duration + ")" : "");
-    return react.createElement(
+    return h(
       "div",
       { className: "mixapp-track-meta" },
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
           className: "mixapp-track-meta-title" + (isSeed ? " is-seed" : ""),
           onClick: (e) => {
             e.stopPropagation();
+            const di = displayTracks.findIndex(
+              (t) => t.uid === track.uid || t.uri === track.uri
+            );
+            if (di >= 0) selectDisplay(di);
             onToggleSeed?.(track.uri);
           },
           title: isSeed ? "Remove seed" : "Mark as seed track",
@@ -326,7 +537,7 @@ function MixAppArranger(props) {
         titleText
       ),
       subParts.length
-        ? react.createElement(
+        ? h(
             "div",
             { className: "mixapp-track-meta-sub", title: subParts.join(" · ") },
             subParts.join(" · ")
@@ -348,11 +559,34 @@ function MixAppArranger(props) {
     if (show("INDEX")) {
       cells.push(
         cell(
-          "mixapp-col-num mixapp-drag-handle",
-          react.createElement(
-            "span",
-            { title: "Drag to reorder" },
-            fullIndex >= 0 ? fullIndex + 1 : index + 1
+          "mixapp-col-num",
+          h(
+            "div",
+            { className: "mixapp-index-cell" },
+            h(
+              "span",
+              {
+                className: "mixapp-drag-handle",
+                draggable: true,
+                title: "Drag to reorder",
+                "aria-label": "Drag to reorder",
+                onClick: (e) => e.stopPropagation(),
+                onDragStart: (e) => {
+                  e.stopPropagation();
+                  beginRowDrag(e, index);
+                },
+                onDragEnd: (e) => {
+                  e.stopPropagation();
+                  clearDrag();
+                },
+              },
+              dragGripIcon
+            ),
+            h(
+              "span",
+              { className: "mixapp-index-num" },
+              fullIndex >= 0 ? fullIndex + 1 : index + 1
+            )
           )
         )
       );
@@ -365,10 +599,10 @@ function MixAppArranger(props) {
       cells.push(
         cell(
           "mixapp-col-title",
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-title-cell" },
-            react.createElement(
+            h(
               "button",
               {
                 type: "button",
@@ -380,7 +614,7 @@ function MixAppArranger(props) {
                 title: playLabel,
                 "aria-label": playLabel,
               },
-              react.createElement(
+              h(
                 "svg",
                 {
                   viewBox: "0 0 16 16",
@@ -390,11 +624,11 @@ function MixAppArranger(props) {
                   focusable: "false",
                 },
                 active
-                  ? react.createElement("path", {
+                  ? h("path", {
                       fill: "currentColor",
                       d: "M3.5 2h3v12h-3V2zm6 0h3v12h-3V2z",
                     })
-                  : react.createElement("path", {
+                  : h("path", {
                       fill: "currentColor",
                       d: "M3 2.5v11l10-5.5L3 2.5z",
                     })
@@ -428,7 +662,7 @@ function MixAppArranger(props) {
     if (show("ACTIONS")) {
       cells.push(
         cell("mixapp-col-actions", [
-          react.createElement(
+          h(
             "button",
             {
               key: "up",
@@ -443,7 +677,7 @@ function MixAppArranger(props) {
             },
             "↑"
           ),
-          react.createElement(
+          h(
             "button",
             {
               key: "down",
@@ -458,7 +692,7 @@ function MixAppArranger(props) {
             },
             "↓"
           ),
-          react.createElement(
+          h(
             "button",
             {
               key: "remove",
@@ -471,7 +705,7 @@ function MixAppArranger(props) {
               title: "Remove from playlist",
               "aria-label": "Remove from playlist",
             },
-            react.createElement(
+            h(
               "svg",
               {
                 viewBox: "0 0 16 16",
@@ -480,7 +714,7 @@ function MixAppArranger(props) {
                 "aria-hidden": "true",
                 focusable: "false",
               },
-              react.createElement("path", {
+              h("path", {
                 fill: "currentColor",
                 d: "M5.5 1a1 1 0 0 0-.9.55L4.1 2H2.5a.5.5 0 0 0 0 1h11a.5.5 0 0 0 0-1H11.9l-.5-.45A1 1 0 0 0 10.5 1h-5zM3.5 4v9.5A1.5 1.5 0 0 0 5 15h6a1.5 1.5 0 0 0 1.5-1.5V4h-9zm2 2.5a.5.5 0 0 1 1 0v6a.5.5 0 0 1-1 0v-6zm3 0a.5.5 0 0 1 1 0v6a.5.5 0 0 1-1 0v-6z",
               })
@@ -493,7 +727,7 @@ function MixAppArranger(props) {
   }
 
   const columnMenu = menu
-    ? react.createElement(
+    ? h(
         "div",
         {
           ref: menuRef,
@@ -501,13 +735,13 @@ function MixAppArranger(props) {
           style: { left: menu.x + "px", top: menu.y + "px" },
           role: "menu",
         },
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-column-menu-title" },
           "Columns"
         ),
         toggleable.map((col) =>
-          react.createElement(
+          h(
             "label",
             {
               key: col.id,
@@ -516,7 +750,7 @@ function MixAppArranger(props) {
               "aria-checked": show(col.id),
               onMouseDown: (e) => e.stopPropagation(),
             },
-            react.createElement("input", {
+            h("input", {
               type: "checkbox",
               checked: show(col.id),
               onMouseDown: (e) => e.stopPropagation(),
@@ -526,7 +760,7 @@ function MixAppArranger(props) {
                 handleToggleColumn(col.id);
               },
             }),
-            react.createElement("span", null, col.label)
+            h("span", null, col.label)
           )
         )
       )
@@ -539,42 +773,67 @@ function MixAppArranger(props) {
       ? Spicetify.ReactDOM.createPortal(columnMenu, document.body)
       : columnMenu;
 
-  return react.createElement(
+  const activeDescendant =
+    activeIndex != null ? "mixapp-arranger-row-" + activeIndex : undefined;
+
+  return h(
     "div",
     { className: "mixapp-arranger-wrap" },
-    react.createElement(
+    h(
       "div",
-      { className: "mixapp-arranger" },
-      react.createElement(
+      {
+        ref: listRef,
+        className:
+          "mixapp-arranger" +
+          (listFlashOn ? " is-flash" : "") +
+          (dragIndex != null ? " is-reordering" : ""),
+        role: "listbox",
+        tabIndex: 0,
+        "aria-label": "Playlist tracks",
+        "aria-activedescendant": activeDescendant,
+        onKeyDown: handleListKeyDown,
+      },
+      h(
         "div",
         {
           className: "mixapp-arranger-head",
           style: { gridTemplateColumns: gridTemplate },
           onContextMenu: openColumnMenu,
           title: "Right-click to show or hide columns",
+          role: "presentation",
         },
         ...headCells()
       ),
       !displayTracks.length
-        ? react.createElement(
+        ? h(
             "div",
             { className: "mixapp-arranger-empty" },
             "Select a playlist to edit its track order."
           )
         : displayTracks.map((track, index) =>
-            react.createElement(
+            h(
               "div",
               {
                 key: (track.uid || track.uri) + "-" + index,
+                id: "mixapp-arranger-row-" + index,
+                role: "option",
+                "aria-selected": activeIndex === index,
                 className:
                   "mixapp-track-row" +
                   (dragIndex === index ? " is-dragging" : "") +
-                  (seedSet.has(track.uri) ? " is-seed" : ""),
-                style: { gridTemplateColumns: gridTemplate },
-                draggable: true,
+                  (dragOverIndex === index && dragIndex !== index
+                    ? " is-drag-over"
+                    : "") +
+                  (seedSet.has(track.uri) ? " is-seed" : "") +
+                  (flashSet.has(track.uid) || flashSet.has(track.uri)
+                    ? " is-flash"
+                    : "") +
+                  (activeIndex === index ? " is-active" : ""),
+                style: rowDragStyle(index),
+                draggable: false,
                 title: seedSet.has(track.uri)
-                  ? "Seed track — click title to unmark"
-                  : "Click title to mark as seed",
+                  ? "Seed track — click to unmark · drag ⋮⋮ to reorder"
+                  : "Click to mark as seed · drag ⋮⋮ to reorder",
                 onClick: (e) => {
                   if (
                     e.target?.closest?.(
@@ -583,24 +842,11 @@ function MixAppArranger(props) {
                   ) {
                     return;
                   }
+                  selectDisplay(index);
                   onToggleSeed?.(track.uri);
                 },
-                onDragStart: (e) => {
-                  setDragIndex(index);
-                  e.dataTransfer.effectAllowed = "move";
-                  e.dataTransfer.setData("text/plain", String(index));
-                },
-                onDragEnd: () => setDragIndex(null),
-                onDragOver: (e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
-                },
-                onDrop: (e) => {
-                  e.preventDefault();
-                  const from = Number(e.dataTransfer.getData("text/plain"));
-                  moveDisplay(from, index);
-                  setDragIndex(null);
-                },
+                onDragOver: (e) => onRowDragOver(e, index),
+                onDrop: (e) => finishRowDrop(e, index),
               },
               ...rowCells(track, index)
             )

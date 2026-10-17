@@ -1,0 +1,370 @@
+//@ts-check
+/**
+ * Playlist list/load/save + dirty/undo wiring.
+ *
+ * @param {{
+ *   saved: object|null,
+ *   onBeforePlaylistLoad?: () => void,
+ *   onClearPlaylist?: () => void,
+ * }} opts
+ */
+function MixAppUsePlaylistSession(opts) {
+  const react = Spicetify.React;
+  const saved = opts?.saved || null;
+  const onBeforePlaylistLoad = opts?.onBeforePlaylistLoad;
+  const onClearPlaylist = opts?.onClearPlaylist;
+
+  const undoRef = react.useRef(null);
+  if (!undoRef.current) {
+    undoRef.current = MixAppCreateUndoStack(40);
+    if (saved?.undo) undoRef.current.importState(saved.undo);
+  }
+
+  const [playlists, setPlaylists] = react.useState([]);
+  const [selectedUri, setSelectedUri] = react.useState(
+    () => saved?.selectedUri || null
+  );
+  const [playlist, setPlaylist] = react.useState(() => saved?.playlist || null);
+  const [tracks, setTracks] = react.useState(() => {
+    const list = Array.isArray(saved?.tracks)
+      ? saved.tracks.map((t) => ({ ...t }))
+      : [];
+    return MixAppFeatures.reformatTrackKeys(list);
+  });
+  const [listLoading, setListLoading] = react.useState(true);
+  const [tracksLoading, setTracksLoading] = react.useState(false);
+  const [dirty, setDirty] = react.useState(() => !!saved?.dirty);
+  const [saving, setSaving] = react.useState(false);
+  const [canUndo, setCanUndo] = react.useState(() =>
+    !!(saved?.undo?.past && saved.undo.past.length)
+  );
+  const [canRedo, setCanRedo] = react.useState(() =>
+    !!(saved?.undo?.future && saved.undo.future.length)
+  );
+  const [error, setError] = react.useState(null);
+  /** Brief arranger motion (R5.4): row uids and/or whole-list flash key. */
+  const [rowFlashUids, setRowFlashUids] = react.useState([]);
+  const [listFlashKey, setListFlashKey] = react.useState(0);
+  const flashTimerRef = react.useRef(null);
+
+  const loadGenRef = react.useRef(0);
+  const selectedUriRef = react.useRef(selectedUri);
+  selectedUriRef.current = selectedUri;
+  const tracksLoadingRef = react.useRef(tracksLoading);
+  tracksLoadingRef.current = tracksLoading;
+
+  function syncUndoFlags() {
+    setCanUndo(undoRef.current.canUndo());
+    setCanRedo(undoRef.current.canRedo());
+  }
+
+  async function refreshPlaylists() {
+    setListLoading(true);
+    setError(null);
+    try {
+      const items = await MixAppApi.listPlaylists();
+      items.sort((a, b) => a.name.localeCompare(b.name));
+      setPlaylists(items);
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Failed to load playlists");
+      MixAppApi.notify("Failed to load playlists", true);
+    } finally {
+      setListLoading(false);
+    }
+  }
+
+  react.useEffect(() => {
+    refreshPlaylists();
+  }, []);
+
+  async function loadPlaylist(uri) {
+    if (!uri) {
+      loadGenRef.current += 1;
+      onClearPlaylist?.();
+      setSelectedUri(null);
+      setPlaylist(null);
+      setTracks([]);
+      setDirty(false);
+      undoRef.current.clear();
+      syncUndoFlags();
+      MixAppSession.clear();
+      return;
+    }
+
+    if (uri === selectedUri && tracks.length) {
+      return;
+    }
+
+    onBeforePlaylistLoad?.();
+    const loadGen = ++loadGenRef.current;
+    setSelectedUri(uri);
+    setTracksLoading(true);
+    setError(null);
+    try {
+      const [meta, items] = await Promise.all([
+        MixAppApi.getPlaylistMeta(uri),
+        MixAppApi.getPlaylistTracks(uri),
+      ]);
+      if (loadGen !== loadGenRef.current) return;
+      const listed = playlists.find((p) => p.uri === uri);
+      if (listed) {
+        meta.isOwnedBySelf = !!(meta.isOwnedBySelf || listed.isOwnedBySelf);
+        meta.collaborative = !!(meta.collaborative || listed.collaborative);
+        if (listed.canEdit === false) {
+          meta.isOwnedBySelf = false;
+          meta.collaborative = false;
+        }
+      }
+      setPlaylist(meta);
+      setTracks(items);
+      setDirty(false);
+      undoRef.current.clear();
+      syncUndoFlags();
+      setTracksLoading(false);
+      try {
+        const enriched = await MixAppFeatures.enrichTracks(items.slice());
+        if (loadGen !== loadGenRef.current) return;
+        setTracks(enriched.slice());
+      } catch (featErr) {
+        console.warn("MixApp: feature enrich failed", featErr);
+      }
+      return;
+    } catch (err) {
+      if (loadGen !== loadGenRef.current) return;
+      console.error(err);
+      setError(err?.message || "Failed to load playlist");
+      MixAppApi.notify("Failed to load playlist", true);
+      setPlaylist(null);
+      setTracks([]);
+    } finally {
+      if (loadGen === loadGenRef.current) setTracksLoading(false);
+    }
+  }
+
+  function clearFlashSoon() {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => {
+      flashTimerRef.current = null;
+      setRowFlashUids([]);
+    }, 700);
+  }
+
+  /** Highlight specific rows (track add). */
+  function flashRows(uids) {
+    const ids = (uids || []).map(String).filter(Boolean);
+    if (!ids.length) return;
+    setRowFlashUids(ids);
+    clearFlashSoon();
+  }
+
+  /** Pulse the whole arranger (Flowify / bulk rearrange). */
+  function flashList() {
+    if (flashTimerRef.current) {
+      clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = null;
+    }
+    setRowFlashUids([]);
+    setListFlashKey((k) => k + 1);
+  }
+
+  function commitTracks(next, { recordUndo } = { recordUndo: true }) {
+    if (recordUndo) {
+      undoRef.current.push(tracks);
+    }
+    setTracks(next);
+    setDirty(true);
+    syncUndoFlags();
+  }
+
+  function handleReorder(from, to) {
+    if (from === to) return;
+    const next = tracks.slice();
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    commitTracks(next);
+  }
+
+  function handleRemoveTrack(index, track) {
+    if (index == null || index < 0 || index >= tracks.length) return null;
+    const removed = track || tracks[index];
+    const next = tracks.slice();
+    next.splice(index, 1);
+    commitTracks(next);
+    return removed || null;
+  }
+
+  function handleUndo() {
+    const prev = undoRef.current.undo(tracks);
+    if (!prev) return;
+    setTracks(prev);
+    setDirty(true);
+    syncUndoFlags();
+  }
+
+  function handleRedo() {
+    const next = undoRef.current.redo(tracks);
+    if (!next) return;
+    setTracks(next);
+    setDirty(true);
+    syncUndoFlags();
+  }
+
+  async function handleSave() {
+    if (!playlist?.uri || !dirty) return;
+    if (tracksLoadingRef.current || saving) return;
+    const uriAtStart = playlist.uri;
+    const tracksAtStart = tracks;
+    setSaving(true);
+    try {
+      if (tracksLoadingRef.current) {
+        MixAppApi.notify("Cannot save while playlist is loading", true);
+        return;
+      }
+      if (selectedUriRef.current !== uriAtStart) {
+        MixAppApi.notify("Playlist changed — save cancelled", true);
+        return;
+      }
+      const savedTracks = await MixAppApi.saveOverwrite(
+        uriAtStart,
+        tracksAtStart
+      );
+      if (selectedUriRef.current !== uriAtStart) {
+        MixAppApi.notify(
+          "Playlist changed during save — local state left unchanged",
+          true
+        );
+        return;
+      }
+      if (Array.isArray(savedTracks) && savedTracks.length) {
+        const byUri = new Map();
+        for (const t of tracksAtStart) {
+          if (!t?.uri) continue;
+          if (!byUri.has(t.uri)) byUri.set(t.uri, []);
+          byUri.get(t.uri).push(t);
+        }
+        setTracks(
+          savedTracks.map((t) => {
+            const queue = byUri.get(t.uri);
+            const prev = queue && queue.length ? queue.shift() : null;
+            if (!prev) return t;
+            return {
+              ...t,
+              bpm: prev.bpm ?? t.bpm,
+              key: prev.key ?? t.key,
+              year: prev.year ?? t.year,
+            };
+          })
+        );
+      }
+      setDirty(false);
+      undoRef.current.clear();
+      syncUndoFlags();
+      MixAppApi.notify("Playlist saved");
+    } catch (err) {
+      console.error(err);
+      MixAppApi.notify(err?.message || "Save failed", true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveAsNew() {
+    if (!tracks.length) return;
+    if (tracksLoadingRef.current || saving) return;
+    const base = playlist?.name || "MixApp playlist";
+    const name = `${base} (MixApp)`;
+    setSaving(true);
+    try {
+      if (tracksLoadingRef.current) {
+        MixAppApi.notify("Cannot save while playlist is loading", true);
+        return;
+      }
+      const uri = await MixAppApi.createPlaylist(
+        name,
+        tracks.map((t) => t.uri)
+      );
+      MixAppApi.notify(`Created “${name}”`);
+      await refreshPlaylists();
+      await loadPlaylist(uri);
+    } catch (err) {
+      console.error(err);
+      MixAppApi.notify(err?.message || "Create failed", true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleAddCatalogTrack(track) {
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
+    if (!added.length) {
+      MixAppApi.notify("Track already in playlist", true);
+      return;
+    }
+    commitTracks(next);
+    flashRows(added.map((t) => t.uid || t.uri));
+    MixAppApi.notify(`Added “${added[0].name}”`);
+    MixAppPlaylistOps.enrichAdded(added, setTracks);
+  }
+
+  function handleAddCatalogTracks(batch) {
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, batch);
+    if (!added.length) {
+      MixAppApi.notify("No new tracks to add", true);
+      return;
+    }
+    commitTracks(next);
+    flashRows(added.map((t) => t.uid || t.uri));
+    MixAppApi.notify(
+      added.length === 1
+        ? `Added “${added[0].name}”`
+        : `Added ${added.length} tracks`
+    );
+    MixAppPlaylistOps.enrichAdded(added, setTracks);
+  }
+
+  /** Add a rec result track; returns true if added. */
+  function handleAddRecommendedTrack(track) {
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
+    if (!added.length) {
+      MixAppApi.notify("Track already in playlist", true);
+      return false;
+    }
+    commitTracks(next);
+    flashRows(added.map((t) => t.uid || t.uri));
+    MixAppApi.notify(`Added “${added[0].name}”`);
+    MixAppPlaylistOps.enrichAdded(added, setTracks);
+    return true;
+  }
+
+  return {
+    playlists,
+    selectedUri,
+    playlist,
+    tracks,
+    listLoading,
+    tracksLoading,
+    dirty,
+    saving,
+    canUndo,
+    canRedo,
+    error,
+    rowFlashUids,
+    listFlashKey,
+    undoRef,
+    refreshPlaylists,
+    loadPlaylist,
+    commitTracks,
+    flashRows,
+    flashList,
+    handleReorder,
+    handleRemoveTrack,
+    handleUndo,
+    handleRedo,
+    handleSave,
+    handleSaveAsNew,
+    handleAddCatalogTrack,
+    handleAddCatalogTracks,
+    handleAddRecommendedTrack,
+  };
+}

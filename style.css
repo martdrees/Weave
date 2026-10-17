@@ -1,4 +1,61 @@
+/* MixApp styles — interactive primitives inventory: docs/COMPONENTS.md (R5.2) */
+
 .mixapp-root {
+  /* —— Design tokens (R5.1) — wrap Spotify spice vars where possible —— */
+  --mix-text: var(--spice-text);
+  --mix-subtext: var(--spice-subtext);
+  --mix-main: var(--spice-main);
+  --mix-surface: var(--spice-card);
+  --mix-accent: var(--spice-button, #1db954);
+  --mix-accent-text: var(--spice-button-text, #000);
+
+  --mix-border: rgba(255, 255, 255, 0.12);
+  --mix-border-subtle: rgba(255, 255, 255, 0.08);
+  --mix-border-strong: rgba(255, 255, 255, 0.14);
+  --mix-border-faint: rgba(255, 255, 255, 0.05);
+  --mix-hover: rgba(255, 255, 255, 0.06);
+  --mix-hover-strong: rgba(255, 255, 255, 0.1);
+  --mix-row-tint: rgba(255, 255, 255, 0.04);
+  --mix-scrim: rgba(0, 0, 0, 0.55);
+  --mix-danger-bg: rgba(255, 80, 80, 0.12);
+  --mix-warn-bg: rgba(255, 200, 60, 0.18);
+  --mix-accent-soft: rgba(29, 185, 84, 0.12);
+  --mix-accent-muted: rgba(29, 185, 84, 0.18);
+  --mix-accent-badge: rgba(29, 185, 84, 0.22);
+  --mix-accent-ring: rgba(29, 185, 84, 0.55);
+  --mix-accent-chip: rgba(29, 185, 84, 0.14);
+
+  --mix-space-1: 4px;
+  --mix-space-2: 8px;
+  --mix-space-3: 12px;
+  --mix-space-4: 16px;
+  --mix-space-5: 20px;
+  --mix-space-6: 24px;
+  --mix-space-8: 32px;
+  --mix-gap-tight: 6px;
+  --mix-gap: 10px;
+
+  --mix-radius-sm: 4px;
+  --mix-radius: 6px;
+  --mix-radius-md: 8px;
+  --mix-radius-pill: 999px;
+
+  --mix-font-2xs: 0.65rem;
+  --mix-font-xs: 0.75rem;
+  --mix-font-sm: 0.8rem;
+  --mix-font-md: 0.85rem;
+  --mix-font: 0.95rem;
+  --mix-font-lg: 1rem;
+  --mix-font-title: 1.75rem;
+
+  --mix-z-base: 1;
+  --mix-z-raised: 2;
+  --mix-z-sticky: 3;
+  --mix-z-tip: 40;
+  --mix-z-tip-above: 41;
+  --mix-z-menu: 10000;
+  --mix-z-overlay: 10050;
+
   --mixapp-table-min-height: min(42vh, 360px);
   display: flex;
   flex-direction: column;
@@ -7,8 +64,8 @@
   max-width: none;
   min-height: 100%;
   height: 100%;
-  padding: 24px 32px 32px;
-  color: var(--spice-text);
+  padding: var(--mix-space-6) var(--mix-space-8) var(--mix-space-8);
+  color: var(--mix-text);
   box-sizing: border-box;
 }
 
@@ -19,14 +76,14 @@
 
 .mixapp-header h1 {
   margin: 0 0 4px;
-  font-size: 1.75rem;
+  font-size: var(--mix-font-title);
   font-weight: 700;
 }
 
 .mixapp-subtitle {
   margin: 0 0 20px;
-  color: var(--spice-subtext);
-  font-size: 0.95rem;
+  color: var(--mix-subtext);
+  font-size: var(--mix-font);
   line-height: 1.45;
 }
 
@@ -45,9 +102,9 @@
 .mixapp-picker-label {
   display: block;
   margin-bottom: 6px;
-  font-size: 0.8rem;
+  font-size: var(--mix-font-sm);
   letter-spacing: 0.02em;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-picker-row {
@@ -60,8 +117,8 @@
 .mixapp-picker-count {
   flex: 0 0 auto;
   white-space: nowrap;
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
   padding: 0 2px;
 }
 
@@ -73,11 +130,11 @@
   flex: 1;
   min-width: 0;
   padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: var(--spice-main);
-  color: var(--spice-text);
-  font-size: 0.95rem;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border);
+  background: var(--mix-main);
+  color: var(--mix-text);
+  font-size: var(--mix-font);
 }
 
 .mixapp-select-toolbar {
@@ -85,7 +142,7 @@
   min-width: 140px;
   max-width: 100%;
   padding: 5px 8px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
   line-height: 1.3;
   border-radius: 5px;
 }
@@ -95,15 +152,15 @@
   width: auto;
   min-width: 72px;
   padding: 6px 8px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
 }
 
 .mixapp-result-limit {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
 }
 
 .mixapp-toolbar {
@@ -114,9 +171,9 @@
   justify-content: space-between;
   margin-bottom: 12px;
   padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--spice-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--mix-radius-md);
+  background: var(--mix-surface);
+  border: 1px solid var(--mix-border-subtle);
 }
 
 .mixapp-toolbar-left {
@@ -141,13 +198,13 @@
 .mixapp-badge {
   font-size: 0.7rem;
   padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(255, 200, 60, 0.18);
-  color: var(--spice-text);
+  border-radius: var(--mix-radius-pill);
+  background: var(--mix-warn-bg);
+  color: var(--mix-text);
 }
 
 .mixapp-badge-seed {
-  background: rgba(29, 185, 84, 0.22);
+  background: var(--mix-accent-badge);
 }
 
 .mixapp-toolbar-actions {
@@ -159,21 +216,22 @@
 
 .mixapp-toolbar-actions .mixapp-btn {
   padding: 6px 10px;
-  font-size: 0.8rem;
+  font-size: var(--mix-font-sm);
 }
 
+/* —— Button: .mixapp-btn (+ primary / ghost / active / compact) —— */
 .mixapp-btn {
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
   background: transparent;
-  color: var(--spice-text);
-  font-size: 0.85rem;
+  color: var(--mix-text);
+  font-size: var(--mix-font-md);
   cursor: pointer;
 }
 
 .mixapp-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--mix-hover);
 }
 
 .mixapp-btn:disabled {
@@ -186,28 +244,28 @@
 }
 
 .mixapp-btn-primary {
-  background: var(--spice-button, #1db954);
+  background: var(--mix-accent);
   border-color: transparent;
-  color: var(--spice-button-text, #000);
+  color: var(--mix-accent-text);
   font-weight: 600;
 }
 
 .mixapp-btn-primary:hover:not(:disabled) {
   filter: brightness(1.05);
-  background: var(--spice-button, #1db954);
+  background: var(--mix-accent);
 }
 
 .mixapp-btn-active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--spice-button, #1db954);
+  background: var(--mix-hover-strong);
+  border-color: var(--mix-accent);
 }
 
 .mixapp-error {
   margin-bottom: 12px;
   padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(255, 80, 80, 0.12);
-  color: var(--spice-text);
+  border-radius: var(--mix-radius);
+  background: var(--mix-danger-bg);
+  color: var(--mix-text);
   font-size: 0.9rem;
 }
 
@@ -246,10 +304,10 @@
   min-height: var(--mixapp-table-min-height);
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
   overflow: auto;
-  background: var(--spice-card);
+  background: var(--mix-surface);
 }
 
 /* With search open, don’t trap scroll in a squeezed table — expand and scroll the view */
@@ -283,7 +341,7 @@
 
 .mixapp-col-sort:hover,
 .mixapp-col-sort.is-active {
-  color: var(--spice-text);
+  color: var(--mix-text);
   text-decoration: underline;
 }
 
@@ -312,13 +370,13 @@
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--spice-text);
+  color: var(--mix-text);
   box-sizing: border-box;
 }
 
 .mixapp-col-feat-head {
-  padding: 0 1px;
-  overflow: hidden;
+  padding: 0 2px;
+  overflow: visible;
 }
 
 .mixapp-col-feat-head .mixapp-col-sort {
@@ -327,8 +385,8 @@
   font-size: 0.58rem;
   letter-spacing: 0.02em;
   padding: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -339,9 +397,10 @@
   justify-content: center;
   padding: 36px 20px;
   text-align: center;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
+/* —— Track row / table (see MixAppTrackTable) —— */
 .mixapp-arranger-head,
 .mixapp-track-row {
   display: grid;
@@ -354,37 +413,81 @@
 }
 
 .mixapp-arranger-head {
-  font-size: 0.65rem;
+  font-size: var(--mix-font-2xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--spice-subtext);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--mix-subtext);
+  border-bottom: 1px solid var(--mix-border-subtle);
   background: rgba(0, 0, 0, 0.15);
 }
 
 .mixapp-track-row {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.8rem;
+  border-bottom: 1px solid var(--mix-border-faint);
+  font-size: var(--mix-font-sm);
+  transition: transform 0.16s ease, background-color 0.12s ease, opacity 0.12s ease;
+  will-change: transform;
 }
 
 .mixapp-track-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--mix-row-tint);
+}
+
+.mixapp-arranger.is-reordering {
+  cursor: grabbing;
+}
+
+.mixapp-arranger.is-reordering .mixapp-track-row {
+  pointer-events: auto;
 }
 
 .mixapp-track-row.is-dragging {
-  opacity: 0.55;
+  opacity: 0.4;
+  background: var(--mix-accent-soft);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+  position: relative;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.mixapp-track-row.is-drag-over:not(.is-dragging) {
+  box-shadow: inset 0 2px 0 0 var(--mix-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mixapp-track-row {
+    transition: none;
+  }
 }
 
 .mixapp-track-row.is-seed {
-  background: rgba(29, 185, 84, 0.12);
+  background: var(--mix-accent-soft);
 }
 
 .mixapp-track-row.is-seed:hover {
-  background: rgba(29, 185, 84, 0.18);
+  background: var(--mix-accent-muted);
+}
+
+/* R6.2 — keyboard / click selection */
+.mixapp-arranger:focus {
+  outline: none;
+}
+
+.mixapp-arranger:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--mix-border-strong);
+}
+
+.mixapp-track-row.is-active {
+  outline: 2px solid var(--mix-accent-ring);
+  outline-offset: -2px;
+  background: var(--mix-hover);
+}
+
+.mixapp-track-row.is-active.is-seed {
+  background: var(--mix-accent-muted);
 }
 
 .mixapp-linkish.is-seed {
-  color: var(--spice-button, #1db954);
+  color: var(--mix-accent);
   font-weight: 600;
 }
 
@@ -392,14 +495,14 @@
 .mixapp-col-dur,
 .mixapp-col-bpm,
 .mixapp-col-added {
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   font-variant-numeric: tabular-nums;
 }
 
 .mixapp-col-bpm {
   text-align: center;
   background: transparent;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-col-key {
@@ -420,18 +523,56 @@
   line-height: 1;
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--mix-border);
 }
 
 .mixapp-key-circle.is-empty {
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   text-shadow: none;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--mix-hover);
+}
+
+.mixapp-index-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mixapp-index-num {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .mixapp-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--mix-radius-sm);
+  background: transparent;
+  color: var(--mix-subtext);
   cursor: grab;
   user-select: none;
+  opacity: 0.55;
+}
+
+.mixapp-drag-handle:hover,
+.mixapp-track-row:hover .mixapp-drag-handle,
+.mixapp-track-row.is-active .mixapp-drag-handle {
+  opacity: 1;
+  color: var(--mix-text);
+  background: var(--mix-hover);
+}
+
+.mixapp-drag-handle:active,
+.mixapp-arranger.is-reordering .mixapp-drag-handle {
+  cursor: grabbing;
 }
 
 .mixapp-col-title,
@@ -452,7 +593,7 @@
 }
 
 .mixapp-col-dur.is-current {
-  color: var(--spice-button, #1db954);
+  color: var(--mix-accent);
   font-weight: 600;
 }
 
@@ -483,7 +624,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--spice-text);
+  color: var(--mix-text);
   font: inherit;
   font-weight: 600;
   font-size: 0.78rem;
@@ -500,11 +641,11 @@
 }
 
 .mixapp-track-meta-title.is-seed {
-  color: var(--spice-button, #1db954);
+  color: var(--mix-accent);
 }
 
 .mixapp-track-meta-sub {
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.25;
@@ -524,46 +665,46 @@
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
 }
 
 .mixapp-play-btn:hover {
-  color: var(--spice-text);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--mix-text);
+  background: var(--mix-hover-strong);
 }
 
 .mixapp-play-btn.is-playing {
-  color: var(--spice-button, #1db954);
+  color: var(--mix-accent);
 }
 
 .mixapp-track-row:hover .mixapp-play-btn {
-  color: var(--spice-text);
+  color: var(--mix-text);
 }
 
 .mixapp-track-row:hover .mixapp-play-btn.is-playing {
-  color: var(--spice-button, #1db954);
+  color: var(--mix-accent);
 }
 
 .mixapp-column-menu {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--mix-z-menu);
   min-width: 180px;
   padding: 8px 0;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: var(--spice-card, #282828);
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border);
+  background: var(--mix-surface, #282828);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  color: var(--spice-text);
+  color: var(--mix-text);
 }
 
 .mixapp-column-menu-title {
   padding: 4px 14px 8px;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-column-menu-item {
@@ -578,18 +719,18 @@
 }
 
 .mixapp-column-menu-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--mix-border-subtle);
 }
 
 .mixapp-column-menu-item input {
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
 }
 
 .mixapp-linkish {
   background: none;
   border: none;
   padding: 0;
-  color: var(--spice-text);
+  color: var(--mix-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -605,20 +746,21 @@
   justify-content: flex-end;
 }
 
+/* —— Icon button (companion to .mixapp-btn) —— */
 .mixapp-icon-btn {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--mix-radius-sm);
   background: transparent;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   cursor: pointer;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 0.95rem;
+  font-size: var(--mix-font);
   line-height: 1;
 }
 
@@ -629,8 +771,8 @@
 }
 
 .mixapp-icon-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--spice-text);
+  background: var(--mix-border-subtle);
+  color: var(--mix-text);
 }
 
 .mixapp-icon-btn-danger:hover:not(:disabled) {
@@ -646,8 +788,8 @@
 .mixapp-footer-hint {
   flex: 0 0 auto;
   margin: 12px 0 0;
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
 }
 
 /* Stretch past Spicetify’s default content column when present */
@@ -670,9 +812,9 @@
   width: 100%;
   margin-bottom: 10px;
   padding: 8px 10px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--spice-card);
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
+  background: var(--mix-surface);
   box-sizing: border-box;
 }
 
@@ -718,7 +860,7 @@
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-feature-sliders-wide {
@@ -729,16 +871,17 @@
   overflow: visible;
 }
 
+/* —— Modal shell: overlay + dialog (MixAppModal) —— */
 .mixapp-results-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10050;
+  z-index: var(--mix-z-overlay);
   display: flex;
   align-items: stretch;
   justify-content: stretch;
   padding: 12px 16px;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--mix-scrim);
 }
 
 .mixapp-results-modal {
@@ -750,11 +893,11 @@
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: var(--spice-card, #282828);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--mix-border);
+  background: var(--mix-surface, #282828);
+  box-shadow: 0 16px 48px var(--mix-scrim);
   overflow: hidden;
-  color: var(--spice-text);
+  color: var(--mix-text);
 }
 
 /* Phase 5 — Add Track / Copy from Playlist */
@@ -805,7 +948,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
 }
 
 .mixapp-flowify-weights,
@@ -834,16 +977,16 @@
 }
 
 .mixapp-flowify-weight-label {
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
   white-space: nowrap;
 }
 
 .mixapp-flowify-weight-val {
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
   font-variant-numeric: tabular-nums;
   text-align: right;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-flowify-actions {
@@ -858,7 +1001,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
 }
 
 .mixapp-generator-checks label {
@@ -899,7 +1042,7 @@
 .mixapp-empty-hint {
   margin: 0;
   max-width: 36rem;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -924,7 +1067,7 @@
 
 .mixapp-shortcuts-table td {
   padding: 8px 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--mix-hover);
   vertical-align: top;
 }
 
@@ -932,7 +1075,7 @@
   width: 48%;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.78rem;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   white-space: nowrap;
 }
 
@@ -942,7 +1085,7 @@
   gap: 8px;
   align-items: center;
   padding: 12px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--mix-border-subtle);
 }
 
 .mixapp-find-search-bar-stack {
@@ -956,23 +1099,23 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
   background: rgba(0, 0, 0, 0.25);
-  color: var(--spice-text);
+  color: var(--mix-text);
   font-size: 0.9rem;
 }
 
 .mixapp-find-input:focus {
   outline: none;
-  border-color: var(--spice-button, #1db954);
+  border-color: var(--mix-accent);
 }
 
 .mixapp-find-error {
   flex: 0 0 auto;
   padding: 8px 18px;
   color: #f87171;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
 }
 
 .mixapp-find-list {
@@ -987,11 +1130,15 @@
   align-items: center;
   gap: 8px;
   padding: 8px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--mix-border-faint);
 }
 
 .mixapp-copy-modal .mixapp-find-row {
-  grid-template-columns: 22px 36px minmax(0, 1fr) 3.2rem auto;
+  grid-template-columns: 22px 36px minmax(0, 1fr) 2.4rem 3.2rem auto;
+}
+
+.mixapp-find-key {
+  justify-self: center;
 }
 
 .mixapp-find-row.is-in-playlist {
@@ -1015,22 +1162,22 @@
 
 .mixapp-find-sub {
   font-size: 0.78rem;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mixapp-find-dur {
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
 .mixapp-btn-compact {
   padding: 5px 10px;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
 }
 
 .mixapp-copy-layout {
@@ -1044,7 +1191,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid var(--mix-border-subtle);
   padding: 10px 12px;
   gap: 8px;
 }
@@ -1072,7 +1219,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--mix-radius);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -1080,11 +1227,11 @@
 }
 
 .mixapp-copy-playlist-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--mix-hover);
 }
 
 .mixapp-copy-playlist-item.is-active {
-  background: rgba(29, 185, 84, 0.18);
+  background: var(--mix-accent-muted);
 }
 
 .mixapp-copy-playlist-name {
@@ -1109,12 +1256,12 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--mix-border-subtle);
 }
 
 .mixapp-copy-main-head h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--mix-font);
 }
 
 .mixapp-copy-actions {
@@ -1130,7 +1277,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--mix-border-subtle);
 }
 
 .mixapp-search-results-body {
@@ -1149,8 +1296,8 @@
 
 .mixapp-search-waiting-label {
   margin: 0;
-  color: var(--spice-subtext);
-  font-size: 0.95rem;
+  color: var(--mix-subtext);
+  font-size: var(--mix-font);
 }
 
 .mixapp-spinner {
@@ -1158,13 +1305,55 @@
   height: 36px;
   border-radius: 50%;
   border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(--spice-button, #1db954);
+  border-top-color: var(--mix-accent);
   animation: mixapp-spin 0.75s linear infinite;
 }
 
 @keyframes mixapp-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* R5.4 — purposeful flashes (track add / Flowify); theme-safe via --mix-accent-* */
+@keyframes mixapp-row-flash {
+  0% {
+    background-color: var(--mix-accent-muted);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes mixapp-list-flash {
+  0% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+  25% {
+    box-shadow: inset 0 0 0 2px var(--mix-accent-ring);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+}
+
+.mixapp-track-row.is-flash {
+  animation: mixapp-row-flash 0.65s ease-out;
+}
+
+.mixapp-arranger.is-flash {
+  border-radius: var(--mix-radius-md);
+  animation: mixapp-list-flash 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mixapp-track-row.is-flash,
+  .mixapp-arranger.is-flash {
+    animation: none;
+  }
+
+  .mixapp-track-row.is-flash {
+    background-color: var(--mix-accent-soft);
   }
 }
 
@@ -1178,8 +1367,8 @@
 .mixapp-results-table-head {
   position: sticky;
   top: 0;
-  z-index: 1;
-  background: var(--spice-card, #282828);
+  z-index: var(--mix-z-base);
+  background: var(--mix-surface, #282828);
 }
 
 .mixapp-results-table .mixapp-track-row:last-child {
@@ -1187,7 +1376,7 @@
 }
 
 .mixapp-results-table-row .mixapp-col-key {
-  color: var(--spice-text);
+  color: var(--mix-text);
 }
 
 .mixapp-results-actions {
@@ -1198,12 +1387,12 @@
 
 .mixapp-results-actions .mixapp-btn {
   padding: 6px 10px;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
 }
 
 .mixapp-explicit-mark {
-  color: var(--spice-subtext);
-  font-size: 0.75rem;
+  color: var(--mix-subtext);
+  font-size: var(--mix-font-xs);
   font-weight: 700;
 }
 
@@ -1215,15 +1404,15 @@
 
 .mixapp-recommend-section {
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--mix-hover);
 }
 
 .mixapp-recommend-section h3 {
   margin: 0 0 8px;
-  font-size: 0.8rem;
+  font-size: var(--mix-font-sm);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
 }
 
 .mixapp-recommend-section-head {
@@ -1240,8 +1429,8 @@
 }
 
 .mixapp-recommend-meta {
-  font-size: 0.75rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
 }
 
 .mixapp-recommend-seed-actions {
@@ -1256,8 +1445,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-hover);
   background: rgba(0, 0, 0, 0.12);
 }
 
@@ -1270,17 +1459,17 @@
   align-items: center;
   margin: 0;
   padding: 6px 8px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
   cursor: pointer;
 }
 
 .mixapp-seed-item input {
   grid-row: 1 / span 2;
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
 }
 
 .mixapp-seed-item.is-selected {
-  background: rgba(29, 185, 84, 0.12);
+  background: var(--mix-accent-soft);
 }
 
 .mixapp-seed-title {
@@ -1294,8 +1483,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.75rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
 }
 
 .mixapp-feature-sliders {
@@ -1312,14 +1501,14 @@
   align-items: center;
   gap: 6px;
   padding: 1px 4px;
-  border-radius: 4px;
+  border-radius: var(--mix-radius-sm);
   opacity: 0.55;
   min-height: 22px;
 }
 
 .mixapp-feature-row.is-enabled {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--mix-row-tint);
 }
 
 .mixapp-feature-enable {
@@ -1341,7 +1530,7 @@
 
 .mixapp-feature-enable input {
   flex: 0 0 auto;
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
 }
 
 .mixapp-feature-controls {
@@ -1352,6 +1541,7 @@
   min-width: 0;
 }
 
+/* —— Dual-range slider (Search feature filters) —— */
 .mixapp-dual-range {
   position: relative;
   flex: 1 1 auto;
@@ -1364,7 +1554,7 @@
   position: absolute;
   top: 50%;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--mix-radius-pill);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -1372,11 +1562,11 @@
 .mixapp-dual-range-track {
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--mix-border-strong);
 }
 
 .mixapp-dual-range-fill {
-  background: var(--spice-button, #1db954);
+  background: var(--mix-accent);
 }
 
 .mixapp-dual-range.is-disabled .mixapp-dual-range-fill {
@@ -1417,8 +1607,8 @@
   height: 12px;
   margin-top: -4.5px;
   border-radius: 50%;
-  border: 2px solid var(--spice-button, #1db954);
-  background: var(--spice-main, #121212);
+  border: 2px solid var(--mix-accent);
+  background: var(--mix-main, #121212);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
@@ -1428,8 +1618,8 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--spice-button, #1db954);
-  background: var(--spice-main, #121212);
+  border: 2px solid var(--mix-accent);
+  background: var(--mix-main, #121212);
   cursor: pointer;
 }
 
@@ -1440,27 +1630,27 @@
 }
 
 .mixapp-dual-range-max {
-  z-index: 2;
+  z-index: var(--mix-z-raised);
 }
 
 .mixapp-dual-range-min {
-  z-index: 3;
+  z-index: var(--mix-z-sticky);
 }
 
 .mixapp-feature-values {
   flex: 0 0 64px;
   width: 64px;
   text-align: right;
-  font-size: 0.65rem;
+  font-size: var(--mix-font-2xs);
   font-variant-numeric: tabular-nums;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mixapp-feature-row.is-enabled .mixapp-feature-values {
-  color: var(--spice-text);
+  color: var(--mix-text);
 }
 
 .mixapp-feature-target-toggle {
@@ -1468,16 +1658,16 @@
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  font-size: 0.65rem;
+  font-size: var(--mix-font-2xs);
   font-weight: 600;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   cursor: pointer;
   user-select: none;
 }
 
 .mixapp-feature-target-toggle input {
   margin: 0;
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
 }
 
 .mixapp-feature-target-slider {
@@ -1486,7 +1676,7 @@
   height: 18px;
   margin: 0;
   padding: 0;
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
   cursor: pointer;
 }
 
@@ -1501,13 +1691,14 @@
   box-sizing: border-box;
   padding: 3px 5px;
   border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: var(--spice-main);
-  color: var(--spice-text);
-  font-size: 0.75rem;
+  border: 1px solid var(--mix-border);
+  background: var(--mix-main);
+  color: var(--mix-text);
+  font-size: var(--mix-font-xs);
   font-variant-numeric: tabular-nums;
 }
 
+/* —— Tip: .mixapp-tip[data-tip] —— */
 .mixapp-tip {
   position: relative;
 }
@@ -1517,15 +1708,15 @@
   position: absolute;
   left: 0;
   bottom: calc(100% + 6px);
-  z-index: 40;
+  z-index: var(--mix-z-tip);
   width: max-content;
   max-width: min(280px, 70vw);
   padding: 7px 9px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
   background: rgba(18, 18, 18, 0.96);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  color: var(--spice-text, #fff);
+  color: var(--mix-text, #fff);
   font-size: 0.72rem;
   font-weight: 400;
   letter-spacing: 0;
@@ -1544,7 +1735,7 @@
   position: absolute;
   left: 12px;
   bottom: calc(100% + 2px);
-  z-index: 41;
+  z-index: var(--mix-z-tip-above);
   border: 5px solid transparent;
   border-top-color: rgba(18, 18, 18, 0.96);
   opacity: 0;
@@ -1592,23 +1783,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
   cursor: pointer;
 }
 
 .mixapp-check-compact {
   gap: 5px;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
   white-space: nowrap;
 }
 
 .mixapp-check input {
-  accent-color: var(--spice-button, #1db954);
+  accent-color: var(--mix-accent);
 }
 
 .mixapp-camelot-block {
   padding-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--mix-hover);
 }
 
 .mixapp-camelot-filters-head {
@@ -1629,6 +1820,7 @@
   gap: 4px;
 }
 
+/* —— Chip: .mixapp-camelot-chip (+ is-on) — filters, Camelot, stats toggles —— */
 .mixapp-camelot-chip {
   display: inline-flex;
   flex-direction: column;
@@ -1636,10 +1828,10 @@
   gap: 0;
   margin: 0;
   padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--mix-radius-sm);
+  border: 1px solid var(--mix-border);
   background: transparent;
-  color: var(--spice-text);
+  color: var(--mix-text);
   cursor: pointer;
   line-height: 1.2;
   min-width: 0;
@@ -1647,12 +1839,12 @@
 
 .mixapp-camelot-chip:hover {
   border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--mix-row-tint);
 }
 
 .mixapp-camelot-chip.is-on {
-  border-color: rgba(29, 185, 84, 0.55);
-  background: rgba(29, 185, 84, 0.14);
+  border-color: var(--mix-accent-ring);
+  background: var(--mix-accent-chip);
 }
 
 .mixapp-camelot-chip-label {
@@ -1662,7 +1854,7 @@
 
 .mixapp-camelot-chip-example {
   font-size: 0.62rem;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1672,7 +1864,7 @@
 
 .mixapp-filters-bar {
   padding-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--mix-hover);
 }
 
 .mixapp-year-row {
@@ -1687,8 +1879,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 0.65rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-2xs);
+  color: var(--mix-subtext);
 }
 
 .mixapp-recommend-generate {
@@ -1701,14 +1893,14 @@
 
 .mixapp-recommend-status {
   margin: 0 0 8px;
-  font-size: 0.8rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
 }
 
 .mixapp-recommend-empty {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-md);
+  color: var(--mix-subtext);
 }
 
 .mixapp-recommend-results {
@@ -1733,7 +1925,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--mix-radius);
   background: rgba(0, 0, 0, 0.12);
 }
 
@@ -1755,8 +1947,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.75rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
 }
 
 .mixapp-rec-actions {
@@ -1767,7 +1959,7 @@
 
 .mixapp-rec-actions .mixapp-btn {
   padding: 6px 8px;
-  font-size: 0.75rem;
+  font-size: var(--mix-font-xs);
 }
 
 .mixapp-stats-panel {
@@ -1776,9 +1968,9 @@
   max-height: min(70vh, 720px);
   margin-bottom: 12px;
   padding: 12px 14px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--spice-card);
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
+  background: var(--mix-surface);
   box-sizing: border-box;
   overflow: auto;
 }
@@ -1804,8 +1996,8 @@
 }
 
 .mixapp-stats-legend-item {
-  font-size: 0.75rem;
-  color: var(--spice-subtext);
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1816,8 +2008,8 @@
   width: 14px;
   height: 2px;
   border-radius: 1px;
-  background: var(--spice-text);
-  box-shadow: 0 0 0 1.5px var(--spice-text);
+  background: var(--mix-text);
+  box-shadow: 0 0 0 1.5px var(--mix-text);
 }
 
 .mixapp-stats-legend-ma::before {
@@ -1837,9 +2029,9 @@
   min-width: 0;
   margin: 0;
   padding: 10px 10px 8px;
-  border-radius: 8px;
+  border-radius: var(--mix-radius-md);
   background: rgba(0, 0, 0, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--mix-hover);
 }
 
 .mixapp-stats-chart-agg {
@@ -1853,19 +2045,19 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
-  font-size: 0.85rem;
+  font-size: var(--mix-font-md);
 }
 
 .mixapp-stats-chart-tip {
   cursor: help;
-  border-radius: 4px;
+  border-radius: var(--mix-radius-sm);
   padding: 2px 4px;
   margin: -2px -4px 2px;
 }
 
 .mixapp-stats-chart-tip:hover,
 .mixapp-stats-chart-tip:focus-within {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--mix-row-tint);
 }
 
 .mixapp-stats-chart-tip[data-tip]::after {
@@ -1922,7 +2114,7 @@
 
 .mixapp-stats-line-ylabel,
 .mixapp-stats-line-xlabel {
-  fill: var(--spice-subtext);
+  fill: var(--mix-subtext);
   font-size: 12px;
 }
 
@@ -1930,7 +2122,7 @@
   height: 72px;
   display: flex;
   align-items: center;
-  color: var(--spice-subtext);
+  color: var(--mix-subtext);
   font-size: 0.82rem;
 }
 
@@ -1983,7 +2175,7 @@
 
   .mixapp-copy-sidebar {
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--mix-border-subtle);
   }
 
   .mixapp-find-modal {

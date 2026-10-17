@@ -28,26 +28,10 @@ function MixAppCopyPlaylistModal(props) {
   const [error, setError] = react.useState(null);
   const genRef = react.useRef(0);
 
-  const existingUris = react.useMemo(() => {
-    const s = new Set();
-    for (const t of playlistTracks || []) {
-      if (t?.uri) s.add(t.uri);
-      const id = t?.id || MixAppRecommend.trackIdFromUri?.(t?.uri);
-      if (id) s.add("id:" + id);
-      const fp = MixAppRecommend.trackFingerprint?.(t);
-      if (fp) s.add("fp:" + fp);
-    }
-    return s;
-  }, [playlistTracks]);
-
-  react.useEffect(() => {
-    if (!open) return undefined;
-    function onKey(e) {
-      if (e.key === "Escape") onClose?.();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  const existingIndex = react.useMemo(
+    () => MixAppPlaylistOps.buildExistingIndex(playlistTracks),
+    [playlistTracks]
+  );
 
   react.useEffect(() => {
     if (!open) {
@@ -66,13 +50,7 @@ function MixAppCopyPlaylistModal(props) {
   }, [open]);
 
   function isInPlaylist(track) {
-    if (!track) return false;
-    if (track.uri && existingUris.has(track.uri)) return true;
-    const id = track.id || MixAppRecommend.trackIdFromUri?.(track.uri);
-    if (id && existingUris.has("id:" + id)) return true;
-    const fp = MixAppRecommend.trackFingerprint?.(track);
-    if (fp && existingUris.has("fp:" + fp)) return true;
-    return false;
+    return MixAppPlaylistOps.isInIndex(existingIndex, track);
   }
 
   const libraryOptions = (libraryPlaylists || []).filter(
@@ -114,7 +92,15 @@ function MixAppCopyPlaylistModal(props) {
     setTracksLoading(true);
     setError(null);
     try {
-      const items = await MixAppApi.getPlaylistTracks(pl.uri);
+      let items = await MixAppApi.getPlaylistTracks(pl.uri);
+      if (gen !== genRef.current) return;
+      if (items.length) {
+        try {
+          items = await MixAppFeatures.enrichTracks(items.slice());
+        } catch (enrichErr) {
+          console.warn("MixApp: copy-playlist enrich failed", enrichErr);
+        }
+      }
       if (gen !== genRef.current) return;
       setSourceTracks(items);
       if (!items.length) setError("That playlist has no tracks");
@@ -172,54 +158,28 @@ function MixAppCopyPlaylistModal(props) {
     setSelected(new Set());
   }
 
-  if (!open) return null;
-
   const playlistList =
     mode === "library" ? libraryOptions : searchHits;
 
-  return react.createElement(
-    "div",
+  return h(
+    MixAppModal,
     {
-      className: "mixapp-results-overlay",
-      role: "presentation",
-      onClick: (e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      },
+      open,
+      title: "Copy from Playlist",
+      onClose,
+      ariaLabel: "Copy from playlist",
+      className: "mixapp-find-modal mixapp-copy-modal",
     },
-    react.createElement(
+    h(
       "div",
-      {
-        className: "mixapp-results-modal mixapp-find-modal mixapp-copy-modal",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": "Copy from playlist",
-      },
-      react.createElement(
-        "div",
-        { className: "mixapp-recommend-header" },
-        react.createElement("h2", null, "Copy from Playlist"),
-        react.createElement(
-          "button",
-          {
-            type: "button",
-            className: "mixapp-icon-btn",
-            onClick: onClose,
-            title: "Close",
-            "aria-label": "Close",
-          },
-          "✕"
-        )
-      ),
-      react.createElement(
-        "div",
-        { className: "mixapp-copy-layout" },
-        react.createElement(
+      { className: "mixapp-copy-layout" },
+        h(
           "aside",
           { className: "mixapp-copy-sidebar" },
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-copy-tabs" },
-            react.createElement(
+            h(
               "button",
               {
                 type: "button",
@@ -230,7 +190,7 @@ function MixAppCopyPlaylistModal(props) {
               },
               "Your library"
             ),
-            react.createElement(
+            h(
               "button",
               {
                 type: "button",
@@ -243,20 +203,20 @@ function MixAppCopyPlaylistModal(props) {
             )
           ),
           mode === "search"
-            ? react.createElement(
+            ? h(
                 "form",
                 {
                   className: "mixapp-find-search-bar mixapp-find-search-bar-stack",
                   onSubmit: runPlaylistSearch,
                 },
-                react.createElement("input", {
+                h("input", {
                   type: "search",
                   className: "mixapp-find-input",
                   placeholder: "Playlist name…",
                   value: query,
                   onChange: (e) => setQuery(e.target.value),
                 }),
-                react.createElement(
+                h(
                   "button",
                   {
                     type: "submit",
@@ -267,11 +227,11 @@ function MixAppCopyPlaylistModal(props) {
                 )
               )
             : null,
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-copy-playlist-list" },
             !playlistList.length
-              ? react.createElement(
+              ? h(
                   "div",
                   { className: "mixapp-recommend-meta" },
                   mode === "library"
@@ -279,7 +239,7 @@ function MixAppCopyPlaylistModal(props) {
                     : "Search for a playlist to copy from."
                 )
               : playlistList.map((pl) =>
-                  react.createElement(
+                  h(
                     "button",
                     {
                       key: pl.uri,
@@ -289,12 +249,12 @@ function MixAppCopyPlaylistModal(props) {
                         (selectedUri === pl.uri ? " is-active" : ""),
                       onClick: () => loadSource(pl),
                     },
-                    react.createElement(
+                    h(
                       "span",
                       { className: "mixapp-copy-playlist-name" },
                       pl.name
                     ),
-                    react.createElement(
+                    h(
                       "span",
                       { className: "mixapp-recommend-meta" },
                       pl.totalLength != null
@@ -305,22 +265,22 @@ function MixAppCopyPlaylistModal(props) {
                 )
           )
         ),
-        react.createElement(
+        h(
           "section",
           { className: "mixapp-copy-main" },
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-copy-main-head" },
-            react.createElement(
+            h(
               "div",
               { className: "mixapp-search-panel-title-row" },
-              react.createElement(
+              h(
                 "h3",
                 null,
                 sourceName || "Select a playlist"
               ),
               sourceTracks.length
-                ? react.createElement(
+                ? h(
                     "span",
                     { className: "mixapp-recommend-meta" },
                     sourceTracks.length + " tracks · " + selected.size + " selected"
@@ -328,10 +288,10 @@ function MixAppCopyPlaylistModal(props) {
                 : null
             ),
             sourceTracks.length
-              ? react.createElement(
+              ? h(
                   "div",
                   { className: "mixapp-copy-actions" },
-                  react.createElement(
+                  h(
                     "button",
                     {
                       type: "button",
@@ -340,7 +300,7 @@ function MixAppCopyPlaylistModal(props) {
                     },
                     "Select new"
                   ),
-                  react.createElement(
+                  h(
                     "button",
                     {
                       type: "button",
@@ -350,7 +310,7 @@ function MixAppCopyPlaylistModal(props) {
                     },
                     "Clear"
                   ),
-                  react.createElement(
+                  h(
                     "button",
                     {
                       type: "button",
@@ -360,7 +320,7 @@ function MixAppCopyPlaylistModal(props) {
                     },
                     "Add selected"
                   ),
-                  react.createElement(
+                  h(
                     "button",
                     {
                       type: "button",
@@ -373,56 +333,51 @@ function MixAppCopyPlaylistModal(props) {
               : null
           ),
           error
-            ? react.createElement("div", { className: "mixapp-find-error" }, error)
+            ? h("div", { className: "mixapp-find-error" }, error)
             : null,
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-search-results-body" },
             tracksLoading
-              ? react.createElement(
+              ? h(
                   "div",
                   { className: "mixapp-arranger-empty mixapp-search-waiting" },
-                  react.createElement("div", {
+                  h("div", {
                     className: "mixapp-spinner",
                     "aria-hidden": "true",
                   }),
-                  react.createElement(
+                  h(
                     "p",
                     { className: "mixapp-search-waiting-label" },
                     "Loading tracks…"
                   )
                 )
               : !selectedUri
-                ? react.createElement(
+                ? h(
                     "div",
                     { className: "mixapp-arranger-empty" },
                     "Pick a playlist on the left to browse its tracks."
                   )
                 : !sourceTracks.length
-                  ? react.createElement(
+                  ? h(
                       "div",
                       { className: "mixapp-arranger-empty" },
                       "No tracks to show."
                     )
-                  : react.createElement(
+                  : h(
                       "div",
                       { className: "mixapp-find-list" },
                       sourceTracks.map((track, index) => {
                         const inPl = isInPlaylist(track);
                         const checked = !!(track.uri && selected.has(track.uri));
-                        const active = !!(
-                          track.uri &&
-                          track.uri === playingUri &&
-                          isPlaying
-                        );
-                        return react.createElement(
+                        return h(
                           "div",
                           {
                             key: track.uid || track.uri || index,
                             className:
                               "mixapp-find-row" + (inPl ? " is-in-playlist" : ""),
                           },
-                          react.createElement("input", {
+                          h("input", {
                             type: "checkbox",
                             checked: checked,
                             disabled: inPl || !track.uri,
@@ -431,26 +386,22 @@ function MixAppCopyPlaylistModal(props) {
                               ? "Already in playlist"
                               : "Select to add",
                           }),
-                          react.createElement(
-                            "button",
-                            {
-                              type: "button",
-                              className:
-                                "mixapp-play-btn" + (active ? " is-playing" : ""),
-                              onClick: () => onPlay?.(track, index),
-                              title: active ? "Pause" : "Play",
-                            },
-                            active ? "❚❚" : "▶"
-                          ),
-                          react.createElement(
+                          h(MixAppPlayButton, {
+                            track,
+                            playingUri,
+                            isPlaying,
+                            onPlay,
+                            index,
+                          }),
+                          h(
                             "div",
                             { className: "mixapp-find-meta" },
-                            react.createElement(
+                            h(
                               "div",
                               { className: "mixapp-find-title" },
                               track.name || "Unknown"
                             ),
-                            react.createElement(
+                            h(
                               "div",
                               { className: "mixapp-find-sub" },
                               [track.artists, track.album]
@@ -458,12 +409,38 @@ function MixAppCopyPlaylistModal(props) {
                                 .join(" · ")
                             )
                           ),
-                          react.createElement(
+                          (() => {
+                            const keyBg = MixAppFeatures.camelotBackground(
+                              track.keyIndex,
+                              track.keyMode,
+                              track.key
+                            );
+                            return h(
+                              "div",
+                              {
+                                className: "mixapp-col-feat mixapp-col-key mixapp-find-key",
+                                title: track.key || "Key unknown",
+                              },
+                              h(
+                                "span",
+                                {
+                                  className:
+                                    "mixapp-key-circle" +
+                                    (track.key ? "" : " is-empty"),
+                                  style: keyBg
+                                    ? { background: keyBg }
+                                    : undefined,
+                                },
+                                track.key || "—"
+                              )
+                            );
+                          })(),
+                          h(
                             "span",
                             { className: "mixapp-find-dur" },
                             MixAppApi.formatDuration(track.durationMs)
                           ),
-                          react.createElement(
+                          h(
                             "button",
                             {
                               type: "button",
@@ -480,6 +457,5 @@ function MixAppCopyPlaylistModal(props) {
           )
         )
       )
-    )
   );
 }

@@ -5,17 +5,6 @@ function MixAppShortcutsHelp(props) {
   const react = Spicetify.React;
   const { open, onClose } = props;
 
-  react.useEffect(() => {
-    if (!open) return undefined;
-    function onKey(e) {
-      if (e.key === "Escape") onClose?.();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const rows = [
     ["Ctrl/⌘ + Z", "Undo"],
     ["Ctrl/⌘ + Shift + Z / Y", "Redo"],
@@ -27,67 +16,50 @@ function MixAppShortcutsHelp(props) {
     ["Ctrl/⌘ + Shift + F", "Flowify"],
     ["Ctrl/⌘ + Shift + G", "Generator"],
     ["Ctrl/⌘ + Shift + T", "Toggle stats"],
+    ["↑ / ↓", "Select track in arranger (click list first)"],
+    ["Alt + ↑ / ↓", "Move selected track"],
+    ["Home / End", "First / last track"],
+    ["Delete", "Remove selected track"],
     ["?", "Show this help"],
     ["Esc", "Close top panel / modal"],
   ];
 
-  return react.createElement(
-    "div",
+  return h(
+    MixAppModal,
     {
-      className: "mixapp-results-overlay",
-      role: "presentation",
-      onClick: (e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      },
+      open,
+      title: "Keyboard shortcuts",
+      onClose,
+      ariaLabel: "Keyboard shortcuts",
+      className: "mixapp-find-modal mixapp-shortcuts-modal",
     },
-    react.createElement(
+    h(
       "div",
-      {
-        className: "mixapp-results-modal mixapp-find-modal mixapp-shortcuts-modal",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": "Keyboard shortcuts",
-      },
-      react.createElement(
-        "div",
-        { className: "mixapp-recommend-header" },
-        react.createElement("h2", null, "Keyboard shortcuts"),
-        react.createElement(
-          "button",
-          {
-            type: "button",
-            className: "mixapp-icon-btn",
-            onClick: onClose,
-            title: "Close",
-            "aria-label": "Close",
-          },
-          "✕"
-        )
-      ),
-      react.createElement(
-        "div",
-        { className: "mixapp-shortcuts-body" },
-        react.createElement(
-          "table",
-          { className: "mixapp-shortcuts-table" },
-          react.createElement(
-            "tbody",
-            null,
-            rows.map(([keys, action]) =>
-              react.createElement(
-                "tr",
-                { key: keys },
-                react.createElement("td", { className: "mixapp-shortcuts-keys" }, keys),
-                react.createElement("td", null, action)
-              )
+      { className: "mixapp-shortcuts-body" },
+      h(
+        "table",
+        { className: "mixapp-shortcuts-table" },
+        h(
+          "tbody",
+          null,
+          rows.map(([keys, action]) =>
+            h(
+              "tr",
+              { key: keys },
+              h(
+                "td",
+                { className: "mixapp-shortcuts-keys" },
+                keys
+              ),
+              h("td", null, action)
             )
           )
-        ),
-        react.createElement(
-          "p",
-          { className: "mixapp-recommend-meta" },
-          "Shortcuts are ignored while typing in inputs (except Save)."
         )
+      ),
+      h(
+        "p",
+        { className: "mixapp-recommend-meta" },
+        "Shortcuts are ignored while typing in inputs (except Save)."
       )
     )
   );

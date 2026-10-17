@@ -58,23 +58,23 @@ function MixAppSearchPanel(props) {
     const leftPct = ((Math.min(minV, maxV) - def.min) / span) * 100;
     const rightPct = ((Math.max(minV, maxV) - def.min) / span) * 100;
 
-    return react.createElement(
+    return h(
       "div",
       {
         className:
           "mixapp-dual-range" + (enabled ? "" : " is-disabled"),
       },
-      react.createElement("div", {
+      h("div", {
         className: "mixapp-dual-range-track",
       }),
-      react.createElement("div", {
+      h("div", {
         className: "mixapp-dual-range-fill",
         style: {
           left: leftPct + "%",
           width: Math.max(0, rightPct - leftPct) + "%",
         },
       }),
-      react.createElement("input", {
+      h("input", {
         type: "range",
         className: "mixapp-dual-range-input mixapp-dual-range-min",
         min: def.min,
@@ -90,7 +90,7 @@ function MixAppSearchPanel(props) {
           updateFeature(def.id, { min: nextMin, max: nextMax });
         },
       }),
-      react.createElement("input", {
+      h("input", {
         type: "range",
         className: "mixapp-dual-range-input mixapp-dual-range-max",
         min: def.min,
@@ -109,20 +109,20 @@ function MixAppSearchPanel(props) {
     );
   }
 
-  return react.createElement(
+  return h(
     "section",
     {
       className: "mixapp-search-panel",
       "aria-label": "Search filters",
     },
-    react.createElement(
+    h(
       "div",
       { className: "mixapp-search-panel-header" },
-      react.createElement(
+      h(
         "div",
         { className: "mixapp-search-panel-title-row" },
-        react.createElement("h2", null, "Search"),
-        react.createElement(
+        h("h2", null, "Search"),
+        h(
           "span",
           { className: "mixapp-recommend-meta" },
           seedCount
@@ -137,10 +137,10 @@ function MixAppSearchPanel(props) {
               : "Load a playlist or mark seed tracks"
         )
       ),
-      react.createElement(
+      h(
         "div",
         { className: "mixapp-search-panel-header-actions" },
-        react.createElement(
+        h(
           "button",
           {
             type: "button",
@@ -151,7 +151,7 @@ function MixAppSearchPanel(props) {
           },
           fitting ? "Fitting…" : "Fit to seeds"
         ),
-        react.createElement(
+        h(
           "button",
           {
             type: "button",
@@ -160,11 +160,11 @@ function MixAppSearchPanel(props) {
           },
           "Reset ranges"
         ),
-        react.createElement(
+        h(
           "label",
           { className: "mixapp-result-limit" },
           "Max results",
-          react.createElement(
+          h(
             "select",
             {
               className: "mixapp-select mixapp-select-compact",
@@ -174,11 +174,11 @@ function MixAppSearchPanel(props) {
               disabled: loading,
             },
             [25, 50, 100, 150, 200].map((n) =>
-              react.createElement("option", { key: n, value: n }, String(n))
+              h("option", { key: n, value: n }, String(n))
             )
           )
         ),
-        react.createElement(
+        h(
           "button",
           {
             type: "button",
@@ -193,7 +193,7 @@ function MixAppSearchPanel(props) {
           },
           loading ? "Searching…" : "Search"
         ),
-        react.createElement(
+        h(
           "button",
           {
             type: "button",
@@ -208,44 +208,44 @@ function MixAppSearchPanel(props) {
     ),
 
     error
-      ? react.createElement("div", { className: "mixapp-error" }, error)
+      ? h("div", { className: "mixapp-error" }, error)
       : null,
 
-    react.createElement(
+    h(
       "div",
       { className: "mixapp-search-panel-body" },
-      react.createElement(
+      h(
         "div",
         { className: "mixapp-search-panel-block" },
-        react.createElement("h3", null, "Feature ranges"),
-        react.createElement(
+        h("h3", null, "Feature ranges"),
+        h(
           "div",
           { className: "mixapp-feature-sliders mixapp-feature-sliders-wide" },
           defs.map((def) => {
             const range = features[def.id] || {};
-            return react.createElement(
+            return h(
               "div",
               {
                 key: def.id,
                 className:
                   "mixapp-feature-row" + (range.enabled ? " is-enabled" : ""),
               },
-              react.createElement(
+              h(
                 "label",
                 { className: "mixapp-feature-enable" },
-                react.createElement("input", {
+                h("input", {
                   type: "checkbox",
                   checked: !!range.enabled,
                   onChange: (e) =>
                     updateFeature(def.id, { enabled: e.target.checked }),
                 }),
-                react.createElement("span", null, def.label)
+                h("span", null, def.label)
               ),
-              react.createElement(
+              h(
                 "div",
                 { className: "mixapp-feature-controls" },
                 dualRange(def, range),
-                react.createElement(
+                h(
                   "span",
                   {
                     className: "mixapp-feature-values",
@@ -255,13 +255,13 @@ function MixAppSearchPanel(props) {
                     "–" +
                     formatFeatureValue(def, range.max)
                 ),
-                react.createElement(
+                h(
                   "label",
                   {
                     className: "mixapp-feature-target-toggle",
                     title: "Use target value",
                   },
-                  react.createElement("input", {
+                  h("input", {
                     type: "checkbox",
                     disabled: !range.enabled,
                     checked: !!range.useTarget,
@@ -270,7 +270,7 @@ function MixAppSearchPanel(props) {
                   }),
                   "T"
                 ),
-                react.createElement("input", {
+                h("input", {
                   type: "range",
                   className: "mixapp-feature-target-slider",
                   title: "Target " + formatFeatureValue(def, range.target),
@@ -291,13 +291,13 @@ function MixAppSearchPanel(props) {
         )
       ),
 
-      react.createElement(
+      h(
         "div",
         { className: "mixapp-search-panel-block mixapp-camelot-block" },
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-camelot-filters-head" },
-          react.createElement(
+          h(
             "h3",
             {
               className: "mixapp-tip",
@@ -306,7 +306,7 @@ function MixAppSearchPanel(props) {
             },
             "Mix in key"
           ),
-          react.createElement(
+          h(
             "span",
             { className: "mixapp-recommend-meta" },
             (() => {
@@ -325,14 +325,14 @@ function MixAppSearchPanel(props) {
             })()
           )
         ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-camelot-moves", role: "group", "aria-label": "Camelot moves" },
           MixAppFeatures.CAMELOT_MOVES.map((move) => {
             const selected = Array.isArray(filters.camelotMoves)
               ? filters.camelotMoves.includes(move.id)
               : false;
-            return react.createElement(
+            return h(
               "button",
               {
                 key: move.id,
@@ -351,12 +351,12 @@ function MixAppSearchPanel(props) {
                   onFiltersChange?.({ ...filters, camelotMoves: next });
                 },
               },
-              react.createElement(
+              h(
                 "span",
                 { className: "mixapp-camelot-chip-label" },
                 move.label
               ),
-              react.createElement(
+              h(
                 "span",
                 { className: "mixapp-camelot-chip-example" },
                 move.example
@@ -366,10 +366,10 @@ function MixAppSearchPanel(props) {
         )
       ),
 
-      react.createElement(
+      h(
         "div",
         { className: "mixapp-search-panel-block mixapp-filters-bar" },
-        react.createElement(
+        h(
           "h3",
           {
             className: "mixapp-tip",
@@ -378,10 +378,10 @@ function MixAppSearchPanel(props) {
           },
           "Filters"
         ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-filters-row" },
-          react.createElement(
+          h(
             "div",
             {
               className: "mixapp-camelot-moves mixapp-filter-chips",
@@ -434,7 +434,7 @@ function MixAppSearchPanel(props) {
                   }),
               },
             ].map((f) =>
-              react.createElement(
+              h(
                 "button",
                 {
                   key: f.key,
@@ -445,7 +445,7 @@ function MixAppSearchPanel(props) {
                   "aria-pressed": f.on,
                   onClick: f.toggle,
                 },
-                react.createElement(
+                h(
                   "span",
                   { className: "mixapp-camelot-chip-label" },
                   f.label
@@ -453,21 +453,21 @@ function MixAppSearchPanel(props) {
               )
             )
           ),
-          react.createElement(
+          h(
             "div",
             { className: "mixapp-filters-end" },
-            react.createElement(
+            h(
               "div",
               {
                 className: "mixapp-year-row mixapp-tip",
                 "data-tip":
                   "Only keep tracks whose album release year falls between these values. Leave blank for no year limit.",
               },
-              react.createElement(
+              h(
                 "label",
                 { className: "mixapp-feature-field" },
                 "Year",
-                react.createElement("input", {
+                h("input", {
                   type: "number",
                   placeholder: "from",
                   value: filters.yearMin,
@@ -475,11 +475,11 @@ function MixAppSearchPanel(props) {
                     onFiltersChange?.({ ...filters, yearMin: e.target.value }),
                 })
               ),
-              react.createElement(
+              h(
                 "label",
                 { className: "mixapp-feature-field" },
                 "\u00a0",
-                react.createElement("input", {
+                h("input", {
                   type: "number",
                   placeholder: "to",
                   value: filters.yearMax,

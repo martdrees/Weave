@@ -12,7 +12,7 @@ function MixAppPlaylistPicker(props) {
     onRefresh,
   } = props;
 
-  return react.createElement(
+  return h(
     "div",
     {
       className:
@@ -20,7 +20,7 @@ function MixAppPlaylistPicker(props) {
     },
     compact
       ? null
-      : react.createElement(
+      : h(
           "label",
           {
             className: "mixapp-picker-label",
@@ -28,10 +28,10 @@ function MixAppPlaylistPicker(props) {
           },
           "Playlist"
         ),
-    react.createElement(
+    h(
       "div",
       { className: "mixapp-picker-row" },
-      react.createElement(
+      h(
         "select",
         {
           id: "mixapp-playlist-select",
@@ -43,7 +43,7 @@ function MixAppPlaylistPicker(props) {
           "aria-label": "Playlist",
           title: "Choose playlist",
         },
-        react.createElement(
+        h(
           "option",
           { value: "" },
           loading
@@ -53,7 +53,7 @@ function MixAppPlaylistPicker(props) {
               : "No playlists"
         ),
         (playlists || []).map((p) =>
-          react.createElement(
+          h(
             "option",
             { key: p.uri, value: p.uri },
             p.name + (p.totalLength != null ? ` (${p.totalLength})` : "")
@@ -61,7 +61,7 @@ function MixAppPlaylistPicker(props) {
         )
       ),
       trackCount != null && selectedUri
-        ? react.createElement(
+        ? h(
             "span",
             {
               className: "mixapp-picker-count",
@@ -70,7 +70,7 @@ function MixAppPlaylistPicker(props) {
             trackCount + " tracks"
           )
         : null,
-      react.createElement(
+      h(
         "button",
         {
           type: "button",

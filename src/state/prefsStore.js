@@ -1,11 +1,17 @@
 //@ts-check
 /**
  * Durable MixApp UI prefs (survive playlist changes / session clear).
- * Separate from MixAppSession (working playlist snapshot).
+ *
+ * Owns: resultLimit, searchFilters, preferSearchOpen, preferStatsOpen,
+ *       flowify, generator, statsVisibleMetrics.
+ * Does NOT own: tracks/undo/seeds/results (session) or column visibility
+ * (MixAppColumnConfig). See docs/PERSISTENCE.md.
  */
 
 const MixAppPrefs = (() => {
   const KEY = "mixapp-prefs-v1";
+  /** Schema version written on save; raised when stored shape changes. */
+  const SCHEMA_VERSION = 2;
 
   function defaults() {
     return {
@@ -73,6 +79,37 @@ const MixAppPrefs = (() => {
     }
   }
 
+  /**
+   * Upgrade stored blobs in place. Missing / non-numeric `v` is treated as 1.
+   * @returns {{ data: object, dirty: boolean }}
+   */
+  function migrate(raw) {
+    if (!raw || typeof raw !== "object") {
+      return { data: {}, dirty: false };
+    }
+    const data = { ...raw };
+    let version = Number(data.v);
+    if (!Number.isFinite(version) || version < 1) version = 1;
+    let dirty = false;
+
+    // v1 → v2: prefs saved before Abs. Aggregate chart — turn it on once.
+    if (version < 2) {
+      const metrics = data.statsVisibleMetrics;
+      if (
+        Array.isArray(metrics) &&
+        metrics.length &&
+        !metrics.includes("aggChange")
+      ) {
+        data.statsVisibleMetrics = ["aggChange"].concat(metrics);
+      }
+      version = 2;
+      dirty = true;
+    }
+
+    data.v = version;
+    return { data, dirty };
+  }
+
   function normalize(raw) {
     const base = defaults();
     if (!raw || typeof raw !== "object") return base;
@@ -113,12 +150,19 @@ const MixAppPrefs = (() => {
         return defaults();
       }
     }
-    return normalize(data);
+    if (!data || typeof data !== "object") return defaults();
+
+    const { data: migrated, dirty } = migrate(data);
+    const next = normalize(migrated);
+    if (dirty) {
+      storageSet({ v: SCHEMA_VERSION, savedAt: Date.now(), ...next });
+    }
+    return next;
   }
 
   function save(partial) {
     const next = normalize({ ...load(), ...(partial || {}) });
-    storageSet({ v: 1, savedAt: Date.now(), ...next });
+    storageSet({ v: SCHEMA_VERSION, savedAt: Date.now(), ...next });
     return next;
   }
 
@@ -126,5 +170,5 @@ const MixAppPrefs = (() => {
     return save(partial);
   }
 
-  return { KEY, defaults, load, save, patch };
+  return { KEY, SCHEMA_VERSION, defaults, migrate, load, save, patch };
 })();

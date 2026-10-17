@@ -1,6 +1,8 @@
 //@ts-check
 /**
  * Playlist column visibility for MixApp.
+ * Sole owner of column visibility (not prefs/session). See docs/PERSISTENCE.md.
+ *
  * Toggleable columns are stored under LocalStorageAPI "mixapp-feature-columns"
  * (with an in-memory cache) so Spotify’s own column-config cannot overwrite them.
  * On first run, Spotify playlist-tracklist values are used as defaults when present.

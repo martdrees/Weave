@@ -2,10 +2,17 @@
 /**
  * Persist MixApp working session across Custom App remounts
  * (e.g. open another Spotify view, then return to MixApp).
+ *
+ * Owns: selectedUri, playlist, tracks, dirty, undo, seedUris, bannedUris,
+ *       searchFeatures, searchResults, resultsOpen, searchOpen, statsOpen.
+ * Does NOT own: resultLimit, searchFilters (prefs) or columns
+ * (MixAppColumnConfig). See docs/PERSISTENCE.md.
  */
 
 const MixAppSession = (() => {
   const KEY = "mixapp-session-v1";
+  /** Schema version written on save; raised when stored shape changes. */
+  const SCHEMA_VERSION = 2;
   const MAX_UNDO_SNAPSHOTS = 12;
 
   function storageGet() {
@@ -68,6 +75,31 @@ const MixAppSession = (() => {
     return arr.slice(arr.length - MAX_UNDO_SNAPSHOTS);
   }
 
+  /**
+   * Upgrade stored blobs in place. Missing / non-numeric `v` is treated as 1.
+   * @returns {{ data: object|null, dirty: boolean }}
+   */
+  function migrate(raw) {
+    if (!raw || typeof raw !== "object") {
+      return { data: null, dirty: false };
+    }
+    const data = { ...raw };
+    let version = Number(data.v);
+    if (!Number.isFinite(version) || version < 1) version = 1;
+    let dirty = false;
+
+    // v1 → v2: resultLimit / searchFilters moved to MixAppPrefs (R4.1).
+    if (version < 2) {
+      delete data.searchFilters;
+      delete data.resultLimit;
+      version = 2;
+      dirty = true;
+    }
+
+    data.v = version;
+    return { data, dirty };
+  }
+
   function load() {
     let data = storageGet();
     if (typeof data === "string") {
@@ -78,8 +110,15 @@ const MixAppSession = (() => {
       }
     }
     if (!data || typeof data !== "object") return null;
-    if (!data.selectedUri || !Array.isArray(data.tracks)) return null;
-    return data;
+
+    const { data: migrated, dirty } = migrate(data);
+    if (!migrated?.selectedUri || !Array.isArray(migrated.tracks)) return null;
+
+    if (dirty) {
+      // Persist cleaned schema so migrate runs once.
+      storageSet({ ...migrated, v: SCHEMA_VERSION, savedAt: Date.now() });
+    }
+    return migrated;
   }
 
   function save(session) {
@@ -88,7 +127,7 @@ const MixAppSession = (() => {
       return false;
     }
     const payload = {
-      v: 1,
+      v: SCHEMA_VERSION,
       savedAt: Date.now(),
       selectedUri: session.selectedUri,
       playlist: session.playlist || null,
@@ -97,8 +136,6 @@ const MixAppSession = (() => {
       seedUris: Array.isArray(session.seedUris) ? session.seedUris : [],
       bannedUris: Array.isArray(session.bannedUris) ? session.bannedUris : [],
       searchFeatures: session.searchFeatures || null,
-      searchFilters: session.searchFilters || null,
-      resultLimit: session.resultLimit ?? 100,
       searchOpen: !!session.searchOpen,
       statsOpen: !!session.statsOpen,
       resultsOpen: !!session.resultsOpen,
@@ -124,5 +161,5 @@ const MixAppSession = (() => {
     storageRemove();
   }
 
-  return { load, save, clear, KEY };
+  return { load, save, clear, KEY, SCHEMA_VERSION, migrate };
 })();

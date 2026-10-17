@@ -15,22 +15,11 @@ function MixAppFlowifyModal(props) {
   const [error, setError] = react.useState(null);
 
   react.useEffect(() => {
-    if (!open) return undefined;
-    function onKey(e) {
-      if (e.key === "Escape") onClose?.();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  react.useEffect(() => {
     if (!open) {
       setBusy(false);
       setError(null);
     }
   }, [open]);
-
-  if (!open) return null;
 
   const count = Array.isArray(tracks) ? tracks.length : 0;
   const active = MixAppFlowify.activeWeights(options.weights);
@@ -93,60 +82,29 @@ function MixAppFlowifyModal(props) {
     }
   }
 
-  return react.createElement(
-    "div",
+  return h(
+    MixAppModal,
     {
-      className: "mixapp-results-overlay",
-      role: "presentation",
-      onClick: (e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      },
+      open,
+      title: "Flowify",
+      meta: count + " track" + (count === 1 ? "" : "s"),
+      onClose,
+      ariaLabel: "Flowify",
+      className: "mixapp-find-modal mixapp-flowify-modal",
+      closeDisabled: busy,
     },
-    react.createElement(
+    h(
       "div",
-      {
-        className: "mixapp-results-modal mixapp-find-modal mixapp-flowify-modal",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": "Flowify",
-      },
-      react.createElement(
-        "div",
-        { className: "mixapp-recommend-header" },
-        react.createElement(
-          "div",
-          { className: "mixapp-search-panel-title-row" },
-          react.createElement("h2", null, "Flowify"),
-          react.createElement(
-            "span",
-            { className: "mixapp-recommend-meta" },
-            count + " track" + (count === 1 ? "" : "s")
-          )
-        ),
-        react.createElement(
-          "button",
-          {
-            type: "button",
-            className: "mixapp-icon-btn",
-            onClick: onClose,
-            title: "Close",
-            "aria-label": "Close",
-          },
-          "✕"
-        )
-      ),
-      react.createElement(
-        "div",
-        { className: "mixapp-flowify-body" },
-        react.createElement(
+      { className: "mixapp-flowify-body" },
+        h(
           "p",
           { className: "mixapp-recommend-meta" },
           "Auto-arrange the current playlist. Undo restores the previous order."
         ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-copy-tabs" },
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -157,7 +115,7 @@ function MixAppFlowifyModal(props) {
             },
             "Sets"
           ),
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -170,11 +128,11 @@ function MixAppFlowifyModal(props) {
           )
         ),
         options.method === "sets"
-          ? react.createElement(
+          ? h(
               "label",
               { className: "mixapp-flowify-field" },
-              react.createElement("span", null, "Set size"),
-              react.createElement("input", {
+              h("span", null, "Set size"),
+              h("input", {
                 type: "number",
                 className: "mixapp-find-input",
                 min: 2,
@@ -189,11 +147,11 @@ function MixAppFlowifyModal(props) {
                   }),
               })
             )
-          : react.createElement(
+          : h(
               "label",
               { className: "mixapp-flowify-field" },
-              react.createElement("span", null, "Curve shape"),
-              react.createElement(
+              h("span", null, "Curve shape"),
+              h(
                 "select",
                 {
                   className: "mixapp-find-input",
@@ -201,7 +159,7 @@ function MixAppFlowifyModal(props) {
                   onChange: (e) => patch({ curvePreset: e.target.value }),
                 },
                 MixAppFlowify.CURVE_PRESETS.map((p) =>
-                  react.createElement(
+                  h(
                     "option",
                     { key: p.id, value: p.id },
                     p.label
@@ -209,20 +167,20 @@ function MixAppFlowifyModal(props) {
                 )
               )
             ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-flowify-weights" },
-          react.createElement("h3", null, "Feature weights"),
+          h("h3", null, "Feature weights"),
           MixAppFlowify.FEATURE_IDS.map((id) =>
-            react.createElement(
+            h(
               "div",
               { key: id, className: "mixapp-flowify-weight-row" },
-              react.createElement(
+              h(
                 "span",
                 { className: "mixapp-flowify-weight-label" },
                 MixAppFlowify.featureLabel(id)
               ),
-              react.createElement("input", {
+              h("input", {
                 type: "range",
                 min: 0,
                 max: 100,
@@ -231,13 +189,13 @@ function MixAppFlowifyModal(props) {
                 onChange: (e) => setWeight(id, e.target.value),
                 "aria-label": MixAppFlowify.featureLabel(id) + " weight",
               }),
-              react.createElement(
+              h(
                 "span",
                 { className: "mixapp-flowify-weight-val" },
                 String(options.weights[id] || 0) + "%"
               ),
               options.method === "curves"
-                ? react.createElement(
+                ? h(
                     "button",
                     {
                       type: "button",
@@ -254,12 +212,12 @@ function MixAppFlowifyModal(props) {
           )
         ),
         error
-          ? react.createElement("div", { className: "mixapp-find-error" }, error)
+          ? h("div", { className: "mixapp-find-error" }, error)
           : null,
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-flowify-actions" },
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -269,7 +227,7 @@ function MixAppFlowifyModal(props) {
             },
             "Reset"
           ),
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -281,6 +239,5 @@ function MixAppFlowifyModal(props) {
           )
         )
       )
-    )
   );
 }

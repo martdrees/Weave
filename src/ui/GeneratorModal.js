@@ -36,15 +36,6 @@ function MixAppGeneratorModal(props) {
   const genRef = react.useRef(0);
 
   react.useEffect(() => {
-    if (!open) return undefined;
-    function onKey(e) {
-      if (e.key === "Escape" && !busy) onClose?.();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose, busy]);
-
-  react.useEffect(() => {
     if (open) {
       const base = playlist?.name || "MixApp";
       setName(base + " (generated)");
@@ -56,8 +47,6 @@ function MixAppGeneratorModal(props) {
       setBusy(false);
     }
   }, [open, playlist?.name]);
-
-  if (!open) return null;
 
   const seedCount = (seedUris || []).length;
   const hasTracks = Array.isArray(tracks) && tracks.length > 0;
@@ -179,67 +168,32 @@ function MixAppGeneratorModal(props) {
     )
   );
 
-  return react.createElement(
-    "div",
+  return h(
+    MixAppModal,
     {
-      className: "mixapp-results-overlay",
-      role: "presentation",
-      onClick: (e) => {
-        if (e.target === e.currentTarget && !busy) onClose?.();
-      },
+      open,
+      title: "Generator",
+      meta: preview.length ? preview.length + " ready" : null,
+      onClose,
+      ariaLabel: "Generator",
+      className: "mixapp-find-modal mixapp-generator-modal",
+      closeDisabled: busy,
     },
-    react.createElement(
+    h(
       "div",
-      {
-        className:
-          "mixapp-results-modal mixapp-find-modal mixapp-generator-modal",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": "Generator",
-      },
-      react.createElement(
-        "div",
-        { className: "mixapp-recommend-header" },
-        react.createElement(
-          "div",
-          { className: "mixapp-search-panel-title-row" },
-          react.createElement("h2", null, "Generator"),
-          preview.length
-            ? react.createElement(
-                "span",
-                { className: "mixapp-recommend-meta" },
-                preview.length + " ready"
-              )
-            : null
-        ),
-        react.createElement(
-          "button",
-          {
-            type: "button",
-            className: "mixapp-icon-btn",
-            onClick: onClose,
-            disabled: busy,
-            title: "Close",
-            "aria-label": "Close",
-          },
-          "✕"
-        )
-      ),
-      react.createElement(
-        "div",
-        { className: "mixapp-generator-body" },
-        react.createElement(
+      { className: "mixapp-generator-body" },
+        h(
           "p",
           { className: "mixapp-recommend-meta" },
           seedCount
             ? "Using " + seedCount + " marked seed track(s)."
             : "No seeds marked — soft-seeds from the current playlist."
         ),
-        react.createElement(
+        h(
           "label",
           { className: "mixapp-flowify-field" },
-          react.createElement("span", null, "New playlist name"),
-          react.createElement("input", {
+          h("span", null, "New playlist name"),
+          h("input", {
             type: "text",
             className: "mixapp-find-input",
             value: name,
@@ -247,11 +201,11 @@ function MixAppGeneratorModal(props) {
             disabled: busy,
           })
         ),
-        react.createElement(
+        h(
           "label",
           { className: "mixapp-flowify-field" },
-          react.createElement("span", null, "Track count"),
-          react.createElement("input", {
+          h("span", null, "Track count"),
+          h("input", {
             type: "number",
             className: "mixapp-find-input",
             min: 10,
@@ -270,19 +224,19 @@ function MixAppGeneratorModal(props) {
             disabled: busy,
           })
         ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-generator-features" },
-          react.createElement("h3", null, "Feature ranges (optional)"),
+          h("h3", null, "Feature ranges (optional)"),
           defs.map((def) => {
             const range = features[def.id] || {};
-            return react.createElement(
+            return h(
               "div",
               { key: def.id, className: "mixapp-flowify-weight-row" },
-              react.createElement(
+              h(
                 "label",
                 { className: "mixapp-flowify-weight-label" },
-                react.createElement("input", {
+                h("input", {
                   type: "checkbox",
                   checked: !!range.enabled,
                   disabled: busy,
@@ -292,7 +246,7 @@ function MixAppGeneratorModal(props) {
                 " ",
                 def.label
               ),
-              react.createElement("input", {
+              h("input", {
                 type: "range",
                 min: def.min,
                 max: def.max,
@@ -307,7 +261,7 @@ function MixAppGeneratorModal(props) {
                 },
                 title: "Min",
               }),
-              react.createElement("input", {
+              h("input", {
                 type: "range",
                 min: def.min,
                 max: def.max,
@@ -325,13 +279,13 @@ function MixAppGeneratorModal(props) {
             );
           })
         ),
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-generator-checks" },
-          react.createElement(
+          h(
             "label",
             null,
-            react.createElement("input", {
+            h("input", {
               type: "checkbox",
               checked: excludeExplicit,
               disabled: busy,
@@ -339,10 +293,10 @@ function MixAppGeneratorModal(props) {
             }),
             " Exclude explicit"
           ),
-          react.createElement(
+          h(
             "label",
             null,
-            react.createElement("input", {
+            h("input", {
               type: "checkbox",
               checked: excludeAberrant,
               disabled: busy,
@@ -350,10 +304,10 @@ function MixAppGeneratorModal(props) {
             }),
             " Exclude aberrant titles"
           ),
-          react.createElement(
+          h(
             "label",
             null,
-            react.createElement("input", {
+            h("input", {
               type: "checkbox",
               checked: flowifyAfter,
               disabled: busy,
@@ -363,18 +317,18 @@ function MixAppGeneratorModal(props) {
           )
         ),
         error
-          ? react.createElement("div", { className: "mixapp-find-error" }, error)
+          ? h("div", { className: "mixapp-find-error" }, error)
           : null,
         preview.length
-          ? react.createElement(
+          ? h(
               "div",
               { className: "mixapp-generator-preview" },
-              react.createElement("h3", null, "Preview"),
-              react.createElement(
+              h("h3", null, "Preview"),
+              h(
                 "ul",
                 { className: "mixapp-generator-preview-list" },
                 preview.slice(0, 12).map((t, i) =>
-                  react.createElement(
+                  h(
                     "li",
                     { key: t.uri || i },
                     (t.name || "Unknown") +
@@ -382,7 +336,7 @@ function MixAppGeneratorModal(props) {
                   )
                 ),
                 preview.length > 12
-                  ? react.createElement(
+                  ? h(
                       "li",
                       { className: "mixapp-recommend-meta" },
                       "…and " + (preview.length - 12) + " more"
@@ -391,10 +345,10 @@ function MixAppGeneratorModal(props) {
               )
             )
           : null,
-        react.createElement(
+        h(
           "div",
           { className: "mixapp-flowify-actions" },
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -404,7 +358,7 @@ function MixAppGeneratorModal(props) {
             },
             busy && !preview.length ? "Generating…" : "Generate"
           ),
-          react.createElement(
+          h(
             "button",
             {
               type: "button",
@@ -416,6 +370,5 @@ function MixAppGeneratorModal(props) {
           )
         )
       )
-    )
   );
 }

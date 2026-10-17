@@ -33,13 +33,13 @@ function MixAppToolbar(props) {
   const hasTracks = Array.isArray(tracks) && tracks.length > 0;
   const hasPlaylist = !!playlist;
 
-  return react.createElement(
+  return h(
     "div",
     { className: "mixapp-toolbar" },
-    react.createElement(
+    h(
       "div",
       { className: "mixapp-toolbar-left" },
-      react.createElement(MixAppPlaylistPicker, {
+      h(MixAppPlaylistPicker, {
         playlists,
         selectedUri,
         loading: listLoading,
@@ -49,20 +49,20 @@ function MixAppToolbar(props) {
         onRefresh: onRefreshPlaylists,
       }),
       dirty
-        ? react.createElement("span", { className: "mixapp-badge" }, "Unsaved")
+        ? h("span", { className: "mixapp-badge" }, "Unsaved")
         : null,
       seedCount > 0
-        ? react.createElement(
+        ? h(
             "span",
             { className: "mixapp-badge mixapp-badge-seed" },
             seedCount + " seed" + (seedCount === 1 ? "" : "s")
           )
         : null
     ),
-    react.createElement(
+    h(
       "div",
       { className: "mixapp-toolbar-actions" },
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -73,7 +73,7 @@ function MixAppToolbar(props) {
         },
         "Undo"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -84,7 +84,7 @@ function MixAppToolbar(props) {
         },
         "Redo"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -95,7 +95,7 @@ function MixAppToolbar(props) {
         },
         "Add Track"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -106,7 +106,7 @@ function MixAppToolbar(props) {
         },
         "Recommendations"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -117,7 +117,7 @@ function MixAppToolbar(props) {
         },
         "Copy from Playlist"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -128,7 +128,7 @@ function MixAppToolbar(props) {
         },
         "Flowify"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -139,7 +139,7 @@ function MixAppToolbar(props) {
         },
         "Generator"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -150,7 +150,7 @@ function MixAppToolbar(props) {
         },
         "Stats"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
@@ -163,7 +163,7 @@ function MixAppToolbar(props) {
         },
         saving ? "Saving…" : "Save"
       ),
-      react.createElement(
+      h(
         "button",
         {
           type: "button",
