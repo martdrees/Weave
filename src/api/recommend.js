@@ -272,10 +272,22 @@ const MixAppRecommend = (() => {
     });
   }
 
+  async function cosmosGetRetry(url, label) {
+    const getter = MixAppApi?.withRetry;
+    if (getter) {
+      return getter(() => Spicetify.CosmosAsync.get(url), {
+        retries: 4,
+        label: label || "recommend",
+        notifyUser: true,
+      });
+    }
+    return Spicetify.CosmosAsync.get(url);
+  }
+
   async function resolveRadioPlaylistUri(kind, id) {
     for (const url of radioUrls(kind, id)) {
       try {
-        const res = await Spicetify.CosmosAsync.get(url);
+        const res = await cosmosGetRetry(url, "song-radio");
         const items = res?.mediaItems || res?.media_items || res?.items || [];
         const uri =
           (Array.isArray(items) && items[0]?.uri) ||
@@ -342,8 +354,9 @@ const MixAppRecommend = (() => {
 
   async function getUserMarket() {
     try {
-      const me = await Spicetify.CosmosAsync.get(
-        "https://api.spotify.com/v1/me"
+      const me = await cosmosGetRetry(
+        "https://api.spotify.com/v1/me",
+        "profile"
       );
       if (me?.country) return me.country;
     } catch (_) {
@@ -354,11 +367,12 @@ const MixAppRecommend = (() => {
 
   async function fetchArtistTopTracks(artistId, market) {
     try {
-      const res = await Spicetify.CosmosAsync.get(
+      const res = await cosmosGetRetry(
         "https://api.spotify.com/v1/artists/" +
           artistId +
           "/top-tracks?market=" +
-          encodeURIComponent(market || "US")
+          encodeURIComponent(market || "US"),
+        "artist-top-tracks"
       );
       return (res?.tracks || []).map((t, i) => normalizeWebTrack(t, i));
     } catch (err) {
@@ -369,8 +383,9 @@ const MixAppRecommend = (() => {
 
   async function fetchRelatedArtistIds(artistId) {
     try {
-      const res = await Spicetify.CosmosAsync.get(
-        "https://api.spotify.com/v1/artists/" + artistId + "/related-artists"
+      const res = await cosmosGetRetry(
+        "https://api.spotify.com/v1/artists/" + artistId + "/related-artists",
+        "related-artists"
       );
       return (res?.artists || [])
         .map((a) => a?.id)

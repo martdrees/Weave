@@ -182,16 +182,43 @@ function MixAppArranger(props) {
   if (loading) {
     return react.createElement(
       "div",
-      { className: "mixapp-arranger mixapp-arranger-empty" },
-      "Loading tracks…"
+      { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
+      react.createElement("div", {
+        className: "mixapp-spinner",
+        "aria-hidden": "true",
+      }),
+      react.createElement(
+        "p",
+        { className: "mixapp-empty-title" },
+        "Loading tracks…"
+      ),
+      react.createElement(
+        "p",
+        { className: "mixapp-empty-hint" },
+        "Fetching playlist contents from Spotify."
+      )
     );
   }
 
   if (!tracks?.length) {
     return react.createElement(
       "div",
-      { className: "mixapp-arranger mixapp-arranger-empty" },
-      "Select a playlist to edit its track order."
+      { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
+      react.createElement(
+        "p",
+        { className: "mixapp-empty-title" },
+        "No tracks yet"
+      ),
+      react.createElement(
+        "p",
+        { className: "mixapp-empty-hint" },
+        "Pick a playlist from the toolbar, or use Add Track / Generator once one is loaded."
+      ),
+      react.createElement(
+        "p",
+        { className: "mixapp-empty-hint" },
+        "Press ? for keyboard shortcuts."
+      )
     );
   }
 

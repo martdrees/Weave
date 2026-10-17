@@ -148,7 +148,7 @@ function MixAppToolbar(props) {
           disabled: !hasPlaylist || !hasTracks,
           title: "Feature charts and summary",
         },
-        statsOpen ? "Hide Stats" : "Stats"
+        "Stats"
       ),
       react.createElement(
         "button",

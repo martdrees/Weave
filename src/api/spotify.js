@@ -34,10 +34,29 @@ const MixAppApi = (() => {
 
   function isRateLimitError(err) {
     const msg = String(err?.message || err || "");
-    return msg.includes("429") || /rate.?limit/i.test(msg);
+    return (
+      msg.includes("429") ||
+      /rate.?limit/i.test(msg) ||
+      /too many requests/i.test(msg)
+    );
   }
 
-  async function withRetry(fn, { retries = 6, label = "request" } = {}) {
+  function parseRetryAfterMs(err) {
+    const msg = String(err?.message || err || "");
+    const m = msg.match(/retry[- ]after[:\s]*(\d+)/i);
+    if (m) {
+      const sec = parseInt(m[1], 10);
+      if (Number.isFinite(sec) && sec > 0) return Math.min(60000, sec * 1000);
+    }
+    return null;
+  }
+
+  let rateLimitNotifyAt = 0;
+
+  async function withRetry(
+    fn,
+    { retries = 6, label = "request", notifyUser = true } = {}
+  ) {
     let lastErr;
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
@@ -45,27 +64,67 @@ const MixAppApi = (() => {
       } catch (err) {
         lastErr = err;
         if (!isRateLimitError(err) || attempt === retries - 1) throw err;
-        const delay = Math.min(20000, 800 * Math.pow(2, attempt));
+        const retryAfter = parseRetryAfterMs(err);
+        const delay =
+          retryAfter != null
+            ? retryAfter
+            : Math.min(20000, 800 * Math.pow(2, attempt));
         console.warn(`MixApp: ${label} rate-limited, retry in ${delay}ms`);
+        if (notifyUser && Date.now() - rateLimitNotifyAt > 4000) {
+          rateLimitNotifyAt = Date.now();
+          notify(
+            "Spotify rate limit — backing off " +
+              Math.ceil(delay / 1000) +
+              "s…",
+            true
+          );
+        }
         await sleep(delay);
       }
     }
     throw lastErr;
   }
 
-  async function cosmosGet(url) {
-    const res = await Spicetify.CosmosAsync.get(url);
-    return assertCosmosOk(res, url);
+  async function cosmosGet(url, opts = {}) {
+    return withRetry(
+      async () => {
+        const res = await Spicetify.CosmosAsync.get(url);
+        return assertCosmosOk(res, url);
+      },
+      {
+        retries: opts.retries ?? 5,
+        label: opts.label || "request",
+        notifyUser: opts.notifyUser !== false,
+      }
+    );
   }
 
-  async function cosmosPost(url, body) {
-    const res = await Spicetify.CosmosAsync.post(url, body);
-    return assertCosmosOk(res, url);
+  async function cosmosPost(url, body, opts = {}) {
+    return withRetry(
+      async () => {
+        const res = await Spicetify.CosmosAsync.post(url, body);
+        return assertCosmosOk(res, url);
+      },
+      {
+        retries: opts.retries ?? 5,
+        label: opts.label || "request",
+        notifyUser: opts.notifyUser !== false,
+      }
+    );
   }
 
-  async function cosmosPut(url, body) {
-    const res = await Spicetify.CosmosAsync.put(url, body);
-    return assertCosmosOk(res, url);
+  async function cosmosPut(url, body, opts = {}) {
+    return withRetry(
+      async () => {
+        const res = await Spicetify.CosmosAsync.put(url, body);
+        return assertCosmosOk(res, url);
+      },
+      {
+        retries: opts.retries ?? 5,
+        label: opts.label || "request",
+        notifyUser: opts.notifyUser !== false,
+      }
+    );
   }
 
   function formatDuration(ms) {
@@ -835,7 +894,7 @@ const MixAppApi = (() => {
         offset +
         "&q=" +
         encodeURIComponent(query);
-      const res = await withRetry(() => cosmosGet(url), {
+      const res = await cosmosGet(url, {
         retries: 3,
         label: "track search",
       });
@@ -862,7 +921,7 @@ const MixAppApi = (() => {
         offset +
         "&q=" +
         encodeURIComponent(query);
-      const res = await withRetry(() => cosmosGet(url), {
+      const res = await cosmosGet(url, {
         retries: 3,
         label: "playlist search",
       });
@@ -973,5 +1032,7 @@ const MixAppApi = (() => {
     getCurrentUserId,
     searchTracks,
     searchPlaylists,
+    withRetry,
+    isRateLimitError,
   };
 })();

@@ -7,6 +7,11 @@ function MixAppPage() {
     savedSessionRef.current = MixAppSession.load() || false;
   }
   const saved = savedSessionRef.current || null;
+  const prefsRef = react.useRef(null);
+  if (prefsRef.current === null) {
+    prefsRef.current = MixAppPrefs.load();
+  }
+  const prefs = prefsRef.current;
 
   const undoRef = react.useRef(null);
   if (!undoRef.current) {
@@ -41,11 +46,15 @@ function MixAppPage() {
   const [error, setError] = react.useState(null);
   const [playingUri, setPlayingUri] = react.useState(null);
   const [isPlaying, setIsPlaying] = react.useState(false);
-  const [searchOpen, setSearchOpen] = react.useState(() => !!saved?.searchOpen);
+  const [searchOpen, setSearchOpen] = react.useState(
+    () => !!saved?.searchOpen || !!prefs?.preferSearchOpen
+  );
   const [resultsOpen, setResultsOpen] = react.useState(
     () => !!saved?.resultsOpen
   );
-  const [statsOpen, setStatsOpen] = react.useState(() => !!saved?.statsOpen);
+  const [statsOpen, setStatsOpen] = react.useState(
+    () => !!saved?.statsOpen || !!prefs?.preferStatsOpen
+  );
   const [seedUris, setSeedUris] = react.useState(() =>
     Array.isArray(saved?.seedUris) ? saved.seedUris : []
   );
@@ -54,13 +63,8 @@ function MixAppPage() {
   );
   const [searchFilters, setSearchFilters] = react.useState(() => {
     const base = {
-      hideExisting: true,
-      hideExistingArtists: false,
-      excludeExplicit: false,
-      excludeAberrant: true,
-      yearMin: "",
-      yearMax: "",
-      camelotMoves: [],
+      ...(MixAppPrefs.defaults().searchFilters || {}),
+      ...(prefs?.searchFilters || {}),
     };
     const savedFilters = saved?.searchFilters || {};
     return {
@@ -68,11 +72,13 @@ function MixAppPage() {
       ...savedFilters,
       camelotMoves: Array.isArray(savedFilters.camelotMoves)
         ? savedFilters.camelotMoves
-        : [],
+        : Array.isArray(base.camelotMoves)
+          ? base.camelotMoves
+          : [],
     };
   });
   const [resultLimit, setResultLimit] = react.useState(
-    () => saved?.resultLimit || 100
+    () => saved?.resultLimit || prefs?.resultLimit || 100
   );
   const [searchResults, setSearchResults] = react.useState(() =>
     Array.isArray(saved?.searchResults) ? saved.searchResults : []
@@ -90,6 +96,7 @@ function MixAppPage() {
   const [copyPlaylistOpen, setCopyPlaylistOpen] = react.useState(false);
   const [flowifyOpen, setFlowifyOpen] = react.useState(false);
   const [generatorOpen, setGeneratorOpen] = react.useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = react.useState(false);
 
   function syncUndoFlags() {
     setCanUndo(undoRef.current.canUndo());
@@ -185,6 +192,17 @@ function MixAppPage() {
     canUndo,
     canRedo,
   ]);
+
+  // Durable UI prefs (filters, limits, panel preference).
+  react.useEffect(() => {
+    MixAppPrefs.patch({
+      resultLimit,
+      searchFilters,
+      preferSearchOpen: !!searchOpen,
+      preferStatsOpen: !!statsOpen,
+    });
+    prefsRef.current = MixAppPrefs.load();
+  }, [resultLimit, searchFilters, searchOpen, statsOpen]);
 
   // Flush latest snapshot when the Custom App unmounts (navigate away).
   react.useEffect(() => {
@@ -760,17 +778,177 @@ function MixAppPage() {
     }
   }
 
+  function closeTopOverlay() {
+    if (shortcutsOpen) {
+      setShortcutsOpen(false);
+      return true;
+    }
+    if (generatorOpen) {
+      setGeneratorOpen(false);
+      return true;
+    }
+    if (flowifyOpen) {
+      setFlowifyOpen(false);
+      return true;
+    }
+    if (copyPlaylistOpen) {
+      setCopyPlaylistOpen(false);
+      return true;
+    }
+    if (addTrackOpen) {
+      setAddTrackOpen(false);
+      return true;
+    }
+    if (resultsOpen) {
+      closeResultsPanel();
+      return true;
+    }
+    if (searchOpen) {
+      setSearchOpen(false);
+      return true;
+    }
+    if (statsOpen) {
+      setStatsOpen(false);
+      return true;
+    }
+    return false;
+  }
+
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = String(el.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (el.isContentEditable) return true;
+    return !!el.closest?.("input, textarea, select, [contenteditable=true]");
+  }
+
+  react.useEffect(() => {
+    function onKey(e) {
+      const mod = e.ctrlKey || e.metaKey;
+      const typing = isTypingTarget(e.target);
+
+      if (e.key === "Escape") {
+        if (closeTopOverlay()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+
+      if (!mod && !typing && (e.key === "?" || (e.key === "/" && e.shiftKey))) {
+        e.preventDefault();
+        setShortcutsOpen((v) => !v);
+        return;
+      }
+
+      if (!mod) return;
+
+      const key = String(e.key || "").toLowerCase();
+
+      // Save works even while typing in fields.
+      if (key === "s" && !e.shiftKey) {
+        e.preventDefault();
+        if (!saving) handleSave();
+        return;
+      }
+      if (key === "s" && e.shiftKey) {
+        e.preventDefault();
+        if (!saving) handleSaveAsNew();
+        return;
+      }
+
+      if (typing) return;
+
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      if (key === "f" && !e.shiftKey) {
+        e.preventDefault();
+        handleToggleSearch();
+        return;
+      }
+      if (key === "a" && e.shiftKey) {
+        e.preventDefault();
+        if (playlist) {
+          setCopyPlaylistOpen(false);
+          setFlowifyOpen(false);
+          setGeneratorOpen(false);
+          setAddTrackOpen(true);
+        }
+        return;
+      }
+      if (key === "c" && e.shiftKey) {
+        e.preventDefault();
+        if (playlist) {
+          setAddTrackOpen(false);
+          setFlowifyOpen(false);
+          setGeneratorOpen(false);
+          setCopyPlaylistOpen(true);
+        }
+        return;
+      }
+      if (key === "f" && e.shiftKey) {
+        e.preventDefault();
+        if (playlist && tracks.length) {
+          setAddTrackOpen(false);
+          setCopyPlaylistOpen(false);
+          setGeneratorOpen(false);
+          setFlowifyOpen(true);
+        }
+        return;
+      }
+      if (key === "g" && e.shiftKey) {
+        e.preventDefault();
+        if (playlist && tracks.length) {
+          setAddTrackOpen(false);
+          setCopyPlaylistOpen(false);
+          setFlowifyOpen(false);
+          setGeneratorOpen(true);
+        }
+        return;
+      }
+      if (key === "t" && e.shiftKey) {
+        e.preventDefault();
+        setStatsOpen((v) => !v);
+      }
+    }
+
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
+
   return react.createElement(
     "div",
     { className: "mixapp-root" },
     react.createElement(
       "header",
       { className: "mixapp-header" },
-      react.createElement("h1", null, "MixApp"),
+      react.createElement(
+        "div",
+        { className: "mixapp-header-row" },
+        react.createElement("h1", null, "MixApp"),
+        react.createElement(
+          "button",
+          {
+            type: "button",
+            className: "mixapp-btn mixapp-btn-ghost mixapp-btn-compact",
+            onClick: () => setShortcutsOpen(true),
+            title: "Keyboard shortcuts (?)",
+          },
+          "?"
+        )
+      ),
       react.createElement(
         "p",
         { className: "mixapp-subtitle" },
-        "Load a playlist, optionally mark seed tracks, search for similar tracks, and save back to Spotify."
+        "Load a playlist, rearrange, find tracks, and save back to Spotify. Press ? for shortcuts."
       )
     ),
     react.createElement(MixAppToolbar, {
@@ -923,6 +1101,10 @@ function MixAppPage() {
           console.error(err);
         }
       },
+    }),
+    react.createElement(MixAppShortcutsHelp, {
+      open: shortcutsOpen,
+      onClose: () => setShortcutsOpen(false),
     })
   );
 }

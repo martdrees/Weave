@@ -5,9 +5,12 @@ function MixAppFlowifyModal(props) {
   const react = Spicetify.React;
   const { open, tracks, onClose, onApply } = props;
 
-  const [options, setOptions] = react.useState(() =>
-    MixAppFlowify.defaultOptions()
-  );
+  const [options, setOptions] = react.useState(() => {
+    const saved = MixAppPrefs?.load?.()?.flowify;
+    return saved
+      ? { ...MixAppFlowify.defaultOptions(), ...saved }
+      : MixAppFlowify.defaultOptions();
+  });
   const [busy, setBusy] = react.useState(false);
   const [error, setError] = react.useState(null);
 
@@ -70,6 +73,11 @@ function MixAppFlowifyModal(props) {
         console.warn("MixApp Flowify enrich", err);
       }
       const next = MixAppFlowify.arrange(list, options);
+      try {
+        MixAppPrefs?.patch?.({ flowify: options });
+      } catch (_) {
+        /* ignore */
+      }
       onApply?.(next);
       MixAppApi.notify(
         options.method === "curves"

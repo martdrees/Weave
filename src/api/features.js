@@ -261,8 +261,15 @@ const MixAppFeatures = (() => {
       let list = null;
 
       try {
-        const res = await Spicetify.CosmosAsync.get(
-          SPCLIENT + "?ids=" + chunk.join(",")
+        const getter =
+          MixAppApi?.withRetry ||
+          ((fn) => fn());
+        const res = await getter(
+          () =>
+            Spicetify.CosmosAsync.get(
+              SPCLIENT + "?ids=" + chunk.join(",")
+            ),
+          { retries: 4, label: "audio-attributes", notifyUser: false }
         );
         list = res?.audio_features || res?.audioFeatures || null;
       } catch (err) {
@@ -271,8 +278,15 @@ const MixAppFeatures = (() => {
 
       if (!list) {
         try {
-          const res = await Spicetify.CosmosAsync.get(
-            WEB_FEATURES + "?ids=" + chunk.join(",")
+          const getter =
+            MixAppApi?.withRetry ||
+            ((fn) => fn());
+          const res = await getter(
+            () =>
+              Spicetify.CosmosAsync.get(
+                WEB_FEATURES + "?ids=" + chunk.join(",")
+              ),
+            { retries: 4, label: "audio-features", notifyUser: false }
           );
           list = res?.audio_features || null;
         } catch (err) {
@@ -422,6 +436,119 @@ const MixAppFeatures = (() => {
     }
     if (!count) return { min: null, max: null, count: 0 };
     return { min, max, count };
+  }
+
+  /**
+   * BPM “compatibility distance” in 0…1.
+   * Near tempos and double/half-time count as close (MixMoose-style).
+   */
+  function bpmCompatDistance(a, b) {
+    if (a == null || b == null) return null;
+    const x = Number(a);
+    const y = Number(b);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0) {
+      return null;
+    }
+    const r = Math.max(x, y) / Math.min(x, y);
+    const d = Math.min(Math.abs(r - 1), Math.abs(r - 2), Math.abs(r - 0.5));
+    return Math.min(1, d);
+  }
+
+  function camelotLetter(track) {
+    if (track?.keyMode === 0) return "A";
+    if (track?.keyMode === 1) return "B";
+    const parsed = parseCamelot(track);
+    if (parsed?.letter) return String(parsed.letter).toUpperCase();
+    const m = String(track?.key || "").match(/[ABab]/);
+    return m ? m[0].toUpperCase() : null;
+  }
+
+  /**
+   * Camelot / Open Key distance in 0…1 (0 = same / highly compatible).
+   */
+  function keyCompatDistance(a, b) {
+    const na = camelotNumber(a?.keyIndex, a?.keyMode, a?.key);
+    const nb = camelotNumber(b?.keyIndex, b?.keyMode, b?.key);
+    if (na == null || nb == null) return null;
+    const la = camelotLetter(a);
+    const lb = camelotLetter(b);
+    const wheel = Math.min(Math.abs(na - nb), 12 - Math.abs(na - nb)); // 0…6
+    if (la && lb && la !== lb) {
+      if (wheel === 0) return 1 / 6; // relative major/minor
+      return Math.min(1, (wheel + 1) / 6);
+    }
+    return wheel / 6;
+  }
+
+  const AGG_CHANGE_01_FIELDS = [
+    "energy",
+    "danceability",
+    "valence",
+    "acousticness",
+    "instrumentalness",
+    "speechiness",
+    "liveness",
+  ];
+
+  /**
+   * Absolute Aggregate Change per track (transition into that track).
+   * Track 0 has no prior → null. Values are 0…100 (%).
+   */
+  function absoluteAggregateChange(tracks) {
+    const list = Array.isArray(tracks) ? tracks : [];
+    const values = [];
+    for (let i = 0; i < list.length; i++) {
+      if (i === 0) {
+        values.push(null);
+        continue;
+      }
+      const prev = list[i - 1];
+      const cur = list[i];
+      const parts = [];
+      for (const field of AGG_CHANGE_01_FIELDS) {
+        const a = prev?.[field];
+        const b = cur?.[field];
+        if (a == null || b == null || Number.isNaN(Number(a)) || Number.isNaN(Number(b))) {
+          continue;
+        }
+        parts.push(Math.abs(Number(a) - Number(b)));
+      }
+      const bpmA = prev?.tempo ?? prev?.bpm;
+      const bpmB = cur?.tempo ?? cur?.bpm;
+      const bpmD = bpmCompatDistance(bpmA, bpmB);
+      if (bpmD != null) parts.push(bpmD);
+      const keyD = keyCompatDistance(prev, cur);
+      if (keyD != null) parts.push(keyD);
+
+      if (!parts.length) {
+        values.push(null);
+        continue;
+      }
+      const mean = parts.reduce((s, v) => s + v, 0) / parts.length;
+      values.push(Math.min(100, Math.max(0, mean * 100)));
+    }
+
+    const known = values.filter((v) => v != null);
+    let avg = null;
+    let min = null;
+    let max = null;
+    if (known.length) {
+      avg = known.reduce((s, v) => s + v, 0) / known.length;
+      min = Math.min(...known);
+      max = Math.max(...known);
+    }
+    return {
+      id: "aggChange",
+      label: "Abs. Aggregate",
+      kind: "percent",
+      values,
+      count: known.length,
+      avg,
+      min,
+      max,
+      /** 100% = perfectly smooth transitions. */
+      smoothness: avg == null ? null : Math.max(0, 100 - avg),
+    };
   }
 
   function aggregateStats(tracks) {
@@ -667,6 +794,9 @@ const MixAppFeatures = (() => {
     relativeColor,
     rangeForMetric,
     aggregateStats,
+    absoluteAggregateChange,
+    bpmCompatDistance,
+    keyCompatDistance,
     histogram,
     defaultArrangerFilters,
     filtersActive,

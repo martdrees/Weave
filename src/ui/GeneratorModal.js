@@ -15,14 +15,21 @@ function MixAppGeneratorModal(props) {
     onCreated,
   } = props;
 
+  const prefsGen = MixAppPrefs?.load?.()?.generator || {};
   const [name, setName] = react.useState("");
-  const [limit, setLimit] = react.useState(40);
+  const [limit, setLimit] = react.useState(() => prefsGen.limit || 40);
   const [features, setFeatures] = react.useState(() =>
     MixAppRecommend.defaultFeatureState()
   );
-  const [excludeExplicit, setExcludeExplicit] = react.useState(false);
-  const [excludeAberrant, setExcludeAberrant] = react.useState(true);
-  const [flowifyAfter, setFlowifyAfter] = react.useState(true);
+  const [excludeExplicit, setExcludeExplicit] = react.useState(
+    () => !!prefsGen.excludeExplicit
+  );
+  const [excludeAberrant, setExcludeAberrant] = react.useState(
+    () => prefsGen.excludeAberrant !== false
+  );
+  const [flowifyAfter, setFlowifyAfter] = react.useState(
+    () => prefsGen.flowifyAfter !== false
+  );
   const [busy, setBusy] = react.useState(false);
   const [error, setError] = react.useState(null);
   const [preview, setPreview] = react.useState([]);
@@ -116,6 +123,18 @@ function MixAppGeneratorModal(props) {
       }
 
       if (gen !== genRef.current) return;
+      try {
+        MixAppPrefs?.patch?.({
+          generator: {
+            limit,
+            flowifyAfter,
+            excludeExplicit,
+            excludeAberrant,
+          },
+        });
+      } catch (_) {
+        /* ignore */
+      }
       setPreview(list);
       if (!list.length) {
         setError("No tracks generated — try wider feature ranges or seeds");

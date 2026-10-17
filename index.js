@@ -1,7 +1,7 @@
 //@ts-check
 
 /**
- * MixApp entry — Phase 6: Flowify + generator (existing UI unchanged).
+ * MixApp entry — Phase 7: shortcuts, prefs, empty states, rate-limit polish.
  * Logic lives in src/ subfiles (concatenated by Spicetify).
  */
 function render() {

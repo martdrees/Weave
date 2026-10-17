@@ -9,6 +9,7 @@
     "src/api/flowify.js",
     "src/state/undoStack.js",
     "src/state/sessionStore.js",
+    "src/state/prefsStore.js",
     "src/state/columnConfig.js",
     "src/ui/PlaylistPicker.js",
     "src/ui/Toolbar.js",
@@ -20,6 +21,7 @@
     "src/ui/CopyPlaylistModal.js",
     "src/ui/FlowifyModal.js",
     "src/ui/GeneratorModal.js",
+    "src/ui/ShortcutsHelp.js",
     "src/App.js"
   ]
 }
