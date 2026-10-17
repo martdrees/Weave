@@ -782,6 +782,99 @@
   width: min(1080px, 100%);
 }
 
+/* Phase 6 — Flowify / Generator */
+.mixapp-flowify-modal,
+.mixapp-generator-modal {
+  max-width: 640px;
+  width: min(640px, 100%);
+  max-height: min(880px, 94vh);
+}
+
+.mixapp-flowify-body,
+.mixapp-generator-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mixapp-flowify-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.mixapp-flowify-weights,
+.mixapp-generator-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mixapp-flowify-weights h3,
+.mixapp-generator-features h3,
+.mixapp-generator-preview h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.mixapp-flowify-weight-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 2.6rem auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.mixapp-generator-features .mixapp-flowify-weight-row {
+  grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.mixapp-flowify-weight-label {
+  font-size: 0.8rem;
+  color: var(--spice-subtext);
+  white-space: nowrap;
+}
+
+.mixapp-flowify-weight-val {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--spice-subtext);
+}
+
+.mixapp-flowify-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.mixapp-generator-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.mixapp-generator-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mixapp-generator-preview-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  max-height: 160px;
+  overflow: auto;
+}
+
 .mixapp-find-search-bar {
   flex: 0 0 auto;
   display: flex;

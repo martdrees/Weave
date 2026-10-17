@@ -88,6 +88,8 @@ function MixAppPage() {
   );
   const [addTrackOpen, setAddTrackOpen] = react.useState(false);
   const [copyPlaylistOpen, setCopyPlaylistOpen] = react.useState(false);
+  const [flowifyOpen, setFlowifyOpen] = react.useState(false);
+  const [generatorOpen, setGeneratorOpen] = react.useState(false);
 
   function syncUndoFlags() {
     setCanUndo(undoRef.current.canUndo());
@@ -794,11 +796,27 @@ function MixAppPage() {
       onToggleStats: () => setStatsOpen((v) => !v),
       onOpenAddTrack: () => {
         setCopyPlaylistOpen(false);
+        setFlowifyOpen(false);
+        setGeneratorOpen(false);
         setAddTrackOpen(true);
       },
       onOpenCopyPlaylist: () => {
         setAddTrackOpen(false);
+        setFlowifyOpen(false);
+        setGeneratorOpen(false);
         setCopyPlaylistOpen(true);
+      },
+      onOpenFlowify: () => {
+        setAddTrackOpen(false);
+        setCopyPlaylistOpen(false);
+        setGeneratorOpen(false);
+        setFlowifyOpen(true);
+      },
+      onOpenGenerator: () => {
+        setAddTrackOpen(false);
+        setCopyPlaylistOpen(false);
+        setFlowifyOpen(false);
+        setGeneratorOpen(true);
       },
     }),
     react.createElement(MixAppStatsPanel, {
@@ -881,6 +899,30 @@ function MixAppPage() {
       onAddTrack: handleAddCatalogTrack,
       onAddTracks: handleAddCatalogTracks,
       onPlay: handlePlay,
+    }),
+    react.createElement(MixAppFlowifyModal, {
+      open: flowifyOpen,
+      tracks,
+      onClose: () => setFlowifyOpen(false),
+      onApply: (next) => {
+        if (Array.isArray(next) && next.length) commitTracks(next);
+      },
+    }),
+    react.createElement(MixAppGeneratorModal, {
+      open: generatorOpen,
+      playlist,
+      tracks,
+      seedUris,
+      onClose: () => setGeneratorOpen(false),
+      onCreated: async (uri) => {
+        if (!uri) return;
+        try {
+          await refreshPlaylists();
+          await loadPlaylist(uri);
+        } catch (err) {
+          console.error(err);
+        }
+      },
     })
   );
 }

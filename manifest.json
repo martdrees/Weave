@@ -6,6 +6,7 @@
     "src/api/spotify.js",
     "src/api/features.js",
     "src/api/recommend.js",
+    "src/api/flowify.js",
     "src/state/undoStack.js",
     "src/state/sessionStore.js",
     "src/state/columnConfig.js",
@@ -17,6 +18,8 @@
     "src/ui/SearchResults.js",
     "src/ui/AddTrackModal.js",
     "src/ui/CopyPlaylistModal.js",
+    "src/ui/FlowifyModal.js",
+    "src/ui/GeneratorModal.js",
     "src/App.js"
   ]
 }

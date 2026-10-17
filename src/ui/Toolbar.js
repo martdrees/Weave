@@ -25,6 +25,8 @@ function MixAppToolbar(props) {
     onToggleStats,
     onOpenAddTrack,
     onOpenCopyPlaylist,
+    onOpenFlowify,
+    onOpenGenerator,
   } = props;
 
   const owned = !!(playlist?.isOwnedBySelf || playlist?.collaborative);
@@ -114,6 +116,28 @@ function MixAppToolbar(props) {
           title: "Copy tracks from another playlist",
         },
         "Copy from Playlist"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-btn",
+          onClick: onOpenFlowify,
+          disabled: !hasPlaylist || !hasTracks || saving,
+          title: "Auto-arrange playlist (curves / sets)",
+        },
+        "Flowify"
+      ),
+      react.createElement(
+        "button",
+        {
+          type: "button",
+          className: "mixapp-btn",
+          onClick: onOpenGenerator,
+          disabled: !hasPlaylist || !hasTracks || saving,
+          title: "Generate a new playlist from seeds",
+        },
+        "Generator"
       ),
       react.createElement(
         "button",
