@@ -31,9 +31,7 @@ const MixAppHttp = (() => {
   function isRateLimitError(err) {
     const msg = String(err?.message || err || "");
     return (
-      msg.includes("429") ||
-      /rate.?limit/i.test(msg) ||
-      /too many requests/i.test(msg)
+      msg.includes("429") || /rate.?limit/i.test(msg) || /too many requests/i.test(msg)
     );
   }
 
@@ -62,16 +60,12 @@ const MixAppHttp = (() => {
         if (!isRateLimitError(err) || attempt === retries - 1) throw err;
         const retryAfter = parseRetryAfterMs(err);
         const delay =
-          retryAfter != null
-            ? retryAfter
-            : Math.min(20000, 800 * Math.pow(2, attempt));
+          retryAfter != null ? retryAfter : Math.min(20000, 800 * Math.pow(2, attempt));
         console.warn(`MixApp: ${label} rate-limited, retry in ${delay}ms`);
         if (notifyUser && Date.now() - rateLimitNotifyAt > 4000) {
           rateLimitNotifyAt = Date.now();
           MixAppNotify.notify(
-            "Spotify rate limit — backing off " +
-              Math.ceil(delay / 1000) +
-              "s…",
+            "Spotify rate limit — backing off " + Math.ceil(delay / 1000) + "s…",
             true
           );
         }
@@ -130,7 +124,6 @@ const MixAppHttp = (() => {
     const s = totalSec % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
   }
-
 
   return {
     playlistIdFromUri,

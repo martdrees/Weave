@@ -158,8 +158,7 @@ function MixAppCopyPlaylistModal(props) {
     setSelected(new Set());
   }
 
-  const playlistList =
-    mode === "library" ? libraryOptions : searchHits;
+  const playlistList = mode === "library" ? libraryOptions : searchHits;
 
   return h(
     MixAppModal,
@@ -173,289 +172,265 @@ function MixAppCopyPlaylistModal(props) {
     h(
       "div",
       { className: "mixapp-copy-layout" },
+      h(
+        "aside",
+        { className: "mixapp-copy-sidebar" },
         h(
-          "aside",
-          { className: "mixapp-copy-sidebar" },
+          "div",
+          { className: "mixapp-copy-tabs" },
           h(
-            "div",
-            { className: "mixapp-copy-tabs" },
-            h(
-              "button",
-              {
-                type: "button",
-                className:
-                  "mixapp-btn mixapp-btn-ghost" +
-                  (mode === "library" ? " mixapp-btn-active" : ""),
-                onClick: () => setMode("library"),
-              },
-              "Your library"
-            ),
-            h(
-              "button",
-              {
-                type: "button",
-                className:
-                  "mixapp-btn mixapp-btn-ghost" +
-                  (mode === "search" ? " mixapp-btn-active" : ""),
-                onClick: () => setMode("search"),
-              },
-              "Search"
-            )
+            "button",
+            {
+              type: "button",
+              className:
+                "mixapp-btn mixapp-btn-ghost" +
+                (mode === "library" ? " mixapp-btn-active" : ""),
+              onClick: () => setMode("library"),
+            },
+            "Your library"
           ),
-          mode === "search"
-            ? h(
-                "form",
+          h(
+            "button",
+            {
+              type: "button",
+              className:
+                "mixapp-btn mixapp-btn-ghost" +
+                (mode === "search" ? " mixapp-btn-active" : ""),
+              onClick: () => setMode("search"),
+            },
+            "Search"
+          )
+        ),
+        mode === "search"
+          ? h(
+              "form",
+              {
+                className: "mixapp-find-search-bar mixapp-find-search-bar-stack",
+                onSubmit: runPlaylistSearch,
+              },
+              h("input", {
+                type: "search",
+                className: "mixapp-find-input",
+                placeholder: "Playlist name…",
+                value: query,
+                onChange: (e) => setQuery(e.target.value),
+              }),
+              h(
+                "button",
                 {
-                  className: "mixapp-find-search-bar mixapp-find-search-bar-stack",
-                  onSubmit: runPlaylistSearch,
+                  type: "submit",
+                  className: "mixapp-btn mixapp-btn-primary",
+                  disabled: searchLoading || !String(query || "").trim(),
                 },
-                h("input", {
-                  type: "search",
-                  className: "mixapp-find-input",
-                  placeholder: "Playlist name…",
-                  value: query,
-                  onChange: (e) => setQuery(e.target.value),
-                }),
+                searchLoading ? "…" : "Search"
+              )
+            )
+          : null,
+        h(
+          "div",
+          { className: "mixapp-copy-playlist-list" },
+          !playlistList.length
+            ? h(
+                "div",
+                { className: "mixapp-recommend-meta" },
+                mode === "library"
+                  ? "No other playlists in your library."
+                  : "Search for a playlist to copy from."
+              )
+            : playlistList.map((pl) =>
                 h(
                   "button",
                   {
-                    type: "submit",
-                    className: "mixapp-btn mixapp-btn-primary",
-                    disabled: searchLoading || !String(query || "").trim(),
+                    key: pl.uri,
+                    type: "button",
+                    className:
+                      "mixapp-copy-playlist-item" +
+                      (selectedUri === pl.uri ? " is-active" : ""),
+                    onClick: () => loadSource(pl),
                   },
-                  searchLoading ? "…" : "Search"
-                )
-              )
-            : null,
-          h(
-            "div",
-            { className: "mixapp-copy-playlist-list" },
-            !playlistList.length
-              ? h(
-                  "div",
-                  { className: "mixapp-recommend-meta" },
-                  mode === "library"
-                    ? "No other playlists in your library."
-                    : "Search for a playlist to copy from."
-                )
-              : playlistList.map((pl) =>
+                  h("span", { className: "mixapp-copy-playlist-name" }, pl.name),
                   h(
-                    "button",
-                    {
-                      key: pl.uri,
-                      type: "button",
-                      className:
-                        "mixapp-copy-playlist-item" +
-                        (selectedUri === pl.uri ? " is-active" : ""),
-                      onClick: () => loadSource(pl),
-                    },
-                    h(
-                      "span",
-                      { className: "mixapp-copy-playlist-name" },
-                      pl.name
-                    ),
-                    h(
-                      "span",
-                      { className: "mixapp-recommend-meta" },
-                      pl.totalLength != null
-                        ? pl.totalLength + " tracks"
-                        : pl.ownerName || ""
-                    )
-                  )
-                )
-          )
-        ),
-        h(
-          "section",
-          { className: "mixapp-copy-main" },
-          h(
-            "div",
-            { className: "mixapp-copy-main-head" },
-            h(
-              "div",
-              { className: "mixapp-search-panel-title-row" },
-              h(
-                "h3",
-                null,
-                sourceName || "Select a playlist"
-              ),
-              sourceTracks.length
-                ? h(
                     "span",
                     { className: "mixapp-recommend-meta" },
-                    sourceTracks.length + " tracks · " + selected.size + " selected"
+                    pl.totalLength != null
+                      ? pl.totalLength + " tracks"
+                      : pl.ownerName || ""
                   )
-                : null
-            ),
+                )
+              )
+        )
+      ),
+      h(
+        "section",
+        { className: "mixapp-copy-main" },
+        h(
+          "div",
+          { className: "mixapp-copy-main-head" },
+          h(
+            "div",
+            { className: "mixapp-search-panel-title-row" },
+            h("h3", null, sourceName || "Select a playlist"),
             sourceTracks.length
               ? h(
-                  "div",
-                  { className: "mixapp-copy-actions" },
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: "mixapp-btn mixapp-btn-ghost",
-                      onClick: selectAddable,
-                    },
-                    "Select new"
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: "mixapp-btn mixapp-btn-ghost",
-                      onClick: clearSelection,
-                      disabled: !selected.size,
-                    },
-                    "Clear"
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: "mixapp-btn",
-                      onClick: addSelected,
-                      disabled: !selected.size,
-                    },
-                    "Add selected"
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: "mixapp-btn mixapp-btn-primary",
-                      onClick: addAllNew,
-                    },
-                    "Add all new"
-                  )
+                  "span",
+                  { className: "mixapp-recommend-meta" },
+                  sourceTracks.length + " tracks · " + selected.size + " selected"
                 )
               : null
           ),
-          error
-            ? h("div", { className: "mixapp-find-error" }, error)
-            : null,
-          h(
-            "div",
-            { className: "mixapp-search-results-body" },
-            tracksLoading
+          sourceTracks.length
+            ? h(
+                "div",
+                { className: "mixapp-copy-actions" },
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn mixapp-btn-ghost",
+                    onClick: selectAddable,
+                  },
+                  "Select new"
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn mixapp-btn-ghost",
+                    onClick: clearSelection,
+                    disabled: !selected.size,
+                  },
+                  "Clear"
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn",
+                    onClick: addSelected,
+                    disabled: !selected.size,
+                  },
+                  "Add selected"
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn mixapp-btn-primary",
+                    onClick: addAllNew,
+                  },
+                  "Add all new"
+                )
+              )
+            : null
+        ),
+        error ? h("div", { className: "mixapp-find-error" }, error) : null,
+        h(
+          "div",
+          { className: "mixapp-search-results-body" },
+          tracksLoading
+            ? h(
+                "div",
+                { className: "mixapp-arranger-empty mixapp-search-waiting" },
+                h("div", {
+                  className: "mixapp-spinner",
+                  "aria-hidden": "true",
+                }),
+                h("p", { className: "mixapp-search-waiting-label" }, "Loading tracks…")
+              )
+            : !selectedUri
               ? h(
                   "div",
-                  { className: "mixapp-arranger-empty mixapp-search-waiting" },
-                  h("div", {
-                    className: "mixapp-spinner",
-                    "aria-hidden": "true",
-                  }),
-                  h(
-                    "p",
-                    { className: "mixapp-search-waiting-label" },
-                    "Loading tracks…"
-                  )
+                  { className: "mixapp-arranger-empty" },
+                  "Pick a playlist on the left to browse its tracks."
                 )
-              : !selectedUri
-                ? h(
+              : !sourceTracks.length
+                ? h("div", { className: "mixapp-arranger-empty" }, "No tracks to show.")
+                : h(
                     "div",
-                    { className: "mixapp-arranger-empty" },
-                    "Pick a playlist on the left to browse its tracks."
-                  )
-                : !sourceTracks.length
-                  ? h(
-                      "div",
-                      { className: "mixapp-arranger-empty" },
-                      "No tracks to show."
-                    )
-                  : h(
-                      "div",
-                      { className: "mixapp-find-list" },
-                      sourceTracks.map((track, index) => {
-                        const inPl = isInPlaylist(track);
-                        const checked = !!(track.uri && selected.has(track.uri));
-                        return h(
+                    { className: "mixapp-find-list" },
+                    sourceTracks.map((track, index) => {
+                      const inPl = isInPlaylist(track);
+                      const checked = !!(track.uri && selected.has(track.uri));
+                      return h(
+                        "div",
+                        {
+                          key: track.uid || track.uri || index,
+                          className:
+                            "mixapp-find-row" + (inPl ? " is-in-playlist" : ""),
+                        },
+                        h("input", {
+                          type: "checkbox",
+                          checked: checked,
+                          disabled: inPl || !track.uri,
+                          onChange: () => toggleSelect(track.uri),
+                          title: inPl ? "Already in playlist" : "Select to add",
+                        }),
+                        h(MixAppPlayButton, {
+                          track,
+                          playingUri,
+                          isPlaying,
+                          onPlay,
+                          index,
+                        }),
+                        h(
                           "div",
-                          {
-                            key: track.uid || track.uri || index,
-                            className:
-                              "mixapp-find-row" + (inPl ? " is-in-playlist" : ""),
-                          },
-                          h("input", {
-                            type: "checkbox",
-                            checked: checked,
-                            disabled: inPl || !track.uri,
-                            onChange: () => toggleSelect(track.uri),
-                            title: inPl
-                              ? "Already in playlist"
-                              : "Select to add",
-                          }),
-                          h(MixAppPlayButton, {
-                            track,
-                            playingUri,
-                            isPlaying,
-                            onPlay,
-                            index,
-                          }),
+                          { className: "mixapp-find-meta" },
                           h(
                             "div",
-                            { className: "mixapp-find-meta" },
-                            h(
-                              "div",
-                              { className: "mixapp-find-title" },
-                              track.name || "Unknown"
-                            ),
-                            h(
-                              "div",
-                              { className: "mixapp-find-sub" },
-                              [track.artists, track.album]
-                                .filter(Boolean)
-                                .join(" · ")
-                            )
-                          ),
-                          (() => {
-                            const keyBg = MixAppFeatures.camelotBackground(
-                              track.keyIndex,
-                              track.keyMode,
-                              track.key
-                            );
-                            return h(
-                              "div",
-                              {
-                                className: "mixapp-col-feat mixapp-col-key mixapp-find-key",
-                                title: track.key || "Key unknown",
-                              },
-                              h(
-                                "span",
-                                {
-                                  className:
-                                    "mixapp-key-circle" +
-                                    (track.key ? "" : " is-empty"),
-                                  style: keyBg
-                                    ? { background: keyBg }
-                                    : undefined,
-                                },
-                                track.key || "—"
-                              )
-                            );
-                          })(),
-                          h(
-                            "span",
-                            { className: "mixapp-find-dur" },
-                            MixAppApi.formatDuration(track.durationMs)
+                            { className: "mixapp-find-title" },
+                            track.name || "Unknown"
                           ),
                           h(
-                            "button",
-                            {
-                              type: "button",
-                              className:
-                                "mixapp-btn mixapp-btn-primary mixapp-btn-compact",
-                              disabled: inPl,
-                              onClick: () => onAddTrack?.(track),
-                            },
-                            inPl ? "In playlist" : "Add"
+                            "div",
+                            { className: "mixapp-find-sub" },
+                            [track.artists, track.album].filter(Boolean).join(" · ")
                           )
-                        );
-                      })
-                    )
-          )
+                        ),
+                        (() => {
+                          const keyBg = MixAppFeatures.camelotBackground(
+                            track.keyIndex,
+                            track.keyMode,
+                            track.key
+                          );
+                          return h(
+                            "div",
+                            {
+                              className:
+                                "mixapp-col-feat mixapp-col-key mixapp-find-key",
+                              title: track.key || "Key unknown",
+                            },
+                            h(
+                              "span",
+                              {
+                                className:
+                                  "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+                                style: keyBg ? { background: keyBg } : undefined,
+                              },
+                              track.key || "—"
+                            )
+                          );
+                        })(),
+                        h(
+                          "span",
+                          { className: "mixapp-find-dur" },
+                          MixAppApi.formatDuration(track.durationMs)
+                        ),
+                        h(
+                          "button",
+                          {
+                            type: "button",
+                            className:
+                              "mixapp-btn mixapp-btn-primary mixapp-btn-compact",
+                            disabled: inPl,
+                            onClick: () => onAddTrack?.(track),
+                          },
+                          inPl ? "In playlist" : "Add"
+                        )
+                      );
+                    })
+                  )
         )
       )
+    )
   );
 }

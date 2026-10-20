@@ -42,12 +42,9 @@ const MixAppChartConfig = (() => {
       "Likelihood of little or no vocals. High values favor instrumental / no-vocal cuts.",
     speechiness:
       "Presence of spoken words. Higher for talk, rap, or spoken-word passages.",
-    liveness:
-      "Likelihood the track was recorded live (audience / room sound).",
-    loudness:
-      "Overall loudness in dB. Axis spans this playlist’s min→max loudness.",
-    tempo:
-      "Estimated speed in BPM. Axis spans this playlist’s min→max tempo.",
+    liveness: "Likelihood the track was recorded live (audience / room sound).",
+    loudness: "Overall loudness in dB. Axis spans this playlist’s min→max loudness.",
+    tempo: "Estimated speed in BPM. Axis spans this playlist’s min→max tempo.",
   };
 
   function allMetrics() {
@@ -61,7 +58,7 @@ const MixAppChartConfig = (() => {
   function chartHint(metric) {
     return (
       CHART_HINTS[metric?.id] ||
-      ("Playlist order of " + (metric?.label || "feature") + " for each track.")
+      "Playlist order of " + (metric?.label || "feature") + " for each track."
     );
   }
 

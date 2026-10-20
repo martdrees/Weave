@@ -86,7 +86,8 @@ const MixAppTrack = (() => {
 
   /**
    * Empty / default core track. Optional enrichment keys omitted.
-   * @param {Partial<object>} [partial]
+   * @param {Partial<MixAppTrackCore>} [partial]
+   * @returns {MixAppTrackRow}
    */
   function blank(partial) {
     const p = partial || {};
@@ -109,7 +110,11 @@ const MixAppTrack = (() => {
     };
   }
 
-  /** Coerce a partial into a full core track (keeps unknown extra keys). */
+  /**
+   * Coerce a partial into a full core track (keeps unknown extra keys).
+   * @param {Partial<MixAppTrackRow>|null|undefined} partial
+   * @returns {MixAppTrackRow}
+   */
   function ensure(partial) {
     const base = blank(partial);
     if (!partial || typeof partial !== "object") return base;
@@ -130,15 +135,13 @@ const MixAppTrack = (() => {
    * Platform playlist row or Web API playlist /items row.
    * @param {object} raw
    * @param {number} index
+   * @returns {MixAppTrackRow}
    */
   function fromPlaylistItem(raw, index) {
     const track = raw?.track || raw?.item || raw;
     const album = track?.album || raw?.album || {};
     const artists =
-      track?.artists ||
-      raw?.artists ||
-      (track?.artist ? [track.artist] : []) ||
-      [];
+      track?.artists || raw?.artists || (track?.artist ? [track.artist] : []) || [];
     const uri = track?.uri || raw?.uri || "";
     const uid = raw?.uid || raw?.addTime || `${uri}:${index}`;
     const attrs = raw?.formatListAttributes || track?.formatListAttributes || {};
@@ -159,9 +162,7 @@ const MixAppTrack = (() => {
       null;
     const id =
       track?.id ||
-      (uri && String(uri).includes(":track:")
-        ? String(uri).split(":").pop()
-        : null);
+      (uri && String(uri).includes(":track:") ? String(uri).split(":").pop() : null);
 
     return blank({
       uri,
@@ -179,10 +180,7 @@ const MixAppTrack = (() => {
         null,
       albumUri: album?.uri || null,
       durationMs:
-        track?.duration?.milliseconds ??
-        track?.duration_ms ??
-        raw?.durationMs ??
-        0,
+        track?.duration?.milliseconds ?? track?.duration_ms ?? raw?.durationMs ?? 0,
       explicit: !!(track?.explicit || raw?.explicit),
       addedAt: raw?.addedAt || raw?.added_at || track?.addedAt || null,
       year: yearFromRelease(release),
@@ -195,6 +193,7 @@ const MixAppTrack = (() => {
    * Web API search track object.
    * @param {object} raw
    * @param {number} index
+   * @returns {MixAppTrackRow}
    */
   function fromWebApiTrack(raw, index) {
     const track = raw?.track || raw;
@@ -225,14 +224,10 @@ const MixAppTrack = (() => {
   function artistNamesFromGraphql(data) {
     const raw = data?.artists;
     if (Array.isArray(raw?.items)) {
-      return raw.items
-        .map((a) => a?.profile?.name || a?.name)
-        .filter(Boolean);
+      return raw.items.map((a) => a?.profile?.name || a?.name).filter(Boolean);
     }
     if (Array.isArray(raw)) {
-      return raw
-        .map((a) => a?.profile?.name || a?.name || a)
-        .filter(Boolean);
+      return raw.map((a) => a?.profile?.name || a?.name || a).filter(Boolean);
     }
     if (data?.artist?.profile?.name) return [data.artist.profile.name];
     if (typeof data?.artistName === "string") return [data.artistName];
@@ -241,11 +236,7 @@ const MixAppTrack = (() => {
 
   function artistIdsFromGraphql(data) {
     const raw = data?.artists;
-    const list = Array.isArray(raw?.items)
-      ? raw.items
-      : Array.isArray(raw)
-        ? raw
-        : [];
+    const list = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
     return list.map((a) => a?.id || idFromSpotifyUri(a?.uri)).filter(Boolean);
   }
 
@@ -253,7 +244,7 @@ const MixAppTrack = (() => {
    * Pathfinder / searchV2 track entity.
    * @param {object} data
    * @param {number} index
-   * @returns {object|null}
+   * @returns {MixAppTrackRow|null}
    */
   function fromGraphqlTrack(data, index) {
     if (!data) return null;
@@ -268,13 +259,9 @@ const MixAppTrack = (() => {
       data.durationMs ??
       0;
     const rating = data.contentRating?.label || data.contentRating || "";
-    const explicit =
-      !!data.explicit || String(rating).toUpperCase() === "EXPLICIT";
+    const explicit = !!data.explicit || String(rating).toUpperCase() === "EXPLICIT";
     const release =
-      album?.date?.isoString ||
-      album?.date?.year ||
-      album?.release_date ||
-      null;
+      album?.date?.isoString || album?.date?.year || album?.release_date || null;
     return blank({
       uri,
       uid: "search:" + (id || uri) + ":" + index,
@@ -297,8 +284,9 @@ const MixAppTrack = (() => {
   /**
    * Catalog / recommendation row → playlist working-copy track.
    * Preserves enrichment fields when present.
-   * @param {object} track
+   * @param {Partial<MixAppTrackRow>|null|undefined} track
    * @param {number} [stamp]
+   * @returns {MixAppTrackRow}
    */
   function forAppend(track, stamp) {
     const ts = stamp == null ? Date.now() : stamp;

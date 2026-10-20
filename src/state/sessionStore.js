@@ -139,9 +139,7 @@ const MixAppSession = (() => {
       searchOpen: !!session.searchOpen,
       statsOpen: !!session.statsOpen,
       resultsOpen: !!session.resultsOpen,
-      searchResults: Array.isArray(session.searchResults)
-        ? session.searchResults
-        : [],
+      searchResults: Array.isArray(session.searchResults) ? session.searchResults : [],
       undo: {
         past: trimUndo(session.undo?.past),
         future: trimUndo(session.undo?.future),

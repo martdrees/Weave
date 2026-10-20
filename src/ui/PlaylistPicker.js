@@ -2,21 +2,13 @@
 
 function MixAppPlaylistPicker(props) {
   const react = Spicetify.React;
-  const {
-    playlists,
-    selectedUri,
-    loading,
-    compact,
-    trackCount,
-    onSelect,
-    onRefresh,
-  } = props;
+  const { playlists, selectedUri, loading, compact, trackCount, onSelect, onRefresh } =
+    props;
 
   return h(
     "div",
     {
-      className:
-        "mixapp-picker" + (compact ? " mixapp-picker-compact" : ""),
+      className: "mixapp-picker" + (compact ? " mixapp-picker-compact" : ""),
     },
     compact
       ? null
@@ -35,8 +27,7 @@ function MixAppPlaylistPicker(props) {
         "select",
         {
           id: "mixapp-playlist-select",
-          className:
-            "mixapp-select" + (compact ? " mixapp-select-toolbar" : ""),
+          className: "mixapp-select" + (compact ? " mixapp-select-toolbar" : ""),
           value: selectedUri || "",
           disabled: loading || !playlists?.length,
           onChange: (e) => onSelect(e.target.value || null),
@@ -46,11 +37,7 @@ function MixAppPlaylistPicker(props) {
         h(
           "option",
           { value: "" },
-          loading
-            ? "Loading…"
-            : playlists?.length
-              ? "Select playlist…"
-              : "No playlists"
+          loading ? "Loading…" : playlists?.length ? "Select playlist…" : "No playlists"
         ),
         (playlists || []).map((p) =>
           h(

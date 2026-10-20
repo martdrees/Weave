@@ -30,16 +30,51 @@ const MixAppRecommend = (() => {
 
   /** Features tunable via local filter after Song Radio fetch. */
   const FEATURE_DEFS = [
-    { id: "acousticness", label: "Acousticness", min: 0, max: 1, step: 0.01, kind: "01" },
-    { id: "danceability", label: "Danceability", min: 0, max: 1, step: 0.01, kind: "01" },
+    {
+      id: "acousticness",
+      label: "Acousticness",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      kind: "01",
+    },
+    {
+      id: "danceability",
+      label: "Danceability",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      kind: "01",
+    },
     { id: "energy", label: "Energy", min: 0, max: 1, step: 0.01, kind: "01" },
-    { id: "instrumentalness", label: "Instrumentalness", min: 0, max: 1, step: 0.01, kind: "01" },
+    {
+      id: "instrumentalness",
+      label: "Instrumentalness",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      kind: "01",
+    },
     { id: "liveness", label: "Liveness", min: 0, max: 1, step: 0.01, kind: "01" },
     { id: "speechiness", label: "Speechiness", min: 0, max: 1, step: 0.01, kind: "01" },
     { id: "valence", label: "Valence", min: 0, max: 1, step: 0.01, kind: "01" },
     { id: "tempo", label: "Tempo (BPM)", min: 40, max: 220, step: 1, kind: "tempo" },
-    { id: "loudness", label: "Loudness (dB)", min: -60, max: 0, step: 0.5, kind: "loudness" },
-    { id: "popularity", label: "Popularity", min: 0, max: 100, step: 1, kind: "popularity" },
+    {
+      id: "loudness",
+      label: "Loudness (dB)",
+      min: -60,
+      max: 0,
+      step: 0.5,
+      kind: "loudness",
+    },
+    {
+      id: "popularity",
+      label: "Popularity",
+      min: 0,
+      max: 100,
+      step: 1,
+      kind: "popularity",
+    },
   ];
 
   const ABERRANT_RE =
@@ -119,11 +154,12 @@ const MixAppRecommend = (() => {
       typeof t.artists === "string"
         ? t.artists
         : Array.isArray(t.artists)
-          ? t.artists.map((a) => a?.name || a).filter(Boolean).join(", ")
+          ? t.artists
+              .map((a) => a?.name || a)
+              .filter(Boolean)
+              .join(", ")
           : "";
-    const primary = normalizeFingerprintPart(
-      String(artistStr).split(",")[0] || ""
-    );
+    const primary = normalizeFingerprintPart(String(artistStr).split(",")[0] || "");
     if (!name || !primary) return null;
     return name + "|" + primary;
   }
@@ -237,9 +273,7 @@ const MixAppRecommend = (() => {
         if (yearMax != null && t.year > yearMax) return false;
       }
       if (excludeArtists.size) {
-        const aids = (t.artistIds || [])
-          .map((a) => String(a))
-          .filter(Boolean);
+        const aids = (t.artistIds || []).map((a) => String(a)).filter(Boolean);
         // No artist ids → can't verify; drop when hiding existing artists
         if (!aids.length) return false;
         if (aids.some((a) => excludeArtists.has(a))) return false;
@@ -318,8 +352,7 @@ const MixAppRecommend = (() => {
       ...t,
       id: tid,
       uid: (prefix || "rec:") + (tid || t.uri) + ":" + byUri.size,
-      year:
-        t.year ?? yearFromReleaseDate(t.releaseDate || t.albumReleaseDate),
+      year: t.year ?? yearFromReleaseDate(t.releaseDate || t.albumReleaseDate),
     });
     return true;
   }
@@ -335,7 +368,10 @@ const MixAppRecommend = (() => {
       uid: "web:" + (id || uri || index) + ":" + index,
       id,
       name: track?.name || "Unknown",
-      artists: artists.map((a) => a?.name || a).filter(Boolean).join(", "),
+      artists: artists
+        .map((a) => a?.name || a)
+        .filter(Boolean)
+        .join(", "),
       artistIds: artists
         .map((a) => a?.id || (a?.uri ? String(a.uri).split(":").pop() : null))
         .filter(Boolean),
@@ -354,10 +390,7 @@ const MixAppRecommend = (() => {
 
   async function getUserMarket() {
     try {
-      const me = await cosmosGetRetry(
-        "https://api.spotify.com/v1/me",
-        "profile"
-      );
+      const me = await cosmosGetRetry("https://api.spotify.com/v1/me", "profile");
       if (me?.country) return me.country;
     } catch (_) {
       /* ignore */
@@ -477,9 +510,7 @@ const MixAppRecommend = (() => {
       if (artistFetches >= MAX_ARTIST_FETCHES) return 0;
       artistFetches += 1;
       const m = await ensureMarket();
-      const tops = shuffleInPlace(
-        (await fetchArtistTopTracks(artistId, m)).slice()
-      );
+      const tops = shuffleInPlace((await fetchArtistTopTracks(artistId, m)).slice());
       let added = 0;
       for (const t of tops) {
         if (Math.random() < 0.15) continue;
@@ -487,9 +518,7 @@ const MixAppRecommend = (() => {
         if (byUri.size >= rawTarget) break;
       }
       if (byUri.size < rawTarget && artistFetches < MAX_ARTIST_FETCHES) {
-        const related = shuffleInPlace(
-          (await fetchRelatedArtistIds(artistId)).slice()
-        );
+        const related = shuffleInPlace((await fetchRelatedArtistIds(artistId)).slice());
         for (const rid of related) {
           if (Math.random() < 0.7) enqueue("artist", rid);
         }
@@ -536,9 +565,7 @@ const MixAppRecommend = (() => {
    */
   function pickSoftSeeds(tracks, limit = 8) {
     const list = shuffleInPlace(
-      (tracks || []).filter(
-        (t) => t?.uri && (t.id || trackIdFromUri(t.uri))
-      )
+      (tracks || []).filter((t) => t?.uri && (t.id || trackIdFromUri(t.uri)))
     );
     const picked = [];
     const seenArtist = new Set();
@@ -554,19 +581,27 @@ const MixAppRecommend = (() => {
       if (!picked.includes(t)) picked.push(t);
     }
     return {
-      ids: picked
-        .map((t) => t.id || trackIdFromUri(t.uri))
-        .filter(Boolean),
+      ids: picked.map((t) => t.id || trackIdFromUri(t.uri)).filter(Boolean),
       tracks: picked,
     };
   }
 
+  /**
+   * Song Radio candidates → local filters → sampled results.
+   * @param {object} [opts]
+   * @param {string[]} [opts.seedTrackIds]
+   * @param {MixAppTrackRow[]} [opts.seedTracks]
+   * @param {MixAppTrackRow[]} [opts.contextTracks]
+   * @param {number} [opts.limit]
+   * @param {object} [opts.filters]
+   * @param {object} [opts.features]
+   * @param {string[]} [opts.avoidUris]
+   * @returns {Promise<MixAppRecommendResult>}
+   */
   async function recommend(opts = {}) {
     let seedTrackIds = [...new Set((opts.seedTrackIds || []).filter(Boolean))];
     let seedTracks = Array.isArray(opts.seedTracks) ? opts.seedTracks.slice() : [];
-    const contextTracks = Array.isArray(opts.contextTracks)
-      ? opts.contextTracks
-      : [];
+    const contextTracks = Array.isArray(opts.contextTracks) ? opts.contextTracks : [];
     const usedSoftSeeds = !seedTrackIds.length;
 
     if (!seedTrackIds.length) {
@@ -575,13 +610,8 @@ const MixAppRecommend = (() => {
       seedTracks = soft.tracks.length ? soft.tracks : contextTracks.slice(0, 12);
     }
 
-    if (
-      !seedTrackIds.length &&
-      !(seedTracks || []).some((t) => t?.artistIds?.length)
-    ) {
-      throw new Error(
-        "Mark seed tracks or load a playlist with tracks to search"
-      );
+    if (!seedTrackIds.length && !(seedTracks || []).some((t) => t?.artistIds?.length)) {
+      throw new Error("Mark seed tracks or load a playlist with tracks to search");
     }
 
     const target = Math.min(

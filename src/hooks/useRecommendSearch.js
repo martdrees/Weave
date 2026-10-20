@@ -17,9 +17,7 @@ function MixAppUseRecommendSearch(opts) {
   const [searchOpen, setSearchOpen] = react.useState(
     () => !!saved?.searchOpen || !!prefs?.preferSearchOpen
   );
-  const [resultsOpen, setResultsOpen] = react.useState(
-    () => !!saved?.resultsOpen
-  );
+  const [resultsOpen, setResultsOpen] = react.useState(() => !!saved?.resultsOpen);
   const [seedUris, setSeedUris] = react.useState(() =>
     Array.isArray(saved?.seedUris) ? saved.seedUris : []
   );
@@ -37,9 +35,7 @@ function MixAppUseRecommendSearch(opts) {
       camelotMoves: Array.isArray(base.camelotMoves) ? base.camelotMoves : [],
     };
   });
-  const [resultLimit, setResultLimit] = react.useState(
-    () => prefs?.resultLimit || 100
-  );
+  const [resultLimit, setResultLimit] = react.useState(() => prefs?.resultLimit || 100);
   const [searchResults, setSearchResults] = react.useState(() =>
     Array.isArray(saved?.searchResults) ? saved.searchResults : []
   );
@@ -54,9 +50,7 @@ function MixAppUseRecommendSearch(opts) {
   const searchSeenUrisRef = react.useRef(new Set());
 
   react.useEffect(() => {
-    setSeedUris((prev) =>
-      prev.filter((uri) => tracks.some((t) => t.uri === uri))
-    );
+    setSeedUris((prev) => prev.filter((uri) => tracks.some((t) => t.uri === uri)));
   }, [tracks]);
 
   function cancelInFlight() {
@@ -180,28 +174,18 @@ function MixAppUseRecommendSearch(opts) {
       }
 
       const yearMin =
-        filtersSnap.yearMin === ""
-          ? null
-          : parseInt(filtersSnap.yearMin, 10);
+        filtersSnap.yearMin === "" ? null : parseInt(filtersSnap.yearMin, 10);
       const yearMax =
-        filtersSnap.yearMax === ""
-          ? null
-          : parseInt(filtersSnap.yearMax, 10);
+        filtersSnap.yearMax === "" ? null : parseInt(filtersSnap.yearMax, 10);
 
-      const seedTracks = (tracksSnap || []).filter((t) =>
-        seedUrisSnap.includes(t.uri)
-      );
+      const seedTracks = (tracksSnap || []).filter((t) => seedUrisSnap.includes(t.uri));
       const camelotSeeds = seedTracks.length ? seedTracks : tracksSnap;
       const camelotMoves = Array.isArray(filtersSnap.camelotMoves)
         ? filtersSnap.camelotMoves.filter(Boolean)
         : [];
-      const wantLimit =
-        Number(resultLimitSnap) || MixAppRecommend.DEFAULT_LIMIT;
+      const wantLimit = Number(resultLimitSnap) || MixAppRecommend.DEFAULT_LIMIT;
       const fetchLimit = camelotMoves.length
-        ? Math.min(
-            MixAppRecommend.MAX_LIMIT,
-            Math.max(wantLimit * 3, wantLimit + 80)
-          )
+        ? Math.min(MixAppRecommend.MAX_LIMIT, Math.max(wantLimit * 3, wantLimit + 80))
         : wantLimit;
 
       const postFilters = {
@@ -260,9 +244,7 @@ function MixAppUseRecommendSearch(opts) {
         if (t?.uri) searchSeenUrisRef.current.add(t.uri);
       }
       if (searchSeenUrisRef.current.size > 800) {
-        searchSeenUrisRef.current = new Set(
-          [...searchSeenUrisRef.current].slice(-400)
-        );
+        searchSeenUrisRef.current = new Set([...searchSeenUrisRef.current].slice(-400));
       }
 
       setSearchResults(list);
@@ -275,10 +257,7 @@ function MixAppUseRecommendSearch(opts) {
     } catch (err) {
       if (gen !== searchGenRef.current) return;
       console.error(err);
-      const msg =
-        err?.message ||
-        err?.body?.error?.message ||
-        "Search request failed";
+      const msg = err?.message || err?.body?.error?.message || "Search request failed";
       setSearchError(msg);
       setSearchResults([]);
       MixAppApi.notify(msg, true);
@@ -289,9 +268,7 @@ function MixAppUseRecommendSearch(opts) {
 
   function handleHideResult(track) {
     if (!track?.uri) return;
-    setBannedUris((prev) =>
-      prev.includes(track.uri) ? prev : [...prev, track.uri]
-    );
+    setBannedUris((prev) => (prev.includes(track.uri) ? prev : [...prev, track.uri]));
     setSearchResults((prev) => prev.filter((t) => t.uri !== track.uri));
   }
 

@@ -104,8 +104,7 @@ function MixAppStatsPanel(props) {
           {
             key: metric.id,
             type: "button",
-            className:
-              "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
+            className: "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
             "data-tip":
               metric.id === "aggChange"
                 ? "Absolute change between adjacent tracks (energy, dance, valence, acoustic, instr., speech, live, BPM compat, key)"
@@ -113,11 +112,7 @@ function MixAppStatsPanel(props) {
             "aria-pressed": selected,
             onClick: () => toggleMetric(metric.id),
           },
-          h(
-            "span",
-            { className: "mixapp-camelot-chip-label" },
-            metric.label
-          ),
+          h("span", { className: "mixapp-camelot-chip-label" }, metric.label),
           h(
             "span",
             { className: "mixapp-camelot-chip-example" },

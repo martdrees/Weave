@@ -95,11 +95,7 @@ const MixAppPrefs = (() => {
     // v1 → v2: prefs saved before Abs. Aggregate chart — turn it on once.
     if (version < 2) {
       const metrics = data.statsVisibleMetrics;
-      if (
-        Array.isArray(metrics) &&
-        metrics.length &&
-        !metrics.includes("aggChange")
-      ) {
+      if (Array.isArray(metrics) && metrics.length && !metrics.includes("aggChange")) {
         data.statsVisibleMetrics = ["aggChange"].concat(metrics);
       }
       version = 2;
@@ -130,8 +126,7 @@ const MixAppPrefs = (() => {
           ? Math.min(200, Number(raw.resultLimit))
           : base.resultLimit,
       searchFilters: filters,
-      flowify:
-        raw.flowify && typeof raw.flowify === "object" ? raw.flowify : null,
+      flowify: raw.flowify && typeof raw.flowify === "object" ? raw.flowify : null,
       generator,
       preferStatsOpen: !!raw.preferStatsOpen,
       preferSearchOpen: !!raw.preferSearchOpen,

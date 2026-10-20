@@ -262,8 +262,7 @@ const MixAppFlowify = (() => {
         for (let i = 0; i < remaining.length; i++) {
           let cost = 0;
           for (const { id, weight } of weights) {
-            const d =
-              normalize(remaining[i], id, ranges) - (lastC[id] ?? 0.5);
+            const d = normalize(remaining[i], id, ranges) - (lastC[id] ?? 0.5);
             cost += weight * d * d;
           }
           if (cost > best) {
@@ -280,8 +279,7 @@ const MixAppFlowify = (() => {
         for (let i = 0; i < remaining.length; i++) {
           let cost = 0;
           for (const { id, weight } of weights) {
-            const d =
-              normalize(remaining[i], id, ranges) - (center[id] ?? 0.5);
+            const d = normalize(remaining[i], id, ranges) - (center[id] ?? 0.5);
             cost += weight * d * d;
           }
           if (cost < best) {

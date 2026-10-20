@@ -81,7 +81,9 @@ const MixAppPlaylistOps = (() => {
 
   /**
    * Append incoming tracks that are not already present.
-   * @returns {{ next: object[], added: object[], skipped: object[] }}
+   * @param {MixAppTrackRow[]} current
+   * @param {Array<Partial<MixAppTrackRow>|null|undefined>} incoming
+   * @returns {MixAppAppendResult & { skipped: MixAppTrackRow[] }}
    */
   function appendTracks(current, incoming) {
     const working = Array.isArray(current) ? current.slice() : [];

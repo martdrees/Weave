@@ -61,8 +61,7 @@ function MixAppSearchPanel(props) {
     return h(
       "div",
       {
-        className:
-          "mixapp-dual-range" + (enabled ? "" : " is-disabled"),
+        className: "mixapp-dual-range" + (enabled ? "" : " is-disabled"),
       },
       h("div", {
         className: "mixapp-dual-range-track",
@@ -169,8 +168,7 @@ function MixAppSearchPanel(props) {
             {
               className: "mixapp-select mixapp-select-compact",
               value: resultLimit || MixAppRecommend.DEFAULT_LIMIT,
-              onChange: (e) =>
-                onResultLimitChange?.(Number(e.target.value)),
+              onChange: (e) => onResultLimitChange?.(Number(e.target.value)),
               disabled: loading,
             },
             [25, 50, 100, 150, 200].map((n) =>
@@ -207,9 +205,7 @@ function MixAppSearchPanel(props) {
       )
     ),
 
-    error
-      ? h("div", { className: "mixapp-error" }, error)
-      : null,
+    error ? h("div", { className: "mixapp-error" }, error) : null,
 
     h(
       "div",
@@ -227,8 +223,7 @@ function MixAppSearchPanel(props) {
               "div",
               {
                 key: def.id,
-                className:
-                  "mixapp-feature-row" + (range.enabled ? " is-enabled" : ""),
+                className: "mixapp-feature-row" + (range.enabled ? " is-enabled" : ""),
               },
               h(
                 "label",
@@ -236,8 +231,7 @@ function MixAppSearchPanel(props) {
                 h("input", {
                   type: "checkbox",
                   checked: !!range.enabled,
-                  onChange: (e) =>
-                    updateFeature(def.id, { enabled: e.target.checked }),
+                  onChange: (e) => updateFeature(def.id, { enabled: e.target.checked }),
                 }),
                 h("span", null, def.label)
               ),
@@ -327,7 +321,11 @@ function MixAppSearchPanel(props) {
         ),
         h(
           "div",
-          { className: "mixapp-camelot-moves", role: "group", "aria-label": "Camelot moves" },
+          {
+            className: "mixapp-camelot-moves",
+            role: "group",
+            "aria-label": "Camelot moves",
+          },
           MixAppFeatures.CAMELOT_MOVES.map((move) => {
             const selected = Array.isArray(filters.camelotMoves)
               ? filters.camelotMoves.includes(move.id)
@@ -351,16 +349,8 @@ function MixAppSearchPanel(props) {
                   onFiltersChange?.({ ...filters, camelotMoves: next });
                 },
               },
-              h(
-                "span",
-                { className: "mixapp-camelot-chip-label" },
-                move.label
-              ),
-              h(
-                "span",
-                { className: "mixapp-camelot-chip-example" },
-                move.example
-              )
+              h("span", { className: "mixapp-camelot-chip-label" }, move.label),
+              h("span", { className: "mixapp-camelot-chip-example" }, move.example)
             );
           })
         )
@@ -439,17 +429,12 @@ function MixAppSearchPanel(props) {
                 {
                   key: f.key,
                   type: "button",
-                  className:
-                    "mixapp-camelot-chip mixapp-tip" + (f.on ? " is-on" : ""),
+                  className: "mixapp-camelot-chip mixapp-tip" + (f.on ? " is-on" : ""),
                   "data-tip": f.tip,
                   "aria-pressed": f.on,
                   onClick: f.toggle,
                 },
-                h(
-                  "span",
-                  { className: "mixapp-camelot-chip-label" },
-                  f.label
-                )
+                h("span", { className: "mixapp-camelot-chip-label" }, f.label)
               )
             )
           ),

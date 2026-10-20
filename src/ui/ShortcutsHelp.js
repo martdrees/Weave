@@ -46,11 +46,7 @@ function MixAppShortcutsHelp(props) {
             h(
               "tr",
               { key: keys },
-              h(
-                "td",
-                { className: "mixapp-shortcuts-keys" },
-                keys
-              ),
+              h("td", { className: "mixapp-shortcuts-keys" }, keys),
               h("td", null, action)
             )
           )

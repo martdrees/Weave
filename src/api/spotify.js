@@ -2,10 +2,11 @@
 /**
  * MixAppApi façade — stable surface for UI / hooks (R3.1).
  * Ports: notify, http, playlists, catalogSearch.
+ * Shape: {@link MixAppApiFacade} in types.js.
  */
 
 const MixAppApi = (() => {
-  return {
+  const api = {
     notify: MixAppNotify.notify,
     formatDuration: MixAppHttp.formatDuration,
     withRetry: MixAppHttp.withRetry,
@@ -19,4 +20,5 @@ const MixAppApi = (() => {
     searchTracks: MixAppCatalogSearch.searchTracks,
     searchPlaylists: MixAppCatalogSearch.searchPlaylists,
   };
+  return /** @type {MixAppApiFacade} */ (api);
 })();

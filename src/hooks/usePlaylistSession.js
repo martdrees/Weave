@@ -35,11 +35,11 @@ function MixAppUsePlaylistSession(opts) {
   const [tracksLoading, setTracksLoading] = react.useState(false);
   const [dirty, setDirty] = react.useState(() => !!saved?.dirty);
   const [saving, setSaving] = react.useState(false);
-  const [canUndo, setCanUndo] = react.useState(() =>
-    !!(saved?.undo?.past && saved.undo.past.length)
+  const [canUndo, setCanUndo] = react.useState(
+    () => !!(saved?.undo?.past && saved.undo.past.length)
   );
-  const [canRedo, setCanRedo] = react.useState(() =>
-    !!(saved?.undo?.future && saved.undo.future.length)
+  const [canRedo, setCanRedo] = react.useState(
+    () => !!(saved?.undo?.future && saved.undo.future.length)
   );
   const [error, setError] = react.useState(null);
   /** Brief arranger motion (R5.4): row uids and/or whole-list flash key. */
@@ -225,10 +225,7 @@ function MixAppUsePlaylistSession(opts) {
         MixAppApi.notify("Playlist changed — save cancelled", true);
         return;
       }
-      const savedTracks = await MixAppApi.saveOverwrite(
-        uriAtStart,
-        tracksAtStart
-      );
+      const savedTracks = await MixAppApi.saveOverwrite(uriAtStart, tracksAtStart);
       if (selectedUriRef.current !== uriAtStart) {
         MixAppApi.notify(
           "Playlist changed during save — local state left unchanged",
@@ -316,9 +313,7 @@ function MixAppUsePlaylistSession(opts) {
     commitTracks(next);
     flashRows(added.map((t) => t.uid || t.uri));
     MixAppApi.notify(
-      added.length === 1
-        ? `Added “${added[0].name}”`
-        : `Added ${added.length} tracks`
+      added.length === 1 ? `Added “${added[0].name}”` : `Added ${added.length} tracks`
     );
     MixAppPlaylistOps.enrichAdded(added, setTracks);
   }

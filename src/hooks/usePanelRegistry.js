@@ -4,12 +4,7 @@
  * Exclusive modals share one slot; shortcuts / stats are independent overlays.
  */
 
-const MIXAPP_EXCLUSIVE_PANELS = [
-  "addTrack",
-  "copyPlaylist",
-  "flowify",
-  "generator",
-];
+const MIXAPP_EXCLUSIVE_PANELS = ["addTrack", "copyPlaylist", "flowify", "generator"];
 
 /**
  * @param {{ initialStatsOpen?: boolean }} [opts]

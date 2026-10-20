@@ -7,8 +7,7 @@
 const MixAppFeatures = (() => {
   const CACHE = new Map(); // id -> feature sample | null
   const BATCH = 50;
-  const SPCLIENT =
-    "https://spclient.wg.spotify.com/audio-attributes/v1/audio-features";
+  const SPCLIENT = "https://spclient.wg.spotify.com/audio-attributes/v1/audio-features";
   const WEB_FEATURES = "https://api.spotify.com/v1/audio-features";
 
   const CAMELOT_MAJOR = [8, 3, 10, 5, 12, 7, 2, 9, 4, 11, 6, 1];
@@ -17,10 +16,28 @@ const MixAppFeatures = (() => {
   /** Numeric metrics shown in arranger / stats (0–1 unless noted). */
   const METRICS = [
     { id: "energy", label: "Energy", field: "energy", kind: "01", digits: 2 },
-    { id: "danceability", label: "Dance", field: "danceability", kind: "01", digits: 2 },
+    {
+      id: "danceability",
+      label: "Dance",
+      field: "danceability",
+      kind: "01",
+      digits: 2,
+    },
     { id: "valence", label: "Valence", field: "valence", kind: "01", digits: 2 },
-    { id: "acousticness", label: "Acoustic", field: "acousticness", kind: "01", digits: 2 },
-    { id: "instrumentalness", label: "Instr.", field: "instrumentalness", kind: "01", digits: 2 },
+    {
+      id: "acousticness",
+      label: "Acoustic",
+      field: "acousticness",
+      kind: "01",
+      digits: 2,
+    },
+    {
+      id: "instrumentalness",
+      label: "Instr.",
+      field: "instrumentalness",
+      kind: "01",
+      digits: 2,
+    },
     { id: "speechiness", label: "Speech", field: "speechiness", kind: "01", digits: 2 },
     { id: "liveness", label: "Live", field: "liveness", kind: "01", digits: 2 },
     { id: "loudness", label: "Loud", field: "loudness", kind: "loudness", digits: 1 },
@@ -192,15 +209,9 @@ const MixAppFeatures = (() => {
       case "plus2":
         return [wrapCamelotNum(n + 2) + L];
       case "diagonal":
-        return [
-          wrapCamelotNum(n + 1) + flip,
-          wrapCamelotNum(n - 1) + flip,
-        ];
+        return [wrapCamelotNum(n + 1) + flip, wrapCamelotNum(n - 1) + flip];
       case "jaws":
-        return [
-          wrapCamelotNum(n + 5) + L,
-          wrapCamelotNum(n - 5) + L,
-        ];
+        return [wrapCamelotNum(n + 5) + L, wrapCamelotNum(n - 5) + L];
       default:
         return [];
     }
@@ -261,14 +272,9 @@ const MixAppFeatures = (() => {
       let list = null;
 
       try {
-        const getter =
-          MixAppApi?.withRetry ||
-          ((fn) => fn());
+        const getter = MixAppApi?.withRetry || ((fn) => fn());
         const res = await getter(
-          () =>
-            Spicetify.CosmosAsync.get(
-              SPCLIENT + "?ids=" + chunk.join(",")
-            ),
+          () => Spicetify.CosmosAsync.get(SPCLIENT + "?ids=" + chunk.join(",")),
           { retries: 4, label: "audio-attributes", notifyUser: false }
         );
         list = res?.audio_features || res?.audioFeatures || null;
@@ -278,14 +284,9 @@ const MixAppFeatures = (() => {
 
       if (!list) {
         try {
-          const getter =
-            MixAppApi?.withRetry ||
-            ((fn) => fn());
+          const getter = MixAppApi?.withRetry || ((fn) => fn());
           const res = await getter(
-            () =>
-              Spicetify.CosmosAsync.get(
-                WEB_FEATURES + "?ids=" + chunk.join(",")
-              ),
+            () => Spicetify.CosmosAsync.get(WEB_FEATURES + "?ids=" + chunk.join(",")),
             { retries: 4, label: "audio-features", notifyUser: false }
           );
           list = res?.audio_features || null;
@@ -363,7 +364,7 @@ const MixAppFeatures = (() => {
       t.bpm =
         feat.tempo != null && !Number.isNaN(feat.tempo)
           ? Math.round(feat.tempo)
-          : t.bpm ?? null;
+          : (t.bpm ?? null);
       t.key = formatKeyLabel(feat.key, feat.mode);
     }
     return tracks;
@@ -508,7 +509,12 @@ const MixAppFeatures = (() => {
       for (const field of AGG_CHANGE_01_FIELDS) {
         const a = prev?.[field];
         const b = cur?.[field];
-        if (a == null || b == null || Number.isNaN(Number(a)) || Number.isNaN(Number(b))) {
+        if (
+          a == null ||
+          b == null ||
+          Number.isNaN(Number(a)) ||
+          Number.isNaN(Number(b))
+        ) {
           continue;
         }
         parts.push(Math.abs(Number(a) - Number(b)));
@@ -644,14 +650,10 @@ const MixAppFeatures = (() => {
     const keyQ = String(filters.keyQuery || "")
       .trim()
       .toLowerCase();
-    const bpmMin =
-      filters.bpmMin === "" ? null : parseFloat(filters.bpmMin);
-    const bpmMax =
-      filters.bpmMax === "" ? null : parseFloat(filters.bpmMax);
-    const energyMin =
-      filters.energyMin === "" ? null : parseFloat(filters.energyMin);
-    const energyMax =
-      filters.energyMax === "" ? null : parseFloat(filters.energyMax);
+    const bpmMin = filters.bpmMin === "" ? null : parseFloat(filters.bpmMin);
+    const bpmMax = filters.bpmMax === "" ? null : parseFloat(filters.bpmMax);
+    const energyMin = filters.energyMin === "" ? null : parseFloat(filters.energyMin);
+    const energyMax = filters.energyMax === "" ? null : parseFloat(filters.energyMax);
     const valenceMin =
       filters.valenceMin === "" ? null : parseFloat(filters.valenceMin);
     const valenceMax =
@@ -669,9 +671,11 @@ const MixAppFeatures = (() => {
         if (!hay.includes(q)) return false;
       }
       if (keyQ) {
-        if (!String(t.key || "")
-          .toLowerCase()
-          .includes(keyQ))
+        if (
+          !String(t.key || "")
+            .toLowerCase()
+            .includes(keyQ)
+        )
           return false;
       }
       const bpm = t.bpm != null ? Number(t.bpm) : null;

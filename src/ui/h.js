@@ -10,6 +10,5 @@ function MixAppH(type, props, ...children) {
   return Spicetify.React.createElement(type, props ?? null, ...children);
 }
 
-/** @type {typeof MixAppH} */
-// eslint-disable-next-line no-unused-vars -- global alias for UI modules
+/** @type {typeof MixAppH} — global alias for UI modules */
 var h = MixAppH;

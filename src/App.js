@@ -205,9 +205,7 @@ function MixAppPage() {
         search.setSearchFeatures(MixAppRecommend.defaultFeatureState()),
       onSearch: search.handleSearch,
     }),
-    session.error
-      ? h("div", { className: "mixapp-error" }, session.error)
-      : null,
+    session.error ? h("div", { className: "mixapp-error" }, session.error) : null,
     h(
       "div",
       { className: "mixapp-main" },

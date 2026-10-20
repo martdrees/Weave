@@ -3,15 +3,8 @@
 /** Phase 5 — MixMoose “Add Track”: Spotify-style catalog search. */
 function MixAppAddTrackModal(props) {
   const react = Spicetify.React;
-  const {
-    open,
-    playlistTracks,
-    playingUri,
-    isPlaying,
-    onClose,
-    onAddTrack,
-    onPlay,
-  } = props;
+  const { open, playlistTracks, playingUri, isPlaying, onClose, onAddTrack, onPlay } =
+    props;
 
   const [query, setQuery] = react.useState("");
   const [results, setResults] = react.useState([]);
@@ -101,9 +94,7 @@ function MixAppAddTrackModal(props) {
         loading ? "Searching…" : "Search"
       )
     ),
-    error
-      ? h("div", { className: "mixapp-find-error" }, error)
-      : null,
+    error ? h("div", { className: "mixapp-find-error" }, error) : null,
     h(
       "div",
       { className: "mixapp-search-results-body" },
@@ -114,17 +105,12 @@ function MixAppAddTrackModal(props) {
         onPlay,
         onAddTrack,
         disabledReason: (track) =>
-          MixAppPlaylistOps.isInIndex(existingIndex, track)
-            ? "In playlist"
-            : null,
+          MixAppPlaylistOps.isInIndex(existingIndex, track) ? "In playlist" : null,
         rowClassName: (track) =>
-          MixAppPlaylistOps.isInIndex(existingIndex, track)
-            ? "is-in-playlist"
-            : "",
+          MixAppPlaylistOps.isInIndex(existingIndex, track) ? "is-in-playlist" : "",
         loading,
         loadingLabel: "Searching…",
-        emptyLabel:
-          "Search Spotify’s catalog and add tracks to your playlist.",
+        emptyLabel: "Search Spotify’s catalog and add tracks to your playlist.",
       })
     )
   );

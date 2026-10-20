@@ -14,11 +14,7 @@ const MixAppCatalogSearch = (() => {
 
   function graphqlEntity(entry) {
     return (
-      entry?.item?.data ||
-      entry?.itemV2?.data ||
-      entry?.data ||
-      entry?.item ||
-      entry
+      entry?.item?.data || entry?.itemV2?.data || entry?.data || entry?.item || entry
     );
   }
 
@@ -31,10 +27,7 @@ const MixAppCatalogSearch = (() => {
       data.owner?.displayName ||
       "";
     const total =
-      data.content?.totalCount ??
-      data.tracks?.totalCount ??
-      data.tracks?.total ??
-      null;
+      data.content?.totalCount ?? data.tracks?.totalCount ?? data.tracks?.total ?? null;
     return {
       uri: data.uri,
       name: data.name || "Untitled",
@@ -277,7 +270,6 @@ const MixAppCatalogSearch = (() => {
       );
     }
   }
-
 
   return {
     searchTracks,

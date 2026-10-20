@@ -70,8 +70,7 @@ function MixAppArranger(props) {
   }, [menu]);
 
   // Keep the menu inside the viewport after mount (size known).
-  const useLayout =
-    react.useLayoutEffect || react.useEffect;
+  const useLayout = react.useLayoutEffect || react.useEffect;
   useLayout(() => {
     if (!menu || !menuRef.current) return;
     const rect = menuRef.current.getBoundingClientRect();
@@ -106,9 +105,19 @@ function MixAppArranger(props) {
     { id: "BPM", label: "BPM", sortKey: "bpm" },
     { id: "KEY", label: "Key", sortKey: "key" },
     { id: "ENERGY", label: "Energy", sortKey: "energy", metricId: "energy" },
-    { id: "DANCEABILITY", label: "Dance", sortKey: "danceability", metricId: "danceability" },
+    {
+      id: "DANCEABILITY",
+      label: "Dance",
+      sortKey: "danceability",
+      metricId: "danceability",
+    },
     { id: "VALENCE", label: "Valence", sortKey: "valence", metricId: "valence" },
-    { id: "ACOUSTICNESS", label: "Acoustic", sortKey: "acousticness", metricId: "acousticness" },
+    {
+      id: "ACOUSTICNESS",
+      label: "Acoustic",
+      sortKey: "acousticness",
+      metricId: "acousticness",
+    },
   ];
 
   function featureColWidth(col) {
@@ -141,9 +150,7 @@ function MixAppArranger(props) {
   // After reorder (esp. while sorted), re-select the same track by uid/uri.
   react.useEffect(() => {
     if (!followId) return;
-    const di = displayTracks.findIndex(
-      (t) => t.uid === followId || t.uri === followId
-    );
+    const di = displayTracks.findIndex((t) => t.uid === followId || t.uri === followId);
     setFollowId(null);
     if (di >= 0) setActiveIndex(di);
   }, [displayTracks, followId]);
@@ -174,9 +181,7 @@ function MixAppArranger(props) {
   }
 
   function indexInFull(track) {
-    return (tracks || []).findIndex(
-      (t) => t.uid === track.uid || t.uri === track.uri
-    );
+    return (tracks || []).findIndex((t) => t.uid === track.uid || t.uri === track.uri);
   }
 
   function removeDisplay(displayIndex) {
@@ -257,12 +262,7 @@ function MixAppArranger(props) {
   function finishRowDrop(e, index) {
     e.preventDefault();
     const fromRaw = e.dataTransfer.getData("text/plain");
-    const from =
-      dragIndex != null
-        ? dragIndex
-        : fromRaw !== ""
-          ? Number(fromRaw)
-          : NaN;
+    const from = dragIndex != null ? dragIndex : fromRaw !== "" ? Number(fromRaw) : NaN;
     const to = dragOverIndex != null ? dragOverIndex : index;
     if (Number.isFinite(from) && Number.isFinite(to) && from !== to) {
       const moved = displayTracks[from];
@@ -316,9 +316,7 @@ function MixAppArranger(props) {
         return;
       }
       const next =
-        e.key === "ArrowDown"
-          ? Math.min(n - 1, cur + 1)
-          : Math.max(0, cur - 1);
+        e.key === "ArrowDown" ? Math.min(n - 1, cur + 1) : Math.max(0, cur - 1);
       setActiveIndex(next);
       return;
     }
@@ -342,7 +340,7 @@ function MixAppArranger(props) {
       e.preventDefault();
       const removeAt = activeIndex;
       removeDisplay(removeAt);
-      setActiveIndex((idx) => {
+      setActiveIndex(() => {
         if (!displayTracks.length || displayTracks.length <= 1) return null;
         return Math.min(removeAt, displayTracks.length - 2);
       });
@@ -362,13 +360,14 @@ function MixAppArranger(props) {
 
   function cycleSort(sortKey) {
     let next = { key: sortKey, dir: "asc" };
-    if (sort.key === sortKey && sort.dir === "asc") next = { key: sortKey, dir: "desc" };
+    if (sort.key === sortKey && sort.dir === "asc")
+      next = { key: sortKey, dir: "desc" };
     else if (sort.key === sortKey && sort.dir === "desc")
       next = { key: null, dir: null };
     setSort(next);
   }
 
-  function headButton(label, sortKey, className) {
+  function headButton(label, sortKey) {
     const active = sort.key === sortKey;
     const arrow = !active ? "" : sort.dir === "asc" ? " ↑" : " ↓";
     return h(
@@ -394,11 +393,7 @@ function MixAppArranger(props) {
         className: "mixapp-spinner",
         "aria-hidden": "true",
       }),
-      h(
-        "p",
-        { className: "mixapp-empty-title" },
-        "Loading tracks…"
-      ),
+      h("p", { className: "mixapp-empty-title" }, "Loading tracks…"),
       h(
         "p",
         { className: "mixapp-empty-hint" },
@@ -411,21 +406,13 @@ function MixAppArranger(props) {
     return h(
       "div",
       { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
-      h(
-        "p",
-        { className: "mixapp-empty-title" },
-        "No tracks yet"
-      ),
+      h("p", { className: "mixapp-empty-title" }, "No tracks yet"),
       h(
         "p",
         { className: "mixapp-empty-hint" },
         "Pick a playlist from the toolbar, or use Add Track / Generator once one is loaded."
       ),
-      h(
-        "p",
-        { className: "mixapp-empty-hint" },
-        "Press ? for keyboard shortcuts."
-      )
+      h("p", { className: "mixapp-empty-hint" }, "Press ? for keyboard shortcuts.")
     );
   }
 
@@ -445,8 +432,7 @@ function MixAppArranger(props) {
         h(
           "span",
           {
-            className:
-              "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+            className: "mixapp-key-circle" + (track.key ? "" : " is-empty"),
             style: bg ? { background: bg } : undefined,
           },
           track.key || "—"
@@ -454,8 +440,7 @@ function MixAppArranger(props) {
       );
     }
     if (col.id === "BPM") {
-      const text =
-        track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
+      const text = track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
       return cell(
         "mixapp-col-feat mixapp-col-bpm",
         h("span", { className: "mixapp-feat-pill" }, text)
@@ -548,8 +533,7 @@ function MixAppArranger(props) {
 
   function startTimeLabel(track) {
     const fullIndex = indexInFull(track);
-    const startMs =
-      fullIndex >= 0 ? startOffsetsMs[fullIndex] ?? 0 : 0;
+    const startMs = fullIndex >= 0 ? (startOffsetsMs[fullIndex] ?? 0) : 0;
     return MixAppApi.formatDuration(startMs);
   }
 
@@ -641,10 +625,7 @@ function MixAppArranger(props) {
     }
     if (show("ADDED_AT")) {
       cells.push(
-        cell(
-          "mixapp-col-added",
-          MixAppColumnConfig.formatAddedAt(track.addedAt)
-        )
+        cell("mixapp-col-added", MixAppColumnConfig.formatAddedAt(track.addedAt))
       );
     }
     for (const col of featureCols) {
@@ -653,10 +634,7 @@ function MixAppArranger(props) {
     if (show("DURATION")) {
       const isCurrent = !!(track.uri && track.uri === playingUri);
       cells.push(
-        cell(
-          "mixapp-col-dur" + (isCurrent ? " is-current" : ""),
-          startTimeLabel(track)
-        )
+        cell("mixapp-col-dur" + (isCurrent ? " is-current" : ""), startTimeLabel(track))
       );
     }
     if (show("ACTIONS")) {
@@ -735,11 +713,7 @@ function MixAppArranger(props) {
           style: { left: menu.x + "px", top: menu.y + "px" },
           role: "menu",
         },
-        h(
-          "div",
-          { className: "mixapp-column-menu-title" },
-          "Columns"
-        ),
+        h("div", { className: "mixapp-column-menu-title" }, "Columns"),
         toggleable.map((col) =>
           h(
             "label",

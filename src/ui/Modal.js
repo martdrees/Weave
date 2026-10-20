@@ -14,13 +14,11 @@ const MIXAPP_MODAL_FOCUSABLE =
  */
 function mixappModalFocusables(root) {
   if (!root) return [];
-  return Array.from(root.querySelectorAll(MIXAPP_MODAL_FOCUSABLE)).filter(
-    (el) => {
-      if (!(el instanceof HTMLElement)) return false;
-      if (el.getAttribute("aria-hidden") === "true") return false;
-      return el.getClientRects().length > 0;
-    }
-  );
+  return Array.from(root.querySelectorAll(MIXAPP_MODAL_FOCUSABLE)).filter((el) => {
+    if (!(el instanceof HTMLElement)) return false;
+    if (el.getAttribute("aria-hidden") === "true") return false;
+    return el.getClientRects().length > 0;
+  });
 }
 
 /**
@@ -78,9 +76,7 @@ function MixAppModal(props) {
     if (!open) return undefined;
 
     previousFocusRef.current =
-      document.activeElement instanceof Element
-        ? document.activeElement
-        : null;
+      document.activeElement instanceof Element ? document.activeElement : null;
 
     const frame = requestAnimationFrame(() => {
       mixappModalFocusInitial(dialogRef.current);
@@ -139,9 +135,7 @@ function MixAppModal(props) {
 
   if (!open) return null;
 
-  const dialogClass = ["mixapp-results-modal", className]
-    .filter(Boolean)
-    .join(" ");
+  const dialogClass = ["mixapp-results-modal", className].filter(Boolean).join(" ");
 
   return h(
     "div",
@@ -170,11 +164,7 @@ function MixAppModal(props) {
           { className: "mixapp-search-panel-title-row" },
           h("h2", null, title),
           meta != null && meta !== ""
-            ? h(
-                "span",
-                { className: "mixapp-recommend-meta" },
-                String(meta)
-              )
+            ? h("span", { className: "mixapp-recommend-meta" }, String(meta))
             : null
         ),
         h(

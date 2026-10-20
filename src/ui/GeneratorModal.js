@@ -6,14 +6,7 @@
  */
 function MixAppGeneratorModal(props) {
   const react = Spicetify.React;
-  const {
-    open,
-    playlist,
-    tracks,
-    seedUris,
-    onClose,
-    onCreated,
-  } = props;
+  const { open, playlist, tracks, seedUris, onClose, onCreated } = props;
 
   const prefsGen = MixAppPrefs?.load?.()?.generator || {};
   const [name, setName] = react.useState("");
@@ -72,19 +65,14 @@ function MixAppGeneratorModal(props) {
       const seedTrackIds = (seedUris || [])
         .map((uri) => MixAppRecommend.trackIdFromUri(uri))
         .filter(Boolean);
-      const seedTracks = (tracks || []).filter((t) =>
-        (seedUris || []).includes(t.uri)
-      );
+      const seedTracks = (tracks || []).filter((t) => (seedUris || []).includes(t.uri));
 
       const result = await MixAppRecommend.recommend({
         seedTrackIds,
         seedTracks,
         contextTracks: tracks || [],
         features,
-        limit: Math.min(
-          MixAppRecommend.MAX_LIMIT,
-          Math.max(10, Number(limit) || 40)
-        ),
+        limit: Math.min(MixAppRecommend.MAX_LIMIT, Math.max(10, Number(limit) || 40)),
         filters: {
           excludeExplicit: !!excludeExplicit,
           excludeAberrant: !!excludeAberrant,
@@ -163,9 +151,7 @@ function MixAppGeneratorModal(props) {
   }
 
   const defs = MixAppRecommend.FEATURE_DEFS.filter((d) =>
-    ["energy", "danceability", "valence", "acousticness", "tempo"].includes(
-      d.id
-    )
+    ["energy", "danceability", "valence", "acousticness", "tempo"].includes(d.id)
   );
 
   return h(
@@ -182,193 +168,188 @@ function MixAppGeneratorModal(props) {
     h(
       "div",
       { className: "mixapp-generator-body" },
-        h(
-          "p",
-          { className: "mixapp-recommend-meta" },
-          seedCount
-            ? "Using " + seedCount + " marked seed track(s)."
-            : "No seeds marked — soft-seeds from the current playlist."
-        ),
-        h(
-          "label",
-          { className: "mixapp-flowify-field" },
-          h("span", null, "New playlist name"),
-          h("input", {
-            type: "text",
-            className: "mixapp-find-input",
-            value: name,
-            onChange: (e) => setName(e.target.value),
-            disabled: busy,
-          })
-        ),
-        h(
-          "label",
-          { className: "mixapp-flowify-field" },
-          h("span", null, "Track count"),
-          h("input", {
-            type: "number",
-            className: "mixapp-find-input",
-            min: 10,
-            max: MixAppRecommend.MAX_LIMIT,
-            value: limit,
-            onChange: (e) =>
-              setLimit(
-                Math.max(
-                  10,
-                  Math.min(
-                    MixAppRecommend.MAX_LIMIT,
-                    parseInt(e.target.value, 10) || 40
-                  )
-                )
-              ),
-            disabled: busy,
-          })
-        ),
-        h(
-          "div",
-          { className: "mixapp-generator-features" },
-          h("h3", null, "Feature ranges (optional)"),
-          defs.map((def) => {
-            const range = features[def.id] || {};
-            return h(
-              "div",
-              { key: def.id, className: "mixapp-flowify-weight-row" },
-              h(
-                "label",
-                { className: "mixapp-flowify-weight-label" },
-                h("input", {
-                  type: "checkbox",
-                  checked: !!range.enabled,
-                  disabled: busy,
-                  onChange: (e) =>
-                    updateFeature(def.id, { enabled: e.target.checked }),
-                }),
-                " ",
-                def.label
-              ),
+      h(
+        "p",
+        { className: "mixapp-recommend-meta" },
+        seedCount
+          ? "Using " + seedCount + " marked seed track(s)."
+          : "No seeds marked — soft-seeds from the current playlist."
+      ),
+      h(
+        "label",
+        { className: "mixapp-flowify-field" },
+        h("span", null, "New playlist name"),
+        h("input", {
+          type: "text",
+          className: "mixapp-find-input",
+          value: name,
+          onChange: (e) => setName(e.target.value),
+          disabled: busy,
+        })
+      ),
+      h(
+        "label",
+        { className: "mixapp-flowify-field" },
+        h("span", null, "Track count"),
+        h("input", {
+          type: "number",
+          className: "mixapp-find-input",
+          min: 10,
+          max: MixAppRecommend.MAX_LIMIT,
+          value: limit,
+          onChange: (e) =>
+            setLimit(
+              Math.max(
+                10,
+                Math.min(MixAppRecommend.MAX_LIMIT, parseInt(e.target.value, 10) || 40)
+              )
+            ),
+          disabled: busy,
+        })
+      ),
+      h(
+        "div",
+        { className: "mixapp-generator-features" },
+        h("h3", null, "Feature ranges (optional)"),
+        defs.map((def) => {
+          const range = features[def.id] || {};
+          return h(
+            "div",
+            { key: def.id, className: "mixapp-flowify-weight-row" },
+            h(
+              "label",
+              { className: "mixapp-flowify-weight-label" },
               h("input", {
-                type: "range",
-                min: def.min,
-                max: def.max,
-                step: def.step,
-                disabled: busy || !range.enabled,
-                value: Number(range.min),
-                onChange: (e) => {
-                  let minV = Number(e.target.value);
-                  let maxV = Number(range.max);
-                  if (minV > maxV) maxV = minV;
-                  updateFeature(def.id, { min: minV, max: maxV });
-                },
-                title: "Min",
+                type: "checkbox",
+                checked: !!range.enabled,
+                disabled: busy,
+                onChange: (e) => updateFeature(def.id, { enabled: e.target.checked }),
               }),
-              h("input", {
-                type: "range",
-                min: def.min,
-                max: def.max,
-                step: def.step,
-                disabled: busy || !range.enabled,
-                value: Number(range.max),
-                onChange: (e) => {
-                  let maxV = Number(e.target.value);
-                  let minV = Number(range.min);
-                  if (maxV < minV) minV = maxV;
-                  updateFeature(def.id, { min: minV, max: maxV });
-                },
-                title: "Max",
-              })
-            );
-          })
+              " ",
+              def.label
+            ),
+            h("input", {
+              type: "range",
+              min: def.min,
+              max: def.max,
+              step: def.step,
+              disabled: busy || !range.enabled,
+              value: Number(range.min),
+              onChange: (e) => {
+                let minV = Number(e.target.value);
+                let maxV = Number(range.max);
+                if (minV > maxV) maxV = minV;
+                updateFeature(def.id, { min: minV, max: maxV });
+              },
+              title: "Min",
+            }),
+            h("input", {
+              type: "range",
+              min: def.min,
+              max: def.max,
+              step: def.step,
+              disabled: busy || !range.enabled,
+              value: Number(range.max),
+              onChange: (e) => {
+                let maxV = Number(e.target.value);
+                let minV = Number(range.min);
+                if (maxV < minV) minV = maxV;
+                updateFeature(def.id, { min: minV, max: maxV });
+              },
+              title: "Max",
+            })
+          );
+        })
+      ),
+      h(
+        "div",
+        { className: "mixapp-generator-checks" },
+        h(
+          "label",
+          null,
+          h("input", {
+            type: "checkbox",
+            checked: excludeExplicit,
+            disabled: busy,
+            onChange: (e) => setExcludeExplicit(e.target.checked),
+          }),
+          " Exclude explicit"
         ),
         h(
-          "div",
-          { className: "mixapp-generator-checks" },
-          h(
-            "label",
-            null,
-            h("input", {
-              type: "checkbox",
-              checked: excludeExplicit,
-              disabled: busy,
-              onChange: (e) => setExcludeExplicit(e.target.checked),
-            }),
-            " Exclude explicit"
-          ),
-          h(
-            "label",
-            null,
-            h("input", {
-              type: "checkbox",
-              checked: excludeAberrant,
-              disabled: busy,
-              onChange: (e) => setExcludeAberrant(e.target.checked),
-            }),
-            " Exclude aberrant titles"
-          ),
-          h(
-            "label",
-            null,
-            h("input", {
-              type: "checkbox",
-              checked: flowifyAfter,
-              disabled: busy,
-              onChange: (e) => setFlowifyAfter(e.target.checked),
-            }),
-            " Flowify sets after generate"
-          )
+          "label",
+          null,
+          h("input", {
+            type: "checkbox",
+            checked: excludeAberrant,
+            disabled: busy,
+            onChange: (e) => setExcludeAberrant(e.target.checked),
+          }),
+          " Exclude aberrant titles"
         ),
-        error
-          ? h("div", { className: "mixapp-find-error" }, error)
-          : null,
-        preview.length
-          ? h(
-              "div",
-              { className: "mixapp-generator-preview" },
-              h("h3", null, "Preview"),
-              h(
-                "ul",
-                { className: "mixapp-generator-preview-list" },
-                preview.slice(0, 12).map((t, i) =>
+        h(
+          "label",
+          null,
+          h("input", {
+            type: "checkbox",
+            checked: flowifyAfter,
+            disabled: busy,
+            onChange: (e) => setFlowifyAfter(e.target.checked),
+          }),
+          " Flowify sets after generate"
+        )
+      ),
+      error ? h("div", { className: "mixapp-find-error" }, error) : null,
+      preview.length
+        ? h(
+            "div",
+            { className: "mixapp-generator-preview" },
+            h("h3", null, "Preview"),
+            h(
+              "ul",
+              { className: "mixapp-generator-preview-list" },
+              preview
+                .slice(0, 12)
+                .map((t, i) =>
                   h(
                     "li",
                     { key: t.uri || i },
-                    (t.name || "Unknown") +
-                      (t.artists ? " — " + t.artists : "")
+                    (t.name || "Unknown") + (t.artists ? " — " + t.artists : "")
                   )
                 ),
-                preview.length > 12
-                  ? h(
-                      "li",
-                      { className: "mixapp-recommend-meta" },
-                      "…and " + (preview.length - 12) + " more"
-                    )
-                  : null
-              )
+              preview.length > 12
+                ? h(
+                    "li",
+                    { className: "mixapp-recommend-meta" },
+                    "…and " + (preview.length - 12) + " more"
+                  )
+                : null
             )
-          : null,
-        h(
-          "div",
-          { className: "mixapp-flowify-actions" },
-          h(
-            "button",
-            {
-              type: "button",
-              className: "mixapp-btn",
-              onClick: runGenerate,
-              disabled: busy || !canRun,
-            },
-            busy && !preview.length ? "Generating…" : "Generate"
-          ),
-          h(
-            "button",
-            {
-              type: "button",
-              className: "mixapp-btn mixapp-btn-primary",
-              onClick: createFromPreview,
-              disabled: busy || !preview.length,
-            },
-            busy && preview.length ? "Creating…" : "Create playlist"
           )
+        : null,
+      h(
+        "div",
+        { className: "mixapp-flowify-actions" },
+        h(
+          "button",
+          {
+            type: "button",
+            className: "mixapp-btn",
+            onClick: runGenerate,
+            disabled: busy || !canRun,
+          },
+          busy && !preview.length ? "Generating…" : "Generate"
+        ),
+        h(
+          "button",
+          {
+            type: "button",
+            className: "mixapp-btn mixapp-btn-primary",
+            onClick: createFromPreview,
+            disabled: busy || !preview.length,
+          },
+          busy && preview.length ? "Creating…" : "Create playlist"
         )
       )
+    )
   );
 }

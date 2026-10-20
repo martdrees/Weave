@@ -3,6 +3,7 @@
   "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
   "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
   "subfiles": [
+    "src/types.js",
     "src/api/notify.js",
     "src/api/http.js",
     "src/domain/track.js",

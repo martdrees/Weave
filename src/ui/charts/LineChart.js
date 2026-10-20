@@ -91,11 +91,7 @@ function MixAppLineChart(props) {
               MixAppChartConfig.formatChartValue(metric, maxV) +
               (extraMeta || "")
           )
-        : h(
-            "span",
-            { className: "mixapp-recommend-meta" },
-            "no data"
-          )
+        : h("span", { className: "mixapp-recommend-meta" }, "no data")
     ),
     !known.length
       ? h(
@@ -112,8 +108,7 @@ function MixAppLineChart(props) {
             viewBox: "0 0 " + W + " " + H,
             preserveAspectRatio: "none",
             role: "img",
-            "aria-label":
-              metric.label + " across " + n + " tracks in playlist order",
+            "aria-label": metric.label + " across " + n + " tracks in playlist order",
           },
           h("rect", {
             className: "mixapp-stats-line-frame",
@@ -179,8 +174,7 @@ function MixAppLineChart(props) {
               ": " +
               MixAppChartConfig.formatChartValue(metric, p.value) +
               (ma != null
-                ? "\n5-track avg: " +
-                  MixAppChartConfig.formatChartValue(metric, ma)
+                ? "\n5-track avg: " + MixAppChartConfig.formatChartValue(metric, ma)
                 : "");
             return h(
               "circle",

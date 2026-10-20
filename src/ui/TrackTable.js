@@ -117,11 +117,7 @@ function MixAppTrackTable(props) {
   }
 
   function cell(classNameCell, children, style) {
-    return h(
-      "div",
-      { className: classNameCell, style: style || undefined },
-      children
-    );
+    return h("div", { className: classNameCell, style: style || undefined }, children);
   }
 
   /** Feature cells — same rendering as Arranger (key circle / feat pills). */
@@ -196,11 +192,7 @@ function MixAppTrackTable(props) {
         },
         track.name || "Unknown",
         track.explicit
-          ? h(
-              "span",
-              { className: "mixapp-explicit-mark", title: "Explicit" },
-              " E"
-            )
+          ? h("span", { className: "mixapp-explicit-mark", title: "Explicit" }, " E")
           : null
       ),
       subParts.length
@@ -279,8 +271,7 @@ function MixAppTrackTable(props) {
       {
         key: track.uid || track.uri || String(index),
         className:
-          "mixapp-track-row mixapp-results-table-row" +
-          (extra ? " " + extra : ""),
+          "mixapp-track-row mixapp-results-table-row" + (extra ? " " + extra : ""),
         style: { gridTemplateColumns: gridTemplate },
       },
       cell("mixapp-col-num", String(index + 1)),
@@ -320,20 +311,12 @@ function MixAppTrackTable(props) {
         className: "mixapp-spinner",
         "aria-hidden": "true",
       }),
-      h(
-        "p",
-        { className: "mixapp-search-waiting-label" },
-        loadingLabel || "Loading…"
-      )
+      h("p", { className: "mixapp-search-waiting-label" }, loadingLabel || "Loading…")
     );
   }
 
   if (!list.length) {
-    return h(
-      "div",
-      { className: "mixapp-arranger-empty" },
-      emptyLabel || "No tracks."
-    );
+    return h("div", { className: "mixapp-arranger-empty" }, emptyLabel || "No tracks.");
   }
 
   return h(

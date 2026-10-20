@@ -48,9 +48,7 @@ function MixAppToolbar(props) {
         onSelect: onSelectPlaylist,
         onRefresh: onRefreshPlaylists,
       }),
-      dirty
-        ? h("span", { className: "mixapp-badge" }, "Unsaved")
-        : null,
+      dirty ? h("span", { className: "mixapp-badge" }, "Unsaved") : null,
       seedCount > 0
         ? h(
             "span",

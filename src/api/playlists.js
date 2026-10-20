@@ -20,7 +20,9 @@ const MixAppPlaylists = (() => {
           includeYourEpisodes: false,
         });
         const items = (result?.items || [])
-          .filter((item) => item?.type === "playlist" || item?.uri?.includes(":playlist:"))
+          .filter(
+            (item) => item?.type === "playlist" || item?.uri?.includes(":playlist:")
+          )
           .map((item) => {
             const isOwnedBySelf = !!(item.isOwnedBySelf ?? item.ownedBySelf);
             const canEdit =
@@ -94,7 +96,9 @@ const MixAppPlaylists = (() => {
     }
 
     const id = MixAppHttp.playlistIdFromUri(uri);
-    const meta = await MixAppHttp.cosmosGet(`https://api.spotify.com/v1/playlists/${id}`);
+    const meta = await MixAppHttp.cosmosGet(
+      `https://api.spotify.com/v1/playlists/${id}`
+    );
     const me = await getCurrentUserId();
     return {
       uri: meta.uri || uri,
@@ -116,7 +120,11 @@ const MixAppPlaylists = (() => {
           .filter((item) => {
             const t = item?.track || item?.item || item;
             const type = t?.type || item?.type;
-            return !type || type === "track" || (t?.uri || item?.uri || "").includes(":track:");
+            return (
+              !type ||
+              type === "track" ||
+              (t?.uri || item?.uri || "").includes(":track:")
+            );
           })
           .map((item, i) => normalizeTrack(item, i));
       } catch (err) {
@@ -168,7 +176,9 @@ const MixAppPlaylists = (() => {
       return (contents?.items || []).map(liveItemFromRaw).filter(Boolean);
     }
     // Web API has no item uids — cannot preserve mixing settings this way.
-    throw new Error("PlaylistAPI.getContents unavailable; cannot sync without replacing");
+    throw new Error(
+      "PlaylistAPI.getContents unavailable; cannot sync without replacing"
+    );
   }
 
   async function playlistApiRemove(uri, items) {
@@ -206,7 +216,10 @@ const MixAppPlaylists = (() => {
     if (snapshotId) body.snapshot_id = snapshotId;
     const res = await MixAppHttp.withRetry(
       () =>
-        MixAppHttp.cosmosPut(`https://api.spotify.com/v1/playlists/${playlistId}/items`, body),
+        MixAppHttp.cosmosPut(
+          `https://api.spotify.com/v1/playlists/${playlistId}/items`,
+          body
+        ),
       { label: "playlist reorder" }
     );
     return res?.snapshot_id || snapshotId || null;
@@ -240,11 +253,9 @@ const MixAppPlaylists = (() => {
         const item = byUid.get(uid);
         if (!item) return false;
         try {
-          await PlaylistAPI.move(
-            playlistUri,
-            [{ uri: item.uri, uid: item.uid }],
-            { after: "end" }
-          );
+          await PlaylistAPI.move(playlistUri, [{ uri: item.uri, uid: item.uid }], {
+            after: "end",
+          });
         } catch (_) {
           // Some clients want bare uids instead of {uri,uid} objects.
           await PlaylistAPI.move(playlistUri, [item.uid], { after: "end" });
@@ -308,7 +319,13 @@ const MixAppPlaylists = (() => {
   }
 
   async function reorderLiveToTarget(playlistUri, live, targetUids) {
-    if (sameUidOrder(live.map((l) => l.uid), targetUids)) return;
+    if (
+      sameUidOrder(
+        live.map((l) => l.uid),
+        targetUids
+      )
+    )
+      return;
     if (await reorderViaPlaylistMove(playlistUri, live, targetUids)) return;
     await reorderViaWebApi(playlistUri, targetUids);
   }
@@ -402,9 +419,12 @@ const MixAppPlaylists = (() => {
           uris: chunk,
         });
       } else if (chunk.length) {
-        await MixAppHttp.cosmosPost(`https://api.spotify.com/v1/playlists/${id}/items`, {
-          uris: chunk,
-        });
+        await MixAppHttp.cosmosPost(
+          `https://api.spotify.com/v1/playlists/${id}/items`,
+          {
+            uris: chunk,
+          }
+        );
       }
     }
   }
@@ -423,10 +443,13 @@ const MixAppPlaylists = (() => {
     }
 
     if (!uri) {
-      const created = await MixAppHttp.cosmosPost("https://api.spotify.com/v1/me/playlists", {
-        name,
-        public: false,
-      });
+      const created = await MixAppHttp.cosmosPost(
+        "https://api.spotify.com/v1/me/playlists",
+        {
+          name,
+          public: false,
+        }
+      );
       uri = created?.uri;
     }
 
@@ -440,7 +463,6 @@ const MixAppPlaylists = (() => {
   async function saveOverwrite(uri, tracks) {
     return syncPlaylistTracks(uri, tracks);
   }
-
 
   return {
     listPlaylists,

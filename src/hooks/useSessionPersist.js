@@ -35,7 +35,7 @@ function MixAppUseSessionPersist(buildSnapshot, deps) {
     return () => {
       if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps passed explicitly
+    // deps array is passed explicitly by callers
   }, deps);
 
   react.useEffect(() => {
