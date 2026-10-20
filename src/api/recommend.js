@@ -164,15 +164,36 @@ const MixAppRecommend = (() => {
     return name + "|" + primary;
   }
 
+  /** Padding around a center value when snapping min/max to an average. */
+  function featurePad(def) {
+    if (def.kind === "01") return 0.08;
+    if (def.kind === "tempo") return 12;
+    if (def.kind === "loudness") return 4;
+    if (def.kind === "popularity") return 10;
+    return 0.08;
+  }
+
+  /** Hard band centered on `center`, clamped to the feature domain. */
+  function rangeAroundValue(def, center) {
+    const pad = featurePad(def);
+    const c = Math.min(def.max, Math.max(def.min, Number(center)));
+    if (!Number.isFinite(c)) {
+      return { min: def.min, max: def.max };
+    }
+    return {
+      min: Math.max(def.min, c - pad),
+      max: Math.min(def.max, c + pad),
+    };
+  }
+
   function defaultFeatureState() {
     const state = {};
     for (const def of FEATURE_DEFS) {
       state[def.id] = {
         enabled: false,
+        aroundAvg: false,
         min: def.min,
         max: def.max,
-        useTarget: false,
-        target: (def.min + def.max) / 2,
       };
     }
     return state;
@@ -307,16 +328,20 @@ const MixAppRecommend = (() => {
   }
 
   async function cosmosGetRetry(url, label) {
-    const getter = MixAppApi?.withRetry;
-    if (getter) {
-      return getter(() => Spicetify.CosmosAsync.get(url), {
-        retries: 4,
+    // Prefer queued MixAppHttp (assert + spacing). Keep retries low — padding
+    // calls must not burn the global Web API budget before create/save.
+    if (MixAppHttp?.cosmosGet) {
+      return MixAppHttp.cosmosGet(url, {
+        retries: 2,
         label: label || "recommend",
-        notifyUser: true,
+        notifyUser: false,
       });
     }
     return Spicetify.CosmosAsync.get(url);
   }
+
+  let cachedMarket = null;
+  let rateLimitedPad = false;
 
   async function resolveRadioPlaylistUri(kind, id) {
     for (const url of radioUrls(kind, id)) {
@@ -331,7 +356,7 @@ const MixAppRecommend = (() => {
         if (uri && String(uri).includes(":playlist:")) return uri;
         if (uri && String(uri).includes("playlist")) return uri;
       } catch (err) {
-        console.warn("MixApp: radio seed failed", kind, id, err);
+        console.warn("Weave: radio seed failed", kind, id, err);
       }
     }
     return null;
@@ -389,16 +414,29 @@ const MixAppRecommend = (() => {
   }
 
   async function getUserMarket() {
+    if (cachedMarket) return cachedMarket;
+    const fromPlatform =
+      Spicetify?.Platform?.Session?.country ||
+      Spicetify?.Platform?.PlatformData?.country ||
+      null;
+    if (fromPlatform) {
+      cachedMarket = String(fromPlatform);
+      return cachedMarket;
+    }
     try {
       const me = await cosmosGetRetry("https://api.spotify.com/v1/me", "profile");
-      if (me?.country) return me.country;
-    } catch (_) {
-      /* ignore */
+      if (me?.country) {
+        cachedMarket = me.country;
+        return cachedMarket;
+      }
+    } catch (err) {
+      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
     }
     return "US";
   }
 
   async function fetchArtistTopTracks(artistId, market) {
+    if (rateLimitedPad) return [];
     try {
       const res = await cosmosGetRetry(
         "https://api.spotify.com/v1/artists/" +
@@ -409,12 +447,14 @@ const MixAppRecommend = (() => {
       );
       return (res?.tracks || []).map((t, i) => normalizeWebTrack(t, i));
     } catch (err) {
-      console.warn("MixApp: artist top-tracks failed", artistId, err);
+      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
+      console.warn("Weave: artist top-tracks failed", artistId, err);
       return [];
     }
   }
 
   async function fetchRelatedArtistIds(artistId) {
+    if (rateLimitedPad) return [];
     try {
       const res = await cosmosGetRetry(
         "https://api.spotify.com/v1/artists/" + artistId + "/related-artists",
@@ -425,7 +465,8 @@ const MixAppRecommend = (() => {
         .filter(Boolean)
         .slice(0, 12);
     } catch (err) {
-      console.warn("MixApp: related-artists failed", artistId, err);
+      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
+      console.warn("Weave: related-artists failed", artistId, err);
       return [];
     }
   }
@@ -443,6 +484,7 @@ const MixAppRecommend = (() => {
     let radios = 0;
     let artistFetches = 0;
     let market = null;
+    rateLimitedPad = false;
 
     function enqueue(kind, id) {
       if (!id) return;
@@ -501,7 +543,7 @@ const MixAppRecommend = (() => {
           if (byUri.size >= rawTarget) break;
         }
       } catch (err) {
-        console.warn("MixApp: failed to load radio playlist", playlistUri, err);
+        console.warn("Weave: failed to load radio playlist", playlistUri, err);
       }
       return added;
     }
@@ -540,11 +582,12 @@ const MixAppRecommend = (() => {
         if (radios >= MAX_RADIO_FETCHES) continue;
         await loadRadio(next.kind, next.id);
       } else if (next.kind === "artist") {
-        // Artist radio + top tracks (top tracks help when radio playlists collide).
+        // Artist radio first (Platform playlist load). Skip Web API top/related
+        // padding once rate-limited so create/save still has budget.
         if (radios < MAX_RADIO_FETCHES) {
           await loadRadio("artist", next.id);
         }
-        if (byUri.size < rawTarget) {
+        if (byUri.size < rawTarget && !rateLimitedPad) {
           await loadArtistPad(next.id);
         }
       }
@@ -687,31 +730,50 @@ const MixAppRecommend = (() => {
     };
   }
 
+  function sampleValueForFeature(sample, defId) {
+    if (!sample || !defId) return null;
+    if (sample[defId] != null && !Number.isNaN(Number(sample[defId]))) {
+      return Number(sample[defId]);
+    }
+    if (defId === "tempo") {
+      const t = sample.tempo ?? sample.bpm;
+      if (t != null && !Number.isNaN(Number(t))) return Number(t);
+    }
+    return null;
+  }
+
+  /** Mean of each FEATURE_DEFS field over tracks/samples (null if no values). */
+  function averagesFromTracks(tracks) {
+    /** @type {Record<string, number>} */
+    const out = {};
+    if (!tracks?.length) return out;
+    for (const def of FEATURE_DEFS) {
+      const values = tracks
+        .map((t) => sampleValueForFeature(t, def.id))
+        .filter((v) => v != null);
+      if (!values.length) continue;
+      out[def.id] = values.reduce((a, b) => a + b, 0) / values.length;
+    }
+    return out;
+  }
+
   function featuresFromSamples(samples) {
     const state = defaultFeatureState();
     if (!samples?.length) return state;
 
     for (const def of FEATURE_DEFS) {
       const values = samples
-        .map((s) => s?.[def.id])
-        .filter((v) => v != null && !Number.isNaN(Number(v)))
-        .map(Number);
+        .map((s) => sampleValueForFeature(s, def.id))
+        .filter((v) => v != null);
       if (!values.length) continue;
       const minV = Math.min(...values);
       const maxV = Math.max(...values);
-      const avg = values.reduce((a, b) => a + b, 0) / values.length;
-      let pad;
-      if (def.kind === "01") pad = 0.08;
-      else if (def.kind === "tempo") pad = 12;
-      else if (def.kind === "loudness") pad = 4;
-      else if (def.kind === "popularity") pad = 10;
-      else pad = 0.08;
+      const pad = featurePad(def);
       state[def.id] = {
         enabled: true,
+        aroundAvg: false,
         min: Math.max(def.min, minV - pad),
         max: Math.min(def.max, maxV + pad),
-        useTarget: true,
-        target: Math.min(def.max, Math.max(def.min, avg)),
       };
     }
     return state;
@@ -722,6 +784,8 @@ const MixAppRecommend = (() => {
     DEFAULT_LIMIT,
     MAX_LIMIT,
     defaultFeatureState,
+    featurePad,
+    rangeAroundValue,
     recommend,
     applyPostFilters,
     sampleResults,
@@ -729,5 +793,6 @@ const MixAppRecommend = (() => {
     trackIdFromUri,
     trackFingerprint,
     featuresFromSamples,
+    averagesFromTracks,
   };
 })();

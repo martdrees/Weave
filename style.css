@@ -1,4 +1,4 @@
-/* MixApp styles — interactive primitives inventory: docs/COMPONENTS.md (R5.2) */
+/* Weave styles — interactive primitives inventory: docs/COMPONENTS.md (R5.2) */
 
 .mixapp-root {
   /* —— Design tokens (R5.1) — wrap Spotify spice vars where possible —— */
@@ -800,7 +800,7 @@
   box-sizing: border-box;
 }
 
-/* Allow outer Spotify scroll when MixApp grows past the viewport (search open) */
+/* Allow outer Spotify scroll when Weave grows past the viewport (search open) */
 .main-view-container__scroll-node-child:has(> .mixapp-root:has(.mixapp-search-panel)),
 .main-view-container__scroll-node-child:has(> .mixapp-root:has(.mixapp-search-panel)) > div {
   height: auto;
@@ -926,15 +926,20 @@
 }
 
 /* Phase 6 — Flowify / Generator */
-.mixapp-flowify-modal,
-.mixapp-generator-modal {
+.mixapp-flowify-modal {
   max-width: 640px;
   width: min(640px, 100%);
   max-height: min(880px, 94vh);
 }
 
-.mixapp-flowify-body,
-.mixapp-generator-body {
+.mixapp-generator-modal {
+  max-width: min(1200px, 100%);
+  width: min(1200px, 100%);
+  max-height: min(94vh, 920px);
+  height: min(94vh, 920px);
+}
+
+.mixapp-flowify-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -942,6 +947,67 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.mixapp-generator-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mixapp-generator-settings {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.mixapp-generator-error {
+  padding: 0;
+}
+
+.mixapp-generator-features {
+  gap: 6px;
+}
+
+.mixapp-generator-features .mixapp-feature-sliders-wide {
+  max-height: none;
+  overflow: visible;
+}
+
+.mixapp-generator-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem;
+  gap: 10px 14px;
+  align-items: end;
+}
+
+.mixapp-generator-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mixapp-generator-preview-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px 6px;
+}
+
+.mixapp-generator-preview .mixapp-search-results-body {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .mixapp-flowify-field {
@@ -960,7 +1026,7 @@
 
 .mixapp-flowify-weights h3,
 .mixapp-generator-features h3,
-.mixapp-generator-preview h3 {
+.mixapp-generator-preview-head h3 {
   margin: 0;
   font-size: 0.9rem;
 }
@@ -970,10 +1036,6 @@
   grid-template-columns: 5.5rem minmax(0, 1fr) 2.6rem auto;
   align-items: center;
   gap: 8px;
-}
-
-.mixapp-generator-features .mixapp-flowify-weight-row {
-  grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .mixapp-flowify-weight-label {
@@ -999,8 +1061,9 @@
 
 .mixapp-generator-checks {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px 18px;
   font-size: var(--mix-font-md);
 }
 
@@ -1010,12 +1073,10 @@
   gap: 8px;
 }
 
-.mixapp-generator-preview-list {
-  margin: 0;
-  padding-left: 1.1rem;
-  font-size: 0.82rem;
-  max-height: 160px;
-  overflow: auto;
+@media (max-width: 720px) {
+  .mixapp-generator-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Phase 7 — empty states / shortcuts / header */
@@ -1360,6 +1421,7 @@
 .mixapp-results-table {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 42rem;
   display: flex;
   flex-direction: column;
 }
@@ -1515,11 +1577,23 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 0 0 96px;
-  width: 96px;
+  flex: 0 0 108px;
+  width: 108px;
   min-width: 0;
   font-size: 0.7rem;
   cursor: pointer;
+}
+
+.mixapp-feature-swatch {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.mixapp-camelot-chip .mixapp-feature-swatch {
+  margin-right: 2px;
 }
 
 .mixapp-feature-enable span {
@@ -1566,11 +1640,30 @@
 }
 
 .mixapp-dual-range-fill {
-  background: var(--mix-accent);
+  background: var(--mix-feature-accent, var(--mix-accent));
 }
 
 .mixapp-dual-range.is-disabled .mixapp-dual-range-fill {
-  background: rgba(255, 255, 255, 0.22);
+  opacity: 0.55;
+}
+
+/* Seed / playlist average marker on the range track */
+.mixapp-dual-range-seed {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 14px;
+  margin-left: -1.5px;
+  transform: translateY(-50%);
+  border-radius: 1px;
+  background: var(--mix-feature-accent, var(--mix-text, #fff));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: calc(var(--mix-z-sticky) + 1);
+}
+
+.mixapp-dual-range.is-disabled .mixapp-dual-range-seed {
+  opacity: 0.7;
 }
 
 .mixapp-dual-range-input {
@@ -1607,7 +1700,7 @@
   height: 12px;
   margin-top: -4.5px;
   border-radius: 50%;
-  border: 2px solid var(--mix-accent);
+  border: 2px solid var(--mix-feature-accent, var(--mix-accent));
   background: var(--mix-main, #121212);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   cursor: pointer;
@@ -1618,7 +1711,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--mix-accent);
+  border: 2px solid var(--mix-feature-accent, var(--mix-accent));
   background: var(--mix-main, #121212);
   cursor: pointer;
 }
@@ -1653,10 +1746,10 @@
   color: var(--mix-text);
 }
 
-.mixapp-feature-target-toggle {
+.mixapp-feature-around-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   flex: 0 0 auto;
   font-size: var(--mix-font-2xs);
   font-weight: 600;
@@ -1665,24 +1758,18 @@
   user-select: none;
 }
 
-.mixapp-feature-target-toggle input {
+.mixapp-feature-around-toggle input {
   margin: 0;
-  accent-color: var(--mix-accent);
+  accent-color: var(--mix-feature-accent, var(--mix-accent));
 }
 
-.mixapp-feature-target-slider {
-  flex: 0 0 56px;
-  width: 56px;
-  height: 18px;
-  margin: 0;
-  padding: 0;
-  accent-color: var(--mix-accent);
-  cursor: pointer;
-}
-
-.mixapp-feature-target-slider:disabled {
-  opacity: 0.35;
+.mixapp-feature-around-toggle:has(input:disabled) {
+  opacity: 0.4;
   cursor: default;
+}
+
+.mixapp-feature-row.is-enabled .mixapp-feature-around-toggle {
+  color: var(--mix-text);
 }
 
 .mixapp-feature-field input,

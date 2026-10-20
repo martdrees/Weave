@@ -1,7 +1,7 @@
 //@ts-check
 /**
- * Persist MixApp working session across Custom App remounts
- * (e.g. open another Spotify view, then return to MixApp).
+ * Persist Weave working session across Custom App remounts
+ * (e.g. open another Spotify view, then return to Weave).
  *
  * Owns: selectedUri, playlist, tracks, dirty, undo, seedUris, bannedUris,
  *       searchFeatures, searchResults, resultsOpen, searchOpen, statsOpen.
@@ -23,14 +23,14 @@ const MixAppSession = (() => {
         if (v != null) return v;
       }
     } catch (err) {
-      console.warn("MixApp: session LocalStorageAPI get failed", err);
+      console.warn("Weave: session LocalStorageAPI get failed", err);
     }
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) return null;
       return JSON.parse(raw);
     } catch (err) {
-      console.warn("MixApp: session localStorage get failed", err);
+      console.warn("Weave: session localStorage get failed", err);
       return null;
     }
   }
@@ -43,13 +43,13 @@ const MixAppSession = (() => {
         return true;
       }
     } catch (err) {
-      console.warn("MixApp: session LocalStorageAPI set failed", err);
+      console.warn("Weave: session LocalStorageAPI set failed", err);
     }
     try {
       localStorage.setItem(KEY, JSON.stringify(value));
       return true;
     } catch (err) {
-      console.warn("MixApp: session localStorage set failed", err);
+      console.warn("Weave: session localStorage set failed", err);
       return false;
     }
   }

@@ -99,12 +99,19 @@ function MixAppStatsPanel(props) {
       },
       allMetrics.map((metric) => {
         const selected = visibleIds.includes(metric.id);
+        const accent = MixAppFeatures.featureColor(metric.id);
         return h(
           "button",
           {
             key: metric.id,
             type: "button",
             className: "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
+            style: selected
+              ? {
+                  borderColor: accent,
+                  boxShadow: "inset 0 0 0 1px " + accent,
+                }
+              : undefined,
             "data-tip":
               metric.id === "aggChange"
                 ? "Absolute change between adjacent tracks (energy, dance, valence, acoustic, instr., speech, live, BPM compat, key)"
@@ -112,6 +119,11 @@ function MixAppStatsPanel(props) {
             "aria-pressed": selected,
             onClick: () => toggleMetric(metric.id),
           },
+          h("span", {
+            className: "mixapp-feature-swatch",
+            style: { background: accent },
+            "aria-hidden": "true",
+          }),
           h("span", { className: "mixapp-camelot-chip-label" }, metric.label),
           h(
             "span",

@@ -1,6 +1,6 @@
 //@ts-check
 /**
- * Shared JSDoc typedefs for MixApp façades (R7.2).
+ * Shared JSDoc typedefs for Weave façades (R7.2).
  * Loaded first via manifest — ambient types for `//@ts-check` across IIFE modules.
  * Runtime: no exports; Spicetify ignores the empty script body.
  *
@@ -46,7 +46,7 @@
  */
 
 /**
- * Canonical MixApp track (core + optional enrichment).
+ * Canonical Weave track (core + optional enrichment).
  * @typedef {MixAppTrackCore & MixAppTrackEnrichment} MixAppTrackRow
  */
 

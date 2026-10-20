@@ -119,13 +119,13 @@ const MixAppCatalogSearch = (() => {
       try {
         const res = await GQL.Request(definition, variables);
         if (res?.errors?.length) {
-          console.warn("MixApp GraphQL search errors", res.errors);
+          console.warn("Weave GraphQL search errors", res.errors);
           continue;
         }
         const searchV2 = res?.data?.searchV2 || res?.searchV2;
         if (searchV2) return searchV2;
       } catch (err) {
-        console.warn("MixApp GraphQL search attempt failed", err);
+        console.warn("Weave GraphQL search attempt failed", err);
       }
     }
     return null;
@@ -228,7 +228,7 @@ const MixAppCatalogSearch = (() => {
     try {
       return await searchTracksWebApi(q, want);
     } catch (err) {
-      console.error("MixApp track search failed", err);
+      console.error("Weave track search failed", err);
       throw new Error(
         "Catalog search unavailable (client search blocked). Try again in a moment."
       );
@@ -264,7 +264,7 @@ const MixAppCatalogSearch = (() => {
     try {
       return await searchPlaylistsWebApi(q, want);
     } catch (err) {
-      console.error("MixApp playlist search failed", err);
+      console.error("Weave playlist search failed", err);
       throw new Error(
         "Playlist search unavailable (client search blocked). Try again in a moment."
       );

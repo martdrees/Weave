@@ -279,7 +279,7 @@ const MixAppFeatures = (() => {
         );
         list = res?.audio_features || res?.audioFeatures || null;
       } catch (err) {
-        console.warn("MixApp: audio-attributes batch failed", err);
+        console.warn("Weave: audio-attributes batch failed", err);
       }
 
       if (!list) {
@@ -291,7 +291,7 @@ const MixAppFeatures = (() => {
           );
           list = res?.audio_features || null;
         } catch (err) {
-          console.warn("MixApp: /v1/audio-features batch failed", err);
+          console.warn("Weave: /v1/audio-features batch failed", err);
         }
       }
 
@@ -403,7 +403,55 @@ const MixAppFeatures = (() => {
     return Math.min(1, Math.max(0, (value - min) / (max - min)));
   }
 
-  /** Heat color: low = cool blue, mid = green, high = amber. */
+  /**
+   * Stable muted feature identity colors (tables, sliders, charts).
+   * Intentionally desaturated for dark Spotify chrome.
+   */
+  const FEATURE_COLORS = Object.freeze({
+    energy: "#6a9474",
+    danceability: "#5d8f84",
+    valence: "#a8945e",
+    acousticness: "#6a87a3",
+    instrumentalness: "#8578a0",
+    speechiness: "#9a7380",
+    liveness: "#5d8f88",
+    loudness: "#9a8060",
+    tempo: "#6288a0",
+    popularity: "#8a8378",
+    aggChange: "#8a7398",
+  });
+
+  function featureColorId(id) {
+    if (id == null || id === "") return null;
+    const raw = String(id);
+    if (/^(BPM|bpm|TEMPO)$/i.test(raw)) return "tempo";
+    const lower = raw.toLowerCase();
+    if (FEATURE_COLORS[lower]) return lower;
+    return null;
+  }
+
+  function featureColor(id) {
+    const key = featureColorId(id);
+    return (key && FEATURE_COLORS[key]) || "#6e7882";
+  }
+
+  /** Soft fill from the feature’s fixed hue (pills, range tracks). */
+  function featureTint(id, alpha = 0.4) {
+    const hex = featureColor(id);
+    const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    const a = Math.min(1, Math.max(0, Number(alpha)));
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+
+  /**
+   * @deprecated Prefer featureTint(id) for stable identity colors.
+   * Heat color: low = cool blue, mid = green, high = amber.
+   */
   function relativeColor(norm) {
     if (norm == null) return null;
     const t = Math.min(1, Math.max(0, norm));
@@ -795,6 +843,10 @@ const MixAppFeatures = (() => {
     formatMetric,
     metricValue,
     relativeNorm,
+    FEATURE_COLORS,
+    featureColorId,
+    featureColor,
+    featureTint,
     relativeColor,
     rangeForMetric,
     aggregateStats,

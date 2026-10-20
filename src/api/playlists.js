@@ -4,8 +4,66 @@
  */
 
 const MixAppPlaylists = (() => {
+  /** URIs confirmed missing/private this session (load failed). */
+  const unavailableUris = new Set();
+
   function normalizeTrack(raw, index) {
     return MixAppTrack.fromPlaylistItem(raw, index);
+  }
+
+  function markPlaylistUnavailable(uri) {
+    if (!uri) return;
+    unavailableUris.add(String(uri));
+  }
+
+  /** Spotify library placeholders for deleted / private playlists. */
+  function isUnavailablePlaylistName(name) {
+    const n = String(name || "").trim();
+    if (!n) return true;
+    if (/^playlist not available$/i.test(n)) return true;
+    if (/^not available$/i.test(n)) return true;
+    if (/^playlist nicht verfügbar$/i.test(n)) return true;
+    if (/^nicht verfügbar$/i.test(n)) return true;
+    if (/\bnot available\b/i.test(n)) return true;
+    if (/nicht verfügbar/i.test(n)) return true;
+    if (/no disponible/i.test(n)) return true;
+    if (/non disponible/i.test(n)) return true;
+    if (/non disponibile/i.test(n)) return true;
+    if (/indispon[ií]vel/i.test(n)) return true;
+    if (/недоступн/i.test(n)) return true;
+    if (/利用できません|利用不可/i.test(n)) return true;
+    return false;
+  }
+
+  /**
+   * Drop library rows Spotify marks unavailable (or we already failed to load).
+   * @param {object} item
+   */
+  function isLibraryPlaylistUnavailable(item) {
+    if (!item?.uri) return true;
+    if (unavailableUris.has(String(item.uri))) return true;
+    if (item.isAvailable === false || item.available === false) return true;
+    if (item.isUnavailable === true || item.unavailable === true) return true;
+    if (item.contentsAvailable === false) return true;
+    if (item.canOpen === false || item.canView === false) return true;
+    if (isUnavailablePlaylistName(item.name)) return true;
+    return false;
+  }
+
+  function mapLibraryPlaylist(item) {
+    const isOwnedBySelf = !!(item.isOwnedBySelf ?? item.ownedBySelf);
+    const canEdit =
+      typeof item.canEdit === "boolean"
+        ? item.canEdit
+        : isOwnedBySelf || !!item.collaborative;
+    return {
+      uri: item.uri,
+      name: item.name || "Untitled",
+      collaborative: !!item.collaborative,
+      canEdit,
+      isOwnedBySelf,
+      totalLength: item.totalLength ?? item.length ?? null,
+    };
   }
 
   async function listPlaylists() {
@@ -21,26 +79,14 @@ const MixAppPlaylists = (() => {
         });
         const items = (result?.items || [])
           .filter(
-            (item) => item?.type === "playlist" || item?.uri?.includes(":playlist:")
+            (item) =>
+              (item?.type === "playlist" || item?.uri?.includes(":playlist:")) &&
+              !isLibraryPlaylistUnavailable(item)
           )
-          .map((item) => {
-            const isOwnedBySelf = !!(item.isOwnedBySelf ?? item.ownedBySelf);
-            const canEdit =
-              typeof item.canEdit === "boolean"
-                ? item.canEdit
-                : isOwnedBySelf || !!item.collaborative;
-            return {
-              uri: item.uri,
-              name: item.name || "Untitled",
-              collaborative: !!item.collaborative,
-              canEdit,
-              isOwnedBySelf,
-              totalLength: item.totalLength ?? item.length ?? null,
-            };
-          });
+          .map(mapLibraryPlaylist);
         if (items.length) return items;
       } catch (err) {
-        console.warn("MixApp: LibraryAPI.getContents failed", err);
+        console.warn("Weave: LibraryAPI.getContents failed", err);
       }
     }
 
@@ -50,6 +96,7 @@ const MixAppPlaylists = (() => {
     while (url) {
       const page = await MixAppHttp.cosmosGet(url);
       for (const p of page?.items || []) {
+        if (isLibraryPlaylistUnavailable(p)) continue;
         const isOwnedBySelf = p.owner?.id === me;
         playlists.push({
           uri: p.uri,
@@ -72,7 +119,7 @@ const MixAppPlaylists = (() => {
       const me = await MixAppHttp.cosmosGet("https://api.spotify.com/v1/me");
       cachedUserId = me?.id || null;
     } catch (err) {
-      console.warn("MixApp: failed to fetch /me", err);
+      console.warn("Weave: failed to fetch /me", err);
     }
     return cachedUserId;
   }
@@ -80,24 +127,29 @@ const MixAppPlaylists = (() => {
   async function getPlaylistMeta(uri) {
     const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
     if (PlaylistAPI?.getMetadata) {
-      try {
-        const meta = await PlaylistAPI.getMetadata(uri);
-        return {
-          uri: meta?.uri || uri,
-          name: meta?.name || "Playlist",
-          description: meta?.description || "",
-          isOwnedBySelf: !!(meta?.isOwnedBySelf ?? meta?.ownedBySelf),
-          collaborative: !!meta?.collaborative,
-          totalLength: meta?.totalLength ?? null,
-        };
-      } catch (err) {
-        console.warn("MixApp: PlaylistAPI.getMetadata failed", err);
+      for (const candidate of playlistUriCandidates(uri)) {
+        try {
+          const meta = await PlaylistAPI.getMetadata(candidate);
+          if (meta) {
+            return {
+              uri: meta?.uri || uri,
+              name: meta?.name || "Playlist",
+              description: meta?.description || "",
+              isOwnedBySelf: !!(meta?.isOwnedBySelf ?? meta?.ownedBySelf),
+              collaborative: !!meta?.collaborative,
+              totalLength: meta?.totalLength ?? null,
+            };
+          }
+        } catch (err) {
+          console.warn("Weave: PlaylistAPI.getMetadata failed", err);
+        }
       }
     }
 
     const id = MixAppHttp.playlistIdFromUri(uri);
     const meta = await MixAppHttp.cosmosGet(
-      `https://api.spotify.com/v1/playlists/${id}`
+      `https://api.spotify.com/v1/playlists/${id}`,
+      { retries: 6, label: "playlist meta" }
     );
     const me = await getCurrentUserId();
     return {
@@ -110,35 +162,228 @@ const MixAppPlaylists = (() => {
     };
   }
 
-  async function getPlaylistTracks(uri) {
+  function playlistUriCandidates(uri) {
+    const raw = String(uri || "");
+    const id = MixAppHttp.playlistIdFromUri(raw);
+    const out = [];
+    const push = (u) => {
+      if (u && !out.includes(u)) out.push(u);
+    };
+    push(raw);
+    if (id) {
+      push(`spotify:playlist:${id}`);
+      push(`spotify:playlist-v2:${id}`);
+    }
+    return out;
+  }
+
+  function mapPlatformContents(contents) {
+    const items = contents?.items || [];
+    return items
+      .filter((item) => {
+        const t = item?.track || item?.item || item;
+        const type = t?.type || item?.type;
+        return (
+          !type ||
+          type === "track" ||
+          (t?.uri || item?.uri || "").includes(":track:")
+        );
+      })
+      .map((item, i) => normalizeTrack(item, i));
+  }
+
+  function isInvalidPlaylistResponse(err) {
+    return /invalid playlist response/i.test(String(err?.message || err || ""));
+  }
+
+  function playlistUnavailableError(uri) {
+    if (uri) markPlaylistUnavailable(uri);
+    const err = new Error(
+      "This playlist is no longer available (deleted or made private)"
+    );
+    err.code = "PLAYLIST_UNAVAILABLE";
+    return err;
+  }
+
+  function isPlaylistUnavailableError(err) {
+    return (
+      err?.code === "PLAYLIST_UNAVAILABLE" ||
+      /no longer available/i.test(String(err?.message || ""))
+    );
+  }
+
+  /**
+   * Platform PlaylistAPI.getContents — preferred (keeps item uids / mixing attrs).
+   * "Invalid playlist response" usually means deleted/private — do not retry into 429.
+   * @returns {{ kind: 'ok', tracks: object[] } | { kind: 'unavailable' } | { kind: 'miss' }}
+   */
+  async function getPlaylistTracksViaPlatform(uri) {
     const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
-    if (PlaylistAPI?.getContents) {
+    if (!PlaylistAPI?.getContents) return { kind: "miss" };
+
+    let sawInvalid = false;
+    let lastErr = null;
+    for (const candidate of playlistUriCandidates(uri)) {
       try {
-        const contents = await PlaylistAPI.getContents(uri);
-        const items = contents?.items || [];
-        return items
-          .filter((item) => {
-            const t = item?.track || item?.item || item;
-            const type = t?.type || item?.type;
-            return (
-              !type ||
-              type === "track" ||
-              (t?.uri || item?.uri || "").includes(":track:")
-            );
-          })
-          .map((item, i) => normalizeTrack(item, i));
+        const contents = await PlaylistAPI.getContents(candidate);
+        if (contents && Array.isArray(contents.items)) {
+          return { kind: "ok", tracks: mapPlatformContents(contents) };
+        }
       } catch (err) {
-        console.warn("MixApp: PlaylistAPI.getContents failed", err);
+        lastErr = err;
+        if (isInvalidPlaylistResponse(err)) {
+          sawInvalid = true;
+          continue;
+        }
+        if (MixAppHttp.isRateLimitError(err)) {
+          await MixAppHttp.sleep(1000);
+          try {
+            const contents = await PlaylistAPI.getContents(candidate);
+            if (contents && Array.isArray(contents.items)) {
+              return { kind: "ok", tracks: mapPlatformContents(contents) };
+            }
+          } catch (err2) {
+            lastErr = err2;
+            if (isInvalidPlaylistResponse(err2)) sawInvalid = true;
+          }
+        }
       }
     }
+    if (lastErr) {
+      console.warn("Weave: PlaylistAPI.getContents failed", lastErr);
+    }
+    return sawInvalid ? { kind: "unavailable" } : { kind: "miss" };
+  }
 
+  function mapGraphqlPlaylistItem(entry, index) {
+    const data =
+      entry?.itemV2?.data ||
+      entry?.item?.data ||
+      entry?.data ||
+      entry?.track ||
+      null;
+    if (!data) return null;
+    const typename = String(
+      data.__typename || entry?.itemV2?.__typename || ""
+    );
+    if (typename && /NotFound|Episode|Audiobook|Podcast/i.test(typename)) {
+      return null;
+    }
+    const uri = data.uri || "";
+    if (uri && !String(uri).includes(":track:")) return null;
+
+    const track = MixAppTrack.fromGraphqlTrack(data, index);
+    if (!track) return null;
+    if (entry?.uid) track.uid = String(entry.uid);
+    const added =
+      entry?.addedAt?.isoString ||
+      entry?.addedAt ||
+      data?.addedAt ||
+      null;
+    if (added) track.addedAt = added;
+    return track;
+  }
+
+  function graphqlPlaylistLooksUnavailable(res) {
+    const root = res?.data?.playlistV2 ?? res?.data?.playlist ?? res?.playlistV2;
+    if (root == null) return true;
+    const typename = String(root.__typename || "");
+    if (/NotFound|PlaylistNotFound|GenericError/i.test(typename)) return true;
+    if (Array.isArray(res?.errors) && res.errors.length) {
+      const blob = res.errors.map((e) => e?.message || "").join(" ");
+      if (/not.?found|does not exist|404|unavailable|private/i.test(blob)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Pathfinder FetchPlaylistContents — avoids rate-limited Web API /items.
+   * @returns {{ kind: 'ok', tracks: object[] } | { kind: 'unavailable' } | { kind: 'miss' }}
+   */
+  async function getPlaylistTracksViaGraphQL(uri) {
+    const GQL = Spicetify?.GraphQL;
+    const defs = GQL?.Definitions;
+    if (!GQL?.Request || !defs) return { kind: "miss" };
+
+    const definition =
+      defs.fetchPlaylistContents ||
+      defs.FetchPlaylistContents ||
+      defs.fetchPlaylist ||
+      defs.FetchPlaylist ||
+      null;
+    if (!definition) return { kind: "miss" };
+
+    const playlistUri =
+      playlistUriCandidates(uri).find((u) => u.includes(":playlist:")) || uri;
+    const tracks = [];
+    const limit = 100;
+    let offset = 0;
+    let total = null;
+
+    for (let page = 0; page < 100; page++) {
+      let res;
+      try {
+        res = await GQL.Request(definition, {
+          uri: playlistUri,
+          offset,
+          limit,
+          enableWatchFeedEntrypoint: false,
+        });
+      } catch (err) {
+        console.warn("Weave: GraphQL playlist contents failed", err);
+        return tracks.length
+          ? { kind: "ok", tracks }
+          : { kind: "miss" };
+      }
+
+      if (page === 0 && graphqlPlaylistLooksUnavailable(res)) {
+        return { kind: "unavailable" };
+      }
+      if (res?.errors?.length && !tracks.length) {
+        console.warn("Weave: GraphQL playlist contents errors", res.errors);
+        return { kind: "miss" };
+      }
+
+      const root = res?.data?.playlistV2 || res?.data?.playlist || res?.playlistV2;
+      const content = root?.content || null;
+      const items = content?.items;
+      if (!Array.isArray(items)) {
+        return tracks.length
+          ? { kind: "ok", tracks }
+          : { kind: "unavailable" };
+      }
+      if (total == null && content?.totalCount != null) {
+        total = Number(content.totalCount);
+      }
+
+      for (const entry of items) {
+        const track = mapGraphqlPlaylistItem(entry, tracks.length);
+        if (track) tracks.push(track);
+      }
+
+      offset += items.length;
+      if (!items.length || items.length < limit) break;
+      if (total != null && offset >= total) break;
+      await MixAppHttp.sleep(120);
+    }
+
+    return { kind: "ok", tracks };
+  }
+
+  async function getPlaylistTracksViaWebApi(uri) {
     const id = MixAppHttp.playlistIdFromUri(uri);
+    if (!id) throw new Error("Invalid playlist URI");
     const tracks = [];
     // Feb 2026: /tracks removed — use /items
     let url = `https://api.spotify.com/v1/playlists/${id}/items?limit=100`;
     let index = 0;
     while (url) {
-      const page = await MixAppHttp.cosmosGet(url);
+      const page = await MixAppHttp.cosmosGet(url, {
+        retries: 3,
+        label: "playlist items",
+      });
       for (const row of page?.items || []) {
         const track = row?.item || row?.track;
         if (!track || track.is_local) continue;
@@ -146,11 +391,38 @@ const MixAppPlaylists = (() => {
         tracks.push(normalizeTrack(row, index++));
       }
       url = page?.next || null;
+      if (url) await MixAppHttp.sleep(250);
     }
     return tracks;
   }
 
-  /** Synthetic MixApp uids — not Spotify playlist-item uids (mixing attrs live on those). */
+  async function getPlaylistTracks(uri) {
+    const platform = await getPlaylistTracksViaPlatform(uri);
+    if (platform.kind === "ok") return platform.tracks;
+
+    const graphql = await getPlaylistTracksViaGraphQL(uri);
+    if (graphql.kind === "ok") return graphql.tracks;
+
+    // Deleted / private: Platform "Invalid playlist response" + GraphQL NotFound.
+    // Do not hammer Web API — that only burns rate limit.
+    if (platform.kind === "unavailable" || graphql.kind === "unavailable") {
+      throw playlistUnavailableError(uri);
+    }
+
+    try {
+      return await getPlaylistTracksViaWebApi(uri);
+    } catch (err) {
+      if (
+        MixAppHttp.isNotFoundError(err) ||
+        MixAppHttp.isForbiddenError(err)
+      ) {
+        throw playlistUnavailableError(uri);
+      }
+      throw err;
+    }
+  }
+
+  /** Synthetic Weave uids — not Spotify playlist-item uids (mixing attrs live on those). */
   function isSpotifyItemUid(uid) {
     if (!uid) return false;
     const s = String(uid);
@@ -171,11 +443,27 @@ const MixAppPlaylists = (() => {
 
   async function getLivePlaylistItems(uri) {
     const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
-    if (PlaylistAPI?.getContents) {
-      const contents = await PlaylistAPI.getContents(uri);
-      return (contents?.items || []).map(liveItemFromRaw).filter(Boolean);
+    if (!PlaylistAPI?.getContents) {
+      throw new Error(
+        "PlaylistAPI.getContents unavailable; cannot sync without replacing"
+      );
     }
-    // Web API has no item uids — cannot preserve mixing settings this way.
+    let sawInvalid = false;
+    let lastErr = null;
+    for (const candidate of playlistUriCandidates(uri)) {
+      try {
+        const contents = await PlaylistAPI.getContents(candidate);
+        return (contents?.items || []).map(liveItemFromRaw).filter(Boolean);
+      } catch (err) {
+        lastErr = err;
+        if (isInvalidPlaylistResponse(err)) {
+          sawInvalid = true;
+          continue;
+        }
+      }
+    }
+    if (sawInvalid) throw playlistUnavailableError(uri);
+    if (lastErr) throw lastErr;
     throw new Error(
       "PlaylistAPI.getContents unavailable; cannot sync without replacing"
     );
@@ -272,7 +560,7 @@ const MixAppPlaylists = (() => {
         targetUids
       );
     } catch (err) {
-      console.warn("MixApp: PlaylistAPI.move reorder failed", err);
+      console.warn("Weave: PlaylistAPI.move reorder failed", err);
       return false;
     }
   }
@@ -407,7 +695,33 @@ const MixAppPlaylists = (() => {
     return getPlaylistTracks(uri);
   }
 
-  /** Full replace — only for brand-new playlists (no mixing settings to keep). */
+  function playlistUriFromCreateResult(created) {
+    if (!created) return null;
+    if (typeof created === "string") {
+      return created.includes(":playlist:") ? created : null;
+    }
+    return (
+      created.uri ||
+      created.playlistUri ||
+      created.playlist?.uri ||
+      created.metadata?.uri ||
+      null
+    );
+  }
+
+  /** Fill a new playlist — Platform add preferred (avoids Web API 429). */
+  async function fillNewPlaylist(uri, trackUris) {
+    const uris = (trackUris || []).filter(Boolean);
+    if (!uris.length) return;
+    const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
+    if (typeof PlaylistAPI?.add === "function") {
+      await playlistApiAdd(uri, uris, { after: "end" });
+      return;
+    }
+    await replacePlaylistTracks(uri, uris);
+  }
+
+  /** Full replace via Web API — last resort for brand-new playlists. */
   async function replacePlaylistTracks(uri, trackUris) {
     const id = MixAppHttp.playlistIdFromUri(uri);
     if (!id) throw new Error("Invalid playlist URI");
@@ -415,15 +729,16 @@ const MixAppPlaylists = (() => {
     for (let i = 0; i < Math.max(trackUris.length, 1); i += chunkSize) {
       const chunk = trackUris.slice(i, i + chunkSize);
       if (i === 0) {
-        await MixAppHttp.cosmosPut(`https://api.spotify.com/v1/playlists/${id}/items`, {
-          uris: chunk,
-        });
+        await MixAppHttp.cosmosPut(
+          `https://api.spotify.com/v1/playlists/${id}/items`,
+          { uris: chunk },
+          { retries: 3, label: "playlist replace" }
+        );
       } else if (chunk.length) {
         await MixAppHttp.cosmosPost(
           `https://api.spotify.com/v1/playlists/${id}/items`,
-          {
-            uris: chunk,
-          }
+          { uris: chunk },
+          { retries: 3, label: "playlist append" }
         );
       }
     }
@@ -432,30 +747,59 @@ const MixAppPlaylists = (() => {
   async function createPlaylist(name, trackUris) {
     const RootlistAPI = Spicetify?.Platform?.RootlistAPI;
     let uri = null;
+    let platformErr = null;
 
-    if (RootlistAPI?.createPlaylist) {
-      try {
-        const created = await RootlistAPI.createPlaylist(name);
-        uri = created?.uri || created;
-      } catch (err) {
-        console.warn("MixApp: RootlistAPI.createPlaylist failed", err);
+    if (typeof RootlistAPI?.createPlaylist === "function") {
+      const attempts = [
+        () => RootlistAPI.createPlaylist(name, { before: "start" }),
+        () => RootlistAPI.createPlaylist(name, { after: "end" }),
+        () => RootlistAPI.createPlaylist(name),
+      ];
+      for (const attempt of attempts) {
+        try {
+          const created = await attempt();
+          uri = playlistUriFromCreateResult(created);
+          if (uri) break;
+        } catch (err) {
+          platformErr = err;
+          console.warn("Weave: RootlistAPI.createPlaylist failed", err);
+        }
       }
     }
 
     if (!uri) {
-      const created = await MixAppHttp.cosmosPost(
-        "https://api.spotify.com/v1/me/playlists",
-        {
-          name,
-          public: false,
+      try {
+        const created = await MixAppHttp.cosmosPost(
+          "https://api.spotify.com/v1/me/playlists",
+          { name, public: false },
+          { retries: 2, label: "create playlist", notifyUser: true }
+        );
+        uri = playlistUriFromCreateResult(created);
+      } catch (err) {
+        if (MixAppHttp.isRateLimitError(err) || platformErr) {
+          throw new Error(
+            "Could not create playlist — Spotify is rate-limiting. Wait a minute and try again."
+          );
         }
-      );
-      uri = created?.uri;
+        throw err;
+      }
     }
 
     if (!uri) throw new Error("Failed to create playlist");
     if (trackUris?.length) {
-      await replacePlaylistTracks(uri, trackUris);
+      try {
+        await fillNewPlaylist(uri, trackUris);
+      } catch (err) {
+        console.warn("Weave: failed to fill new playlist", err);
+        if (MixAppHttp.isRateLimitError(err)) {
+          MixAppNotify.notify(
+            "Playlist created, but adding tracks was rate-limited — open it and Save again",
+            true
+          );
+          return uri;
+        }
+        throw err;
+      }
     }
     return uri;
   }
@@ -473,5 +817,8 @@ const MixAppPlaylists = (() => {
     saveOverwrite,
     syncPlaylistTracks,
     normalizeTrack,
+    isPlaylistUnavailableError,
+    markPlaylistUnavailable,
+    isLibraryPlaylistUnavailable,
   };
 })();

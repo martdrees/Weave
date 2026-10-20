@@ -1,6 +1,6 @@
 //@ts-check
 /**
- * Durable MixApp UI prefs (survive playlist changes / session clear).
+ * Durable Weave UI prefs (survive playlist changes / session clear).
  *
  * Owns: resultLimit, searchFilters, preferSearchOpen, preferStatsOpen,
  *       flowify, generator, statsVisibleMetrics.
@@ -48,14 +48,14 @@ const MixAppPrefs = (() => {
         if (v != null) return v;
       }
     } catch (err) {
-      console.warn("MixApp: prefs LocalStorageAPI get failed", err);
+      console.warn("Weave: prefs LocalStorageAPI get failed", err);
     }
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) return null;
       return JSON.parse(raw);
     } catch (err) {
-      console.warn("MixApp: prefs localStorage get failed", err);
+      console.warn("Weave: prefs localStorage get failed", err);
       return null;
     }
   }
@@ -68,13 +68,13 @@ const MixAppPrefs = (() => {
         return true;
       }
     } catch (err) {
-      console.warn("MixApp: prefs LocalStorageAPI set failed", err);
+      console.warn("Weave: prefs LocalStorageAPI set failed", err);
     }
     try {
       localStorage.setItem(KEY, JSON.stringify(value));
       return true;
     } catch (err) {
-      console.warn("MixApp: prefs localStorage set failed", err);
+      console.warn("Weave: prefs localStorage set failed", err);
       return false;
     }
   }

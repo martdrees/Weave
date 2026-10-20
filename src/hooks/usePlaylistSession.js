@@ -102,20 +102,31 @@ function MixAppUsePlaylistSession(opts) {
     setTracksLoading(true);
     setError(null);
     try {
-      const [meta, items] = await Promise.all([
-        MixAppApi.getPlaylistMeta(uri),
-        MixAppApi.getPlaylistTracks(uri),
-      ]);
-      if (loadGen !== loadGenRef.current) return;
+      // Prefer library list for meta so we do not race tracks against /v1/playlists
+      // (and stampede into 429 when Platform getContents already failed).
       const listed = playlists.find((p) => p.uri === uri);
-      if (listed) {
-        meta.isOwnedBySelf = !!(meta.isOwnedBySelf || listed.isOwnedBySelf);
-        meta.collaborative = !!(meta.collaborative || listed.collaborative);
-        if (listed.canEdit === false) {
-          meta.isOwnedBySelf = false;
-          meta.collaborative = false;
-        }
+      let meta = listed
+        ? {
+            uri: listed.uri,
+            name: listed.name || "Playlist",
+            description: "",
+            isOwnedBySelf: !!listed.isOwnedBySelf,
+            collaborative: !!listed.collaborative,
+            totalLength: listed.totalLength ?? null,
+          }
+        : null;
+
+      const items = await MixAppApi.getPlaylistTracks(uri);
+      if (loadGen !== loadGenRef.current) return;
+
+      if (!meta) {
+        meta = await MixAppApi.getPlaylistMeta(uri);
+        if (loadGen !== loadGenRef.current) return;
+      } else if (listed?.canEdit === false) {
+        meta.isOwnedBySelf = false;
+        meta.collaborative = false;
       }
+
       setPlaylist(meta);
       setTracks(items);
       setDirty(false);
@@ -127,16 +138,31 @@ function MixAppUsePlaylistSession(opts) {
         if (loadGen !== loadGenRef.current) return;
         setTracks(enriched.slice());
       } catch (featErr) {
-        console.warn("MixApp: feature enrich failed", featErr);
+        console.warn("Weave: feature enrich failed", featErr);
       }
       return;
     } catch (err) {
       if (loadGen !== loadGenRef.current) return;
-      console.error(err);
-      setError(err?.message || "Failed to load playlist");
-      MixAppApi.notify("Failed to load playlist", true);
+      const unavailable =
+        err?.code === "PLAYLIST_UNAVAILABLE" ||
+        MixAppPlaylists?.isPlaylistUnavailableError?.(err);
+      const rateLimited = !unavailable && MixAppHttp?.isRateLimitError?.(err);
+      const msg = unavailable
+        ? "This playlist is no longer available (deleted or made private)"
+        : rateLimited
+          ? "Spotify rate limit — wait a moment and try again"
+          : err?.message || "Failed to load playlist";
+      if (!unavailable) console.error(err);
+      else console.warn("Weave: playlist unavailable", err);
+      setError(msg);
+      MixAppApi.notify(msg, true);
       setPlaylist(null);
       setTracks([]);
+      if (unavailable && uri) {
+        MixAppPlaylists?.markPlaylistUnavailable?.(uri);
+        setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
+        setSelectedUri(null);
+      }
     } finally {
       if (loadGen === loadGenRef.current) setTracksLoading(false);
     }
@@ -269,8 +295,8 @@ function MixAppUsePlaylistSession(opts) {
   async function handleSaveAsNew() {
     if (!tracks.length) return;
     if (tracksLoadingRef.current || saving) return;
-    const base = playlist?.name || "MixApp playlist";
-    const name = `${base} (MixApp)`;
+    const base = playlist?.name || "Weave playlist";
+    const name = `${base} (Weave)`;
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {

@@ -1,6 +1,6 @@
 //@ts-check
 /**
- * Playlist column visibility for MixApp.
+ * Playlist column visibility for Weave.
  * Sole owner of column visibility (not prefs/session). See docs/PERSISTENCE.md.
  *
  * Toggleable columns are stored under LocalStorageAPI "mixapp-feature-columns"
@@ -50,6 +50,34 @@ const MixAppColumnConfig = (() => {
       always: false,
       defaultVisible: false,
       metricId: "acousticness",
+    },
+    {
+      id: "INSTRUMENTALNESS",
+      label: "Instr.",
+      always: false,
+      defaultVisible: false,
+      metricId: "instrumentalness",
+    },
+    {
+      id: "SPEECHINESS",
+      label: "Speech",
+      always: false,
+      defaultVisible: false,
+      metricId: "speechiness",
+    },
+    {
+      id: "LIVENESS",
+      label: "Live",
+      always: false,
+      defaultVisible: false,
+      metricId: "liveness",
+    },
+    {
+      id: "LOUDNESS",
+      label: "Loud",
+      always: false,
+      defaultVisible: false,
+      metricId: "loudness",
     },
     { id: "DURATION", label: "Time", always: false, defaultVisible: true },
     { id: "ACTIONS", label: "Actions", always: true },
@@ -113,7 +141,7 @@ const MixAppColumnConfig = (() => {
 
     for (const col of COLUMNS) {
       if (col.always) continue;
-      // Prefer MixApp-saved prefs; else seed once from Spotify playlist columns.
+      // Prefer Weave-saved prefs; else seed once from Spotify playlist columns.
       const fromMix = saved?.[col.id];
       if (fromMix && typeof fromMix.visible === "boolean") {
         base[col.id] = { visible: fromMix.visible };
@@ -125,7 +153,7 @@ const MixAppColumnConfig = (() => {
       }
     }
 
-    // Persist only MixApp toggleable entries
+    // Persist only Weave toggleable entries
     /** @type {Record<string, { visible: boolean }>} */
     const toSave = {};
     for (const col of COLUMNS) {
@@ -224,5 +252,202 @@ const MixAppColumnConfig = (() => {
     subscribe,
     formatAddedAt,
     columnMetric,
+  };
+})();
+
+/**
+ * Column visibility for results / generator / catalog tables (not the playlist Arranger).
+ * Separate storage from MixAppColumnConfig so playlist prefs stay untouched.
+ */
+const MixAppResultsColumnConfig = (() => {
+  const MIXAPP_KEY = "mixapp-results-columns";
+
+  /** @type {Record<string, { visible: boolean }> | null} */
+  let memory = null;
+
+  const COLUMNS = [
+    { id: "INDEX", label: "#", always: true },
+    { id: "TITLE_AND_ARTIST", label: "Track", always: true },
+    { id: "BPM", label: "BPM", always: false, defaultVisible: true },
+    { id: "KEY", label: "Key", always: false, defaultVisible: true },
+    {
+      id: "ENERGY",
+      label: "Energy",
+      always: false,
+      defaultVisible: true,
+      metricId: "energy",
+      width: "3.5rem",
+    },
+    {
+      id: "DANCEABILITY",
+      label: "Dance",
+      always: false,
+      defaultVisible: true,
+      metricId: "danceability",
+      width: "3.25rem",
+    },
+    {
+      id: "VALENCE",
+      label: "Valence",
+      always: false,
+      defaultVisible: true,
+      metricId: "valence",
+      width: "3.5rem",
+    },
+    {
+      id: "ACOUSTICNESS",
+      label: "Acoustic",
+      always: false,
+      defaultVisible: true,
+      metricId: "acousticness",
+      width: "4rem",
+    },
+    {
+      id: "INSTRUMENTALNESS",
+      label: "Instr.",
+      always: false,
+      defaultVisible: false,
+      metricId: "instrumentalness",
+      width: "3rem",
+    },
+    {
+      id: "SPEECHINESS",
+      label: "Speech",
+      always: false,
+      defaultVisible: false,
+      metricId: "speechiness",
+      width: "3.1rem",
+    },
+    {
+      id: "LIVENESS",
+      label: "Live",
+      always: false,
+      defaultVisible: false,
+      metricId: "liveness",
+      width: "2.75rem",
+    },
+    {
+      id: "LOUDNESS",
+      label: "Loud",
+      always: false,
+      defaultVisible: false,
+      metricId: "loudness",
+      width: "3rem",
+    },
+    { id: "DURATION", label: "Time", always: false, defaultVisible: true },
+    { id: "ACTIONS", label: "Actions", always: true },
+  ];
+
+  function defaults() {
+    /** @type {Record<string, { visible: boolean }>} */
+    const out = {};
+    for (const col of COLUMNS) {
+      out[col.id] = { visible: col.always ? true : !!col.defaultVisible };
+    }
+    return out;
+  }
+
+  function readPersisted() {
+    try {
+      const api = Spicetify?.Platform?.LocalStorageAPI;
+      const all = api?.getItem?.(MIXAPP_KEY);
+      if (all && typeof all === "object") return all;
+    } catch {
+      /* ignore */
+    }
+    try {
+      const raw = localStorage.getItem("mixapp:" + MIXAPP_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  function writePersisted(all) {
+    try {
+      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(MIXAPP_KEY, all);
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.setItem("mixapp:" + MIXAPP_KEY, JSON.stringify(all));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function ensureMemory() {
+    if (memory) return memory;
+    const base = defaults();
+    const saved = readPersisted();
+    for (const col of COLUMNS) {
+      if (col.always) continue;
+      const fromMix = saved?.[col.id];
+      if (fromMix && typeof fromMix.visible === "boolean") {
+        base[col.id] = { visible: fromMix.visible };
+      }
+    }
+    /** @type {Record<string, { visible: boolean }>} */
+    const toSave = {};
+    for (const col of COLUMNS) {
+      if (col.always) continue;
+      toSave[col.id] = { visible: !!base[col.id].visible };
+    }
+    memory = toSave;
+    writePersisted(toSave);
+    return memory;
+  }
+
+  function getVisibility() {
+    const mix = ensureMemory();
+    const base = defaults();
+    for (const col of COLUMNS) {
+      if (col.always) {
+        base[col.id] = { visible: true };
+        continue;
+      }
+      const entry = mix[col.id];
+      if (entry && typeof entry.visible === "boolean") {
+        base[col.id] = { visible: entry.visible };
+      }
+    }
+    return base;
+  }
+
+  function isVisible(visibility, columnId) {
+    return !!visibility?.[columnId]?.visible;
+  }
+
+  function setVisible(columnId, visible) {
+    const col = COLUMNS.find((c) => c.id === columnId);
+    if (!col || col.always) return getVisibility();
+    const mix = { ...ensureMemory() };
+    mix[columnId] = { visible: !!visible };
+    memory = mix;
+    writePersisted(mix);
+    return getVisibility();
+  }
+
+  function toggle(columnId) {
+    const vis = getVisibility();
+    return setVisible(columnId, !isVisible(vis, columnId));
+  }
+
+  function featureWidth(col) {
+    if (col.width) return col.width;
+    if (col.id === "KEY") return "2.4rem";
+    if (col.id === "BPM") return "2.6rem";
+    return "3.5rem";
+  }
+
+  return {
+    MIXAPP_KEY,
+    COLUMNS,
+    getVisibility,
+    isVisible,
+    setVisible,
+    toggle,
+    featureWidth,
   };
 })();

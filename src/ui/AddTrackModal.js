@@ -44,7 +44,7 @@ function MixAppAddTrackModal(props) {
         try {
           list = await MixAppFeatures.enrichTracks(list.slice());
         } catch (enrichErr) {
-          console.warn("MixApp: add-track enrich failed", enrichErr);
+          console.warn("Weave: add-track enrich failed", enrichErr);
         }
       }
       if (gen !== genRef.current) return;

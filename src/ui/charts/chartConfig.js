@@ -13,19 +13,8 @@ const MixAppChartConfig = (() => {
 
   const MA_WINDOW = 5;
 
-  /** Soft accents on dark spice-card — keyed to feature identity. */
-  const METRIC_COLORS = {
-    aggChange: "#e879f9",
-    energy: "#1ed760",
-    danceability: "#3ecf8e",
-    valence: "#f0c14a",
-    acousticness: "#6cb6ff",
-    instrumentalness: "#a78bfa",
-    speechiness: "#f472b6",
-    liveness: "#2dd4bf",
-    loudness: "#fb923c",
-    tempo: "#38bdf8",
-  };
+  /** Soft accents — delegated to MixAppFeatures so tables/sliders/charts match. */
+  const METRIC_COLORS = MixAppFeatures.FEATURE_COLORS;
 
   const CHART_HINTS = {
     aggChange:
@@ -52,7 +41,7 @@ const MixAppChartConfig = (() => {
   }
 
   function metricColor(id) {
-    return METRIC_COLORS[id] || "var(--spice-button, #1db954)";
+    return MixAppFeatures.featureColor(id);
   }
 
   function chartHint(metric) {

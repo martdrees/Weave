@@ -1,6 +1,6 @@
 //@ts-check
 /**
- * MixApp page — composition + layout (R1.1 / R1.3).
+ * Weave page — composition + layout (R1.1 / R1.3).
  * Use-cases live in src/hooks/*.
  */
 
@@ -134,22 +134,36 @@ function MixAppPage() {
       h(
         "div",
         { className: "mixapp-header-row" },
-        h("h1", null, "MixApp"),
+        h("h1", null, "Weave"),
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-btn mixapp-btn-ghost mixapp-btn-compact",
+            className: "mixapp-icon-btn mixapp-icon-btn-compact",
             onClick: () => panels.openPanel("shortcuts"),
             title: "Keyboard shortcuts (?)",
+            "aria-label": "Keyboard shortcuts",
           },
-          "?"
+          h(
+            "svg",
+            {
+              viewBox: "0 0 16 16",
+              width: 16,
+              height: 16,
+              "aria-hidden": "true",
+              focusable: "false",
+            },
+            h("path", {
+              fill: "currentColor",
+              d: "M14 5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h12zM2 4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H2zm2.5 3a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-8 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm6 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-4.5-.5a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3z",
+            })
+          )
         )
       ),
       h(
         "p",
         { className: "mixapp-subtitle" },
-        "Load a playlist, rearrange, find tracks, and save back to Spotify. Press ? for shortcuts."
+        "Playlist weaving for Spotify"
       )
     ),
     h(MixAppToolbar, {
@@ -275,6 +289,9 @@ function MixAppPage() {
       playlist: session.playlist,
       tracks: session.tracks,
       seedUris: search.seedUris,
+      playingUri: playback.playingUri,
+      isPlaying: playback.isPlaying,
+      onPlay: handlePlay,
       onClose: () => panels.closePanel("generator"),
       onCreated: async (uri) => {
         if (!uri) return;

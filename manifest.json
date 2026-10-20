@@ -1,7 +1,7 @@
 {
-  "name": "MixApp",
-  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
-  "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M4 6h2v12H4V6zm4 3h2v9H8V9zm4-3h2v12h-2V6zm4 5h2v7h-2v-7zm4-2h2v9h-2V9z\"/></svg>",
+  "name": "Weave",
+  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"currentColor\" stroke-width=\"2.5\"/></svg>",
+  "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"currentColor\" stroke-width=\"2.5\"/></svg>",
   "subfiles": [
     "src/types.js",
     "src/api/notify.js",
@@ -34,6 +34,7 @@
     "src/ui/charts/chartConfig.js",
     "src/ui/charts/LineChart.js",
     "src/ui/StatsPanel.js",
+    "src/ui/FeatureSliders.js",
     "src/ui/SearchPanel.js",
     "src/ui/SearchResults.js",
     "src/ui/AddTrackModal.js",

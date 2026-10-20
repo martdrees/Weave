@@ -16,12 +16,30 @@ const MixAppHttp = (() => {
     if (typeof response !== "object") return response;
     if (!("error" in response)) return response;
     const err = response.error;
-    if (typeof err === "string") throw new Error(`${context}: ${err}`);
-    const status = err?.status ?? err?.statusCode;
-    const message = err?.message || err?.error_description || "request failed";
-    throw new Error(
-      status != null ? `${context}: ${status} — ${message}` : `${context}: ${message}`
-    );
+    // Empty-string / bare error bodies are common on 429 under client tokens.
+    if (err === true || err === "" || err == null) {
+      throw new Error(`${context}: 429 — request failed (likely rate limited)`);
+    }
+    if (typeof err === "string") {
+      const text = err.trim() || "429 — request failed (likely rate limited)";
+      throw new Error(`${context}: ${text}`);
+    }
+    const status = err?.status ?? err?.statusCode ?? err?.code;
+    const message =
+      err?.message ||
+      err?.error_description ||
+      (typeof err?.error === "string" ? err.error : null) ||
+      (status === 429 ? "Too Many Requests" : null);
+    if (status != null) {
+      throw new Error(
+        `${context}: ${status} — ${message || "request failed"}`
+      );
+    }
+    // Client-token cosmos often returns `{ error: {} }` on 429 with no status.
+    if (!message) {
+      throw new Error(`${context}: 429 — request failed (likely rate limited)`);
+    }
+    throw new Error(`${context}: ${message}`);
   }
 
   function sleep(ms) {
@@ -31,8 +49,51 @@ const MixAppHttp = (() => {
   function isRateLimitError(err) {
     const msg = String(err?.message || err || "");
     return (
-      msg.includes("429") || /rate.?limit/i.test(msg) || /too many requests/i.test(msg)
+      msg.includes("429") ||
+      /rate.?limit/i.test(msg) ||
+      /too many requests/i.test(msg) ||
+      /likely rate limited/i.test(msg)
     );
+  }
+
+  /** HTTP / cosmos errors that must not be retried (gone / forbidden). */
+  function isNotFoundError(err) {
+    const msg = String(err?.message || err || "");
+    if (/\b404\b/.test(msg)) return true;
+    if (/resource not found|playlist not found|not be found/i.test(msg)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isForbiddenError(err) {
+    const msg = String(err?.message || err || "");
+    return /\b403\b/.test(msg) || /forbidden|access denied/i.test(msg);
+  }
+
+  function isNonRetryableHttpError(err) {
+    return isNotFoundError(err) || isForbiddenError(err) || /\b401\b/.test(
+      String(err?.message || err || "")
+    );
+  }
+
+  /** Serialize Cosmos calls so a meta+tracks stampede does not trip 429. */
+  let cosmosTail = Promise.resolve();
+  let lastCosmosAt = 0;
+  const COSMOS_MIN_GAP_MS = 400;
+
+  function enqueueCosmos(fn) {
+    const run = cosmosTail.then(async () => {
+      const wait = COSMOS_MIN_GAP_MS - (Date.now() - lastCosmosAt);
+      if (wait > 0) await sleep(wait);
+      lastCosmosAt = Date.now();
+      return fn();
+    });
+    cosmosTail = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
   }
 
   function parseRetryAfterMs(err) {
@@ -57,11 +118,12 @@ const MixAppHttp = (() => {
         return await fn();
       } catch (err) {
         lastErr = err;
+        if (isNonRetryableHttpError(err)) throw err;
         if (!isRateLimitError(err) || attempt === retries - 1) throw err;
         const retryAfter = parseRetryAfterMs(err);
         const delay =
           retryAfter != null ? retryAfter : Math.min(20000, 800 * Math.pow(2, attempt));
-        console.warn(`MixApp: ${label} rate-limited, retry in ${delay}ms`);
+        console.warn(`Weave: ${label} rate-limited, retry in ${delay}ms`);
         if (notifyUser && Date.now() - rateLimitNotifyAt > 4000) {
           rateLimitNotifyAt = Date.now();
           MixAppNotify.notify(
@@ -77,10 +139,11 @@ const MixAppHttp = (() => {
 
   async function cosmosGet(url, opts = {}) {
     return withRetry(
-      async () => {
-        const res = await Spicetify.CosmosAsync.get(url);
-        return assertCosmosOk(res, url);
-      },
+      () =>
+        enqueueCosmos(async () => {
+          const res = await Spicetify.CosmosAsync.get(url);
+          return assertCosmosOk(res, url);
+        }),
       {
         retries: opts.retries ?? 5,
         label: opts.label || "request",
@@ -91,10 +154,11 @@ const MixAppHttp = (() => {
 
   async function cosmosPost(url, body, opts = {}) {
     return withRetry(
-      async () => {
-        const res = await Spicetify.CosmosAsync.post(url, body);
-        return assertCosmosOk(res, url);
-      },
+      () =>
+        enqueueCosmos(async () => {
+          const res = await Spicetify.CosmosAsync.post(url, body);
+          return assertCosmosOk(res, url);
+        }),
       {
         retries: opts.retries ?? 5,
         label: opts.label || "request",
@@ -105,10 +169,11 @@ const MixAppHttp = (() => {
 
   async function cosmosPut(url, body, opts = {}) {
     return withRetry(
-      async () => {
-        const res = await Spicetify.CosmosAsync.put(url, body);
-        return assertCosmosOk(res, url);
-      },
+      () =>
+        enqueueCosmos(async () => {
+          const res = await Spicetify.CosmosAsync.put(url, body);
+          return assertCosmosOk(res, url);
+        }),
       {
         retries: opts.retries ?? 5,
         label: opts.label || "request",
@@ -130,6 +195,9 @@ const MixAppHttp = (() => {
     assertCosmosOk,
     sleep,
     isRateLimitError,
+    isNotFoundError,
+    isForbiddenError,
+    isNonRetryableHttpError,
     parseRetryAfterMs,
     withRetry,
     cosmosGet,

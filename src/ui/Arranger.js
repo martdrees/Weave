@@ -118,6 +118,30 @@ function MixAppArranger(props) {
       sortKey: "acousticness",
       metricId: "acousticness",
     },
+    {
+      id: "INSTRUMENTALNESS",
+      label: "Instr.",
+      sortKey: "instrumentalness",
+      metricId: "instrumentalness",
+    },
+    {
+      id: "SPEECHINESS",
+      label: "Speech",
+      sortKey: "speechiness",
+      metricId: "speechiness",
+    },
+    {
+      id: "LIVENESS",
+      label: "Live",
+      sortKey: "liveness",
+      metricId: "liveness",
+    },
+    {
+      id: "LOUDNESS",
+      label: "Loud",
+      sortKey: "loudness",
+      metricId: "loudness",
+    },
   ];
 
   function featureColWidth(col) {
@@ -128,6 +152,10 @@ function MixAppArranger(props) {
     if (col.id === "ENERGY") return "3.5rem";
     if (col.id === "VALENCE") return "3.5rem";
     if (col.id === "ACOUSTICNESS") return "4rem";
+    if (col.id === "INSTRUMENTALNESS") return "3rem";
+    if (col.id === "SPEECHINESS") return "3.1rem";
+    if (col.id === "LIVENESS") return "2.75rem";
+    if (col.id === "LOUDNESS") return "3rem";
     return "3.5rem";
   }
 
@@ -443,23 +471,28 @@ function MixAppArranger(props) {
       const text = track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
       return cell(
         "mixapp-col-feat mixapp-col-bpm",
-        h("span", { className: "mixapp-feat-pill" }, text)
+        h(
+          "span",
+          {
+            className: "mixapp-feat-pill",
+            style: { background: MixAppFeatures.featureTint("tempo") },
+          },
+          text
+        )
       );
     }
     const metricId = col.metricId;
     const metric = MixAppFeatures.METRICS.find((m) => m.id === metricId);
-    const range = metricRanges[metricId];
     const v = MixAppFeatures.metricValue(track, metric);
     const text = MixAppFeatures.formatMetric(metric, v);
-    const norm = MixAppFeatures.relativeNorm(v, range?.min, range?.max);
-    const bg = MixAppFeatures.relativeColor(norm);
+    const bg = MixAppFeatures.featureTint(metricId || col.id);
     return cell(
       "mixapp-col-feat mixapp-col-" + (metricId || col.id.toLowerCase()),
       h(
         "span",
         {
           className: "mixapp-feat-pill",
-          style: bg ? { background: bg } : undefined,
+          style: { background: bg },
         },
         text
       )

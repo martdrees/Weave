@@ -86,7 +86,7 @@ function MixAppUsePlayback() {
         setIsPlaying(true);
       }
     } catch (err) {
-      console.warn("MixApp: play failed", err);
+      console.warn("Weave: play failed", err);
       MixAppApi.notify("Could not start playback", true);
     }
   }

@@ -59,7 +59,7 @@ function MixAppFlowifyModal(props) {
       try {
         list = await MixAppFeatures.enrichTracks(list);
       } catch (err) {
-        console.warn("MixApp Flowify enrich", err);
+        console.warn("Weave Flowify enrich", err);
       }
       const next = MixAppFlowify.arrange(list, options);
       try {

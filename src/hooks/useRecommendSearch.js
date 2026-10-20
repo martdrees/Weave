@@ -220,7 +220,7 @@ function MixAppUseRecommendSearch(opts) {
       try {
         list = await MixAppFeatures.enrichTracks(list.slice());
       } catch (featErr) {
-        console.warn("MixApp: result key enrich failed", featErr);
+        console.warn("Weave: result key enrich failed", featErr);
       }
 
       if (gen !== searchGenRef.current) return;

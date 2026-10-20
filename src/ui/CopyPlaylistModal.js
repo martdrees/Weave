@@ -98,7 +98,7 @@ function MixAppCopyPlaylistModal(props) {
         try {
           items = await MixAppFeatures.enrichTracks(items.slice());
         } catch (enrichErr) {
-          console.warn("MixApp: copy-playlist enrich failed", enrichErr);
+          console.warn("Weave: copy-playlist enrich failed", enrichErr);
         }
       }
       if (gen !== genRef.current) return;

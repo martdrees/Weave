@@ -1,6 +1,6 @@
 //@ts-check
 /**
- * Canonical MixApp track shape + Spotify anti-corruption adapters (R3.2).
+ * Canonical Weave track shape + Spotify anti-corruption adapters (R3.2).
  * See docs/TRACK.md.
  */
 
@@ -255,6 +255,8 @@ const MixAppTrack = (() => {
     const durationMs =
       data.duration?.totalMilliseconds ??
       data.duration?.milliseconds ??
+      data.trackDuration?.totalMilliseconds ??
+      data.trackDuration?.milliseconds ??
       data.duration_ms ??
       data.durationMs ??
       0;

@@ -24,7 +24,6 @@ function MixAppSearchPanel(props) {
 
   if (!open) return null;
 
-  const defs = MixAppRecommend.FEATURE_DEFS;
   const seedCount = (seedUris || []).length;
   const hasPlaylistTracks = Array.isArray(tracks) && tracks.length > 0;
   const canSearch = seedCount > 0 || hasPlaylistTracks;
@@ -32,81 +31,6 @@ function MixAppSearchPanel(props) {
     .filter((t) => seedUris?.includes(t.uri))
     .map((t) => t.name)
     .slice(0, 8);
-
-  function updateFeature(id, patch) {
-    onFeaturesChange?.({
-      ...features,
-      [id]: { ...features[id], ...patch },
-    });
-  }
-
-  function formatFeatureValue(def, value) {
-    if (value == null || Number.isNaN(Number(value))) return "—";
-    const n = Number(value);
-    if (def.kind === "tempo" || def.kind === "popularity") {
-      return String(Math.round(n));
-    }
-    if (def.kind === "loudness") return n.toFixed(1);
-    return n.toFixed(def.step < 0.1 ? 2 : 1);
-  }
-
-  function dualRange(def, range) {
-    const minV = Number(range.min);
-    const maxV = Number(range.max);
-    const enabled = !!range.enabled;
-    const span = def.max - def.min || 1;
-    const leftPct = ((Math.min(minV, maxV) - def.min) / span) * 100;
-    const rightPct = ((Math.max(minV, maxV) - def.min) / span) * 100;
-
-    return h(
-      "div",
-      {
-        className: "mixapp-dual-range" + (enabled ? "" : " is-disabled"),
-      },
-      h("div", {
-        className: "mixapp-dual-range-track",
-      }),
-      h("div", {
-        className: "mixapp-dual-range-fill",
-        style: {
-          left: leftPct + "%",
-          width: Math.max(0, rightPct - leftPct) + "%",
-        },
-      }),
-      h("input", {
-        type: "range",
-        className: "mixapp-dual-range-input mixapp-dual-range-min",
-        min: def.min,
-        max: def.max,
-        step: def.step,
-        disabled: !enabled,
-        value: minV,
-        "aria-label": def.label + " min",
-        onChange: (e) => {
-          let nextMin = Number(e.target.value);
-          let nextMax = maxV;
-          if (nextMin > nextMax) nextMax = nextMin;
-          updateFeature(def.id, { min: nextMin, max: nextMax });
-        },
-      }),
-      h("input", {
-        type: "range",
-        className: "mixapp-dual-range-input mixapp-dual-range-max",
-        min: def.min,
-        max: def.max,
-        step: def.step,
-        disabled: !enabled,
-        value: maxV,
-        "aria-label": def.label + " max",
-        onChange: (e) => {
-          let nextMax = Number(e.target.value);
-          let nextMin = minV;
-          if (nextMax < nextMin) nextMin = nextMax;
-          updateFeature(def.id, { min: nextMin, max: nextMax });
-        },
-      })
-    );
-  }
 
   return h(
     "section",
@@ -146,7 +70,7 @@ function MixAppSearchPanel(props) {
             className: "mixapp-btn mixapp-btn-ghost",
             onClick: onFitToSeeds,
             disabled: !seedCount || fitting,
-            title: "Set min/max/target from selected seed audio features",
+            title: "Set min/max from selected seed audio features",
           },
           fitting ? "Fitting…" : "Fit to seeds"
         ),
@@ -214,75 +138,18 @@ function MixAppSearchPanel(props) {
         "div",
         { className: "mixapp-search-panel-block" },
         h("h3", null, "Feature ranges"),
-        h(
-          "div",
-          { className: "mixapp-feature-sliders mixapp-feature-sliders-wide" },
-          defs.map((def) => {
-            const range = features[def.id] || {};
-            return h(
-              "div",
-              {
-                key: def.id,
-                className: "mixapp-feature-row" + (range.enabled ? " is-enabled" : ""),
-              },
-              h(
-                "label",
-                { className: "mixapp-feature-enable" },
-                h("input", {
-                  type: "checkbox",
-                  checked: !!range.enabled,
-                  onChange: (e) => updateFeature(def.id, { enabled: e.target.checked }),
-                }),
-                h("span", null, def.label)
-              ),
-              h(
-                "div",
-                { className: "mixapp-feature-controls" },
-                dualRange(def, range),
-                h(
-                  "span",
-                  {
-                    className: "mixapp-feature-values",
-                    title: "Min – max",
-                  },
-                  formatFeatureValue(def, range.min) +
-                    "–" +
-                    formatFeatureValue(def, range.max)
-                ),
-                h(
-                  "label",
-                  {
-                    className: "mixapp-feature-target-toggle",
-                    title: "Use target value",
-                  },
-                  h("input", {
-                    type: "checkbox",
-                    disabled: !range.enabled,
-                    checked: !!range.useTarget,
-                    onChange: (e) =>
-                      updateFeature(def.id, { useTarget: e.target.checked }),
-                  }),
-                  "T"
-                ),
-                h("input", {
-                  type: "range",
-                  className: "mixapp-feature-target-slider",
-                  title: "Target " + formatFeatureValue(def, range.target),
-                  "aria-label": def.label + " target",
-                  min: def.min,
-                  max: def.max,
-                  step: def.step,
-                  disabled: !range.enabled || !range.useTarget,
-                  value: range.target,
-                  onChange: (e) =>
-                    updateFeature(def.id, {
-                      target: Number(e.target.value),
-                    }),
-                })
-              )
+        h(MixAppFeatureSliders, {
+          features,
+          onChange: onFeaturesChange,
+          disabled: loading,
+          seedTracks: (() => {
+            const seeds = (tracks || []).filter((t) =>
+              seedUris?.includes(t.uri)
             );
-          })
-        )
+            // No seeds → playlist average (same soft-seed context as search).
+            return seeds.length ? seeds : tracks || [];
+          })(),
+        })
       ),
 
       h(
