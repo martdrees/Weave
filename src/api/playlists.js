@@ -198,9 +198,7 @@ const MixAppPlaylists = (() => {
 
   function playlistUnavailableError(uri) {
     if (uri) markPlaylistUnavailable(uri);
-    const err = new Error(
-      "This playlist is no longer available (deleted or made private)"
-    );
+    const err = new Error(MixAppI18n.t("notify.playlistUnavailable"));
     err.code = "PLAYLIST_UNAVAILABLE";
     return err;
   }
@@ -777,9 +775,7 @@ const MixAppPlaylists = (() => {
         uri = playlistUriFromCreateResult(created);
       } catch (err) {
         if (MixAppHttp.isRateLimitError(err) || platformErr) {
-          throw new Error(
-            "Could not create playlist — Spotify is rate-limiting. Wait a minute and try again."
-          );
+          throw new Error(MixAppI18n.t("notify.rateLimit"));
         }
         throw err;
       }
@@ -792,10 +788,7 @@ const MixAppPlaylists = (() => {
       } catch (err) {
         console.warn("Weave: failed to fill new playlist", err);
         if (MixAppHttp.isRateLimitError(err)) {
-          MixAppNotify.notify(
-            "Playlist created, but adding tracks was rate-limited — open it and Save again",
-            true
-          );
+          MixAppNotify.notify(MixAppI18n.t("notify.fillPlaylistFailed"), true);
           return uri;
         }
         throw err;

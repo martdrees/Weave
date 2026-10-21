@@ -2,6 +2,7 @@
 
 function MixAppToolbar(props) {
   const react = Spicetify.React;
+  const t = MixAppI18n.t;
   const {
     playlist,
     tracks,
@@ -48,12 +49,14 @@ function MixAppToolbar(props) {
         onSelect: onSelectPlaylist,
         onRefresh: onRefreshPlaylists,
       }),
-      dirty ? h("span", { className: "mixapp-badge" }, "Unsaved") : null,
+      dirty ? h("span", { className: "mixapp-badge" }, t("toolbar.unsaved")) : null,
       seedCount > 0
         ? h(
             "span",
             { className: "mixapp-badge mixapp-badge-seed" },
-            seedCount + " seed" + (seedCount === 1 ? "" : "s")
+            seedCount === 1
+              ? t("toolbar.seed", { count: seedCount })
+              : t("toolbar.seeds", { count: seedCount })
           )
         : null
     ),
@@ -67,9 +70,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn mixapp-btn-ghost",
           onClick: onUndo,
           disabled: !canUndo || saving,
-          title: "Undo",
+          title: t("toolbar.undo"),
         },
-        "Undo"
+        t("toolbar.undo")
       ),
       h(
         "button",
@@ -78,9 +81,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn mixapp-btn-ghost",
           onClick: onRedo,
           disabled: !canRedo || saving,
-          title: "Redo",
+          title: t("toolbar.redo"),
         },
-        "Redo"
+        t("toolbar.redo")
       ),
       h(
         "button",
@@ -89,9 +92,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn",
           onClick: onOpenAddTrack,
           disabled: !hasPlaylist || saving,
-          title: "Search Spotify and add a track",
+          title: t("toolbar.addTrackTitle"),
         },
-        "Add Track"
+        t("toolbar.addTrack")
       ),
       h(
         "button",
@@ -100,9 +103,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn" + (searchOpen ? " mixapp-btn-active" : ""),
           onClick: onToggleSearch,
           disabled: !hasPlaylist || !hasTracks || saving,
-          title: "Recommend tracks from seeds / feature ranges",
+          title: t("toolbar.recommendationsTitle"),
         },
-        "Recommendations"
+        t("toolbar.recommendations")
       ),
       h(
         "button",
@@ -111,9 +114,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn",
           onClick: onOpenCopyPlaylist,
           disabled: !hasPlaylist || saving,
-          title: "Copy tracks from another playlist",
+          title: t("toolbar.copyFromPlaylistTitle"),
         },
-        "Copy from Playlist"
+        t("toolbar.copyFromPlaylist")
       ),
       h(
         "button",
@@ -122,9 +125,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn",
           onClick: onOpenFlowify,
           disabled: !hasPlaylist || !hasTracks || saving,
-          title: "Auto-arrange playlist (curves / sets)",
+          title: t("toolbar.flowifyTitle"),
         },
-        "Flowify"
+        t("toolbar.flowify")
       ),
       h(
         "button",
@@ -133,9 +136,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn",
           onClick: onOpenGenerator,
           disabled: !hasPlaylist || !hasTracks || saving,
-          title: "Generate a new playlist from seeds",
+          title: t("toolbar.generatorTitle"),
         },
-        "Generator"
+        t("toolbar.generator")
       ),
       h(
         "button",
@@ -144,9 +147,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn" + (statsOpen ? " mixapp-btn-active" : ""),
           onClick: onToggleStats,
           disabled: !hasPlaylist || !hasTracks,
-          title: "Feature charts and summary",
+          title: t("toolbar.statsTitle"),
         },
-        "Stats"
+        t("toolbar.stats")
       ),
       h(
         "button",
@@ -155,11 +158,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn",
           onClick: onSave,
           disabled: !playlist || !dirty || saving || !owned,
-          title: owned
-            ? "Overwrite playlist with current order"
-            : "You can only overwrite playlists you own",
+          title: owned ? t("toolbar.saveTitle") : t("toolbar.saveTitleOwnedOnly"),
         },
-        saving ? "Saving…" : "Save"
+        saving ? t("toolbar.saving") : t("toolbar.save")
       ),
       h(
         "button",
@@ -168,9 +169,9 @@ function MixAppToolbar(props) {
           className: "mixapp-btn mixapp-btn-primary",
           onClick: onSaveAsNew,
           disabled: !playlist || !hasTracks || saving,
-          title: "Create a new playlist with the current track list",
+          title: t("toolbar.saveAsNewTitle"),
         },
-        "Save as new"
+        t("toolbar.saveAsNew")
       )
     )
   );

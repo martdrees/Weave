@@ -109,7 +109,7 @@ function MixAppUseRecommendSearch(opts) {
       .map((uri) => MixAppRecommend.trackIdFromUri(uri))
       .filter(Boolean);
     if (!ids.length) {
-      MixAppApi.notify("Select seed tracks first", true);
+      MixAppApi.notify(MixAppI18n.t("notify.selectSeeds"), true);
       return;
     }
     setSearchFitting(true);
@@ -117,14 +117,14 @@ function MixAppUseRecommendSearch(opts) {
     try {
       const samples = await MixAppFeatures.getFeatureSamples(ids);
       if (!samples.length) {
-        MixAppApi.notify("No audio features for those seeds", true);
+        MixAppApi.notify(MixAppI18n.t("notify.noSeedFeatures"), true);
         return;
       }
       setSearchFeatures(MixAppRecommend.featuresFromSamples(samples));
-      MixAppApi.notify("Feature ranges fitted to seeds");
+      MixAppApi.notify(MixAppI18n.t("notify.fittedSeeds"));
     } catch (err) {
       console.error(err);
-      setSearchError(err?.message || "Failed to fit features");
+      setSearchError(err?.message || MixAppI18n.t("notify.fitFailed"));
     } finally {
       setSearchFitting(false);
     }
@@ -135,7 +135,7 @@ function MixAppUseRecommendSearch(opts) {
       .map((uri) => MixAppRecommend.trackIdFromUri(uri))
       .filter(Boolean);
     if (!seedTrackIds.length && !tracks.length) {
-      MixAppApi.notify("Load a playlist or mark seed tracks first", true);
+      MixAppApi.notify(MixAppI18n.t("notify.needSeedsOrPlaylist"), true);
       return;
     }
 
@@ -249,15 +249,14 @@ function MixAppUseRecommendSearch(opts) {
 
       setSearchResults(list);
       if (!list.length) {
-        MixAppApi.notify(
-          "No matches after filters — try disabling filters or ranges",
-          true
-        );
+        MixAppApi.notify(MixAppI18n.t("notify.noMatches"), true);
       }
     } catch (err) {
       if (gen !== searchGenRef.current) return;
       console.error(err);
-      const msg = err?.message || err?.body?.error?.message || "Search request failed";
+      const msg = err?.message ||
+        err?.body?.error?.message ||
+        MixAppI18n.t("notify.searchFailed");
       setSearchError(msg);
       setSearchResults([]);
       MixAppApi.notify(msg, true);

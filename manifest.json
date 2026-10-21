@@ -4,6 +4,13 @@
   "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"currentColor\" stroke-width=\"2.5\"/></svg>",
   "subfiles": [
     "src/types.js",
+    "src/i18n/i18n.js",
+    "src/i18n/locales/en.js",
+    "src/i18n/locales/de.js",
+    "src/i18n/locales/es.js",
+    "src/i18n/locales/pt.js",
+    "src/i18n/locales/fr.js",
+    "src/i18n/locales/it.js",
     "src/api/notify.js",
     "src/api/http.js",
     "src/domain/track.js",

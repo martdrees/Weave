@@ -6,6 +6,8 @@
 
 function MixAppPage() {
   const react = Spicetify.React;
+  MixAppI18n.init();
+  const t = MixAppI18n.t;
 
   const savedSessionRef = react.useRef(null);
   if (savedSessionRef.current === null) {
@@ -168,9 +170,9 @@ function MixAppPage() {
           h(
             "h1",
             { className: "mixapp-title" },
-            "Weave",
+            t("app.name"),
             h("span", { className: "mixapp-title-sep", "aria-hidden": "true" }, "|"),
-            h("span", { className: "mixapp-subtitle" }, "Playlist weaving for Spotify")
+            h("span", { className: "mixapp-subtitle" }, t("app.subtitle"))
           )
         ),
         h(
@@ -179,8 +181,8 @@ function MixAppPage() {
             type: "button",
             className: "mixapp-icon-btn mixapp-icon-btn-compact",
             onClick: () => panels.openPanel("shortcuts"),
-            title: "Keyboard shortcuts (?)",
-            "aria-label": "Keyboard shortcuts",
+            title: t("app.shortcutsHint"),
+            "aria-label": t("app.shortcuts"),
           },
           h(
             "svg",

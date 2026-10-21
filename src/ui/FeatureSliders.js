@@ -17,6 +17,7 @@
  * }} props
  */
 function MixAppFeatureSliders(props) {
+  const t = MixAppI18n.t;
   const {
     features,
     onChange,
@@ -93,7 +94,9 @@ function MixAppFeatureSliders(props) {
               left: Math.min(100, Math.max(0, seedPct)) + "%",
               background: accent,
             },
-            title: "Average: " + formatFeatureValue(def, seedAvg),
+            title: t("search.average", {
+              value: formatFeatureValue(def, seedAvg),
+            }),
             "aria-hidden": "true",
           })
         : null,
@@ -183,7 +186,7 @@ function MixAppFeatureSliders(props) {
               "aria-hidden": "true",
             }
           ),
-          h("span", null, def.label)
+          h("span", null, MixAppI18n.featureLabel(def))
         ),
         h(
           "div",
@@ -195,10 +198,10 @@ function MixAppFeatureSliders(props) {
               className: "mixapp-feature-values",
               title:
                 seedAvg != null
-                  ? "Min – max (avg " +
-                    formatFeatureValue(def, seedAvg) +
-                    ")"
-                  : "Min – max",
+                  ? t("search.minMaxAvg", {
+                      avg: formatFeatureValue(def, seedAvg),
+                    })
+                  : t("search.minMax"),
             },
             formatFeatureValue(def, range.min) +
               "–" +
@@ -209,8 +212,8 @@ function MixAppFeatureSliders(props) {
             {
               className: "mixapp-feature-around-toggle",
               title: hasAvg
-                ? "Use target value: set min/max around the average"
-                : "Average unavailable (need seeds or playlist features)",
+                ? t("search.avgTitle")
+                : t("search.avgUnavailable"),
             },
             h("input", {
               type: "checkbox",
@@ -234,7 +237,7 @@ function MixAppFeatureSliders(props) {
                 }
               },
             }),
-            "Avg"
+            t("search.avg")
           )
         )
       );

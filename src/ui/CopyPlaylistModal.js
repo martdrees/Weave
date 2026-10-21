@@ -60,10 +60,7 @@ function MixAppCopyPlaylistModal(props) {
   async function runPlaylistSearch(e) {
     e?.preventDefault?.();
     const q = String(query || "").trim();
-    if (!q) {
-      setError("Enter a playlist name");
-      return;
-    }
+    if (!q) return;
     const gen = ++genRef.current;
     setSearchLoading(true);
     setError(null);
@@ -71,12 +68,12 @@ function MixAppCopyPlaylistModal(props) {
       const hits = await MixAppApi.searchPlaylists(q, { limit: 20 });
       if (gen !== genRef.current) return;
       setSearchHits(hits.filter((p) => p.uri !== currentPlaylistUri));
-      if (!hits.length) setError("No playlists found");
+      if (!hits.length) setError(MixAppI18n.t("picker.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setSearchHits([]);
-      setError(err?.message || "Playlist search failed");
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setSearchLoading(false);
     }
@@ -86,7 +83,7 @@ function MixAppCopyPlaylistModal(props) {
     if (!pl?.uri) return;
     const gen = ++genRef.current;
     setSelectedUri(pl.uri);
-    setSourceName(pl.name || "Playlist");
+    setSourceName(pl.name || MixAppI18n.t("picker.playlist"));
     setSourceTracks([]);
     setSelected(new Set());
     setTracksLoading(true);
@@ -103,12 +100,12 @@ function MixAppCopyPlaylistModal(props) {
       }
       if (gen !== genRef.current) return;
       setSourceTracks(items);
-      if (!items.length) setError("That playlist has no tracks");
+      if (!items.length) setError(MixAppI18n.t("results.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setSourceTracks([]);
-      setError(err?.message || "Failed to load playlist");
+      setError(err?.message || MixAppI18n.t("notify.failedPlaylist"));
     } finally {
       if (gen === genRef.current) setTracksLoading(false);
     }
@@ -141,7 +138,7 @@ function MixAppCopyPlaylistModal(props) {
       (t) => t?.uri && selected.has(t.uri) && !isInPlaylist(t)
     );
     if (!batch.length) {
-      MixAppApi.notify("No new tracks selected", true);
+      MixAppApi.notify(MixAppI18n.t("copy.noSelection"), true);
       return;
     }
     onAddTracks?.(batch);
@@ -151,7 +148,7 @@ function MixAppCopyPlaylistModal(props) {
   function addAllNew() {
     const batch = sourceTracks.filter((t) => t?.uri && !isInPlaylist(t));
     if (!batch.length) {
-      MixAppApi.notify("All tracks are already in your playlist", true);
+      MixAppApi.notify(MixAppI18n.t("copy.allExist"), true);
       return;
     }
     onAddTracks?.(batch);
@@ -164,9 +161,9 @@ function MixAppCopyPlaylistModal(props) {
     MixAppModal,
     {
       open,
-      title: "Copy from Playlist",
+      title: MixAppI18n.t("copy.title"),
       onClose,
-      ariaLabel: "Copy from playlist",
+      ariaLabel: MixAppI18n.t("copy.title"),
       className: "mixapp-find-modal mixapp-copy-modal",
     },
     h(
@@ -198,7 +195,7 @@ function MixAppCopyPlaylistModal(props) {
                 (mode === "search" ? " mixapp-btn-active" : ""),
               onClick: () => setMode("search"),
             },
-            "Search"
+            MixAppI18n.t("common.search")
           )
         ),
         mode === "search"
@@ -211,7 +208,7 @@ function MixAppCopyPlaylistModal(props) {
               h("input", {
                 type: "search",
                 className: "mixapp-find-input",
-                placeholder: "Playlist name…",
+                placeholder: MixAppI18n.t("copy.placeholder"),
                 value: query,
                 onChange: (e) => setQuery(e.target.value),
               }),
@@ -253,7 +250,7 @@ function MixAppCopyPlaylistModal(props) {
                     "span",
                     { className: "mixapp-recommend-meta" },
                     pl.totalLength != null
-                      ? pl.totalLength + " tracks"
+                      ? MixAppI18n.t("picker.tracks", { count: pl.totalLength })
                       : pl.ownerName || ""
                   )
                 )
@@ -269,7 +266,7 @@ function MixAppCopyPlaylistModal(props) {
           h(
             "div",
             { className: "mixapp-search-panel-title-row" },
-            h("h3", null, sourceName || "Select a playlist"),
+            h("h3", null, sourceName || MixAppI18n.t("picker.select")),
             sourceTracks.length
               ? h(
                   "span",
@@ -309,7 +306,7 @@ function MixAppCopyPlaylistModal(props) {
                     onClick: addSelected,
                     disabled: !selected.size,
                   },
-                  "Add selected"
+                  MixAppI18n.t("results.addSelected")
                 ),
                 h(
                   "button",
@@ -335,7 +332,7 @@ function MixAppCopyPlaylistModal(props) {
                   className: "mixapp-spinner",
                   "aria-hidden": "true",
                 }),
-                h("p", { className: "mixapp-search-waiting-label" }, "Loading tracks…")
+                h("p", { className: "mixapp-search-waiting-label" }, MixAppI18n.t("picker.loading"))
               )
             : !selectedUri
               ? h(
@@ -363,7 +360,9 @@ function MixAppCopyPlaylistModal(props) {
                           checked: checked,
                           disabled: inPl || !track.uri,
                           onChange: () => toggleSelect(track.uri),
-                          title: inPl ? "Already in playlist" : "Select to add",
+                          title: inPl
+                            ? MixAppI18n.t("notify.alreadyInPlaylist")
+                            : MixAppI18n.t("results.add"),
                         }),
                         h(MixAppPlayButton, {
                           track,
@@ -378,7 +377,7 @@ function MixAppCopyPlaylistModal(props) {
                           h(
                             "div",
                             { className: "mixapp-find-title" },
-                            track.name || "Unknown"
+                            track.name || MixAppI18n.t("common.unknown")
                           ),
                           h(
                             "div",
@@ -397,7 +396,7 @@ function MixAppCopyPlaylistModal(props) {
                             {
                               className:
                                 "mixapp-col-feat mixapp-col-key mixapp-find-key",
-                              title: track.key || "Key unknown",
+                              title: track.key || MixAppI18n.t("common.unknown"),
                             },
                             h(
                               "span",
@@ -424,7 +423,7 @@ function MixAppCopyPlaylistModal(props) {
                             disabled: inPl,
                             onClick: () => onAddTrack?.(track),
                           },
-                          inPl ? "In playlist" : "Add"
+                          inPl ? "In playlist" : MixAppI18n.t("results.add")
                         )
                       );
                     })

@@ -67,8 +67,8 @@ function MixAppUsePlaylistSession(opts) {
       setPlaylists(items);
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Failed to load playlists");
-      MixAppApi.notify("Failed to load playlists", true);
+      setError(err?.message || MixAppI18n.t("notify.failedPlaylists"));
+      MixAppApi.notify(MixAppI18n.t("notify.failedPlaylists"), true);
     } finally {
       setListLoading(false);
     }
@@ -148,10 +148,10 @@ function MixAppUsePlaylistSession(opts) {
         MixAppPlaylists?.isPlaylistUnavailableError?.(err);
       const rateLimited = !unavailable && MixAppHttp?.isRateLimitError?.(err);
       const msg = unavailable
-        ? "This playlist is no longer available (deleted or made private)"
+        ? MixAppI18n.t("notify.playlistUnavailable")
         : rateLimited
-          ? "Spotify rate limit — wait a moment and try again"
-          : err?.message || "Failed to load playlist";
+          ? MixAppI18n.t("notify.rateLimit")
+          : err?.message || MixAppI18n.t("notify.failedPlaylist");
       if (!unavailable) console.error(err);
       else console.warn("Weave: playlist unavailable", err);
       setError(msg);
@@ -244,19 +244,16 @@ function MixAppUsePlaylistSession(opts) {
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {
-        MixAppApi.notify("Cannot save while playlist is loading", true);
+        MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
         return;
       }
       if (selectedUriRef.current !== uriAtStart) {
-        MixAppApi.notify("Playlist changed — save cancelled", true);
+        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedCancel"), true);
         return;
       }
       const savedTracks = await MixAppApi.saveOverwrite(uriAtStart, tracksAtStart);
       if (selectedUriRef.current !== uriAtStart) {
-        MixAppApi.notify(
-          "Playlist changed during save — local state left unchanged",
-          true
-        );
+        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
         return;
       }
       if (Array.isArray(savedTracks) && savedTracks.length) {
@@ -283,10 +280,10 @@ function MixAppUsePlaylistSession(opts) {
       setDirty(false);
       undoRef.current.clear();
       syncUndoFlags();
-      MixAppApi.notify("Playlist saved");
+      MixAppApi.notify(MixAppI18n.t("notify.playlistSaved"));
     } catch (err) {
       console.error(err);
-      MixAppApi.notify(err?.message || "Save failed", true);
+      MixAppApi.notify(err?.message || MixAppI18n.t("notify.saveFailed"), true);
     } finally {
       setSaving(false);
     }
@@ -295,24 +292,24 @@ function MixAppUsePlaylistSession(opts) {
   async function handleSaveAsNew() {
     if (!tracks.length) return;
     if (tracksLoadingRef.current || saving) return;
-    const base = playlist?.name || "Weave playlist";
-    const name = `${base} (Weave)`;
+    const base = playlist?.name || MixAppI18n.t("playlist.defaultName");
+    const name = MixAppI18n.t("playlist.weaveSuffix", { name: base });
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {
-        MixAppApi.notify("Cannot save while playlist is loading", true);
+        MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
         return;
       }
       const uri = await MixAppApi.createPlaylist(
         name,
         tracks.map((t) => t.uri)
       );
-      MixAppApi.notify(`Created “${name}”`);
+      MixAppApi.notify(MixAppI18n.t("notify.created", { name }));
       await refreshPlaylists();
       await loadPlaylist(uri);
     } catch (err) {
       console.error(err);
-      MixAppApi.notify(err?.message || "Create failed", true);
+      MixAppApi.notify(err?.message || MixAppI18n.t("notify.createFailed"), true);
     } finally {
       setSaving(false);
     }
@@ -321,25 +318,27 @@ function MixAppUsePlaylistSession(opts) {
   function handleAddCatalogTrack(track) {
     const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
     if (!added.length) {
-      MixAppApi.notify("Track already in playlist", true);
+      MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return;
     }
     commitTracks(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppApi.notify(`Added “${added[0].name}”`);
+    MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
     MixAppPlaylistOps.enrichAdded(added, setTracks);
   }
 
   function handleAddCatalogTracks(batch) {
     const { next, added } = MixAppPlaylistOps.appendTracks(tracks, batch);
     if (!added.length) {
-      MixAppApi.notify("No new tracks to add", true);
+      MixAppApi.notify(MixAppI18n.t("notify.noNewTracks"), true);
       return;
     }
     commitTracks(next);
     flashRows(added.map((t) => t.uid || t.uri));
     MixAppApi.notify(
-      added.length === 1 ? `Added “${added[0].name}”` : `Added ${added.length} tracks`
+      added.length === 1
+        ? MixAppI18n.t("notify.addedTrack", { name: added[0].name })
+        : MixAppI18n.t("notify.addedCount", { count: added.length })
     );
     MixAppPlaylistOps.enrichAdded(added, setTracks);
   }
@@ -348,12 +347,12 @@ function MixAppUsePlaylistSession(opts) {
   function handleAddRecommendedTrack(track) {
     const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
     if (!added.length) {
-      MixAppApi.notify("Track already in playlist", true);
+      MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return false;
     }
     commitTracks(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppApi.notify(`Added “${added[0].name}”`);
+    MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
     MixAppPlaylistOps.enrichAdded(added, setTracks);
     return true;
   }

@@ -44,19 +44,18 @@ function MixAppStatsPanel(props) {
 
   return h(
     "section",
-    { className: "mixapp-stats-panel", "aria-label": "Playlist stats" },
+    { className: "mixapp-stats-panel", "aria-label": MixAppI18n.t("stats.title") },
     h(
       "div",
       { className: "mixapp-stats-panel-header" },
       h(
         "div",
         { className: "mixapp-search-panel-title-row" },
-        h("h2", null, "Stats"),
+        h("h2", null, MixAppI18n.t("stats.title")),
         h(
           "span",
           { className: "mixapp-recommend-meta" },
-          stats.trackCount +
-            " tracks" +
+          MixAppI18n.t("picker.tracks", { count: stats.trackCount }) +
             (agg.smoothness != null
               ? " · smoothness " +
                 MixAppChartConfig.formatChartValue(AGG_METRIC, agg.smoothness)
@@ -69,12 +68,12 @@ function MixAppStatsPanel(props) {
         h(
           "span",
           { className: "mixapp-stats-legend-item mixapp-stats-legend-raw" },
-          "Track values"
+          MixAppI18n.t("stats.legendRaw")
         ),
         h(
           "span",
           { className: "mixapp-stats-legend-item mixapp-stats-legend-ma" },
-          "5-track avg"
+          MixAppI18n.t("stats.legendMa")
         ),
         h(
           "button",
@@ -82,8 +81,8 @@ function MixAppStatsPanel(props) {
             type: "button",
             className: "mixapp-icon-btn",
             onClick: onClose,
-            title: "Close stats",
-            "aria-label": "Close stats",
+            title: MixAppI18n.t("common.close"),
+            "aria-label": MixAppI18n.t("common.close"),
           },
           "✕"
         )
@@ -115,7 +114,10 @@ function MixAppStatsPanel(props) {
             "data-tip":
               metric.id === "aggChange"
                 ? "Absolute change between adjacent tracks (energy, dance, valence, acoustic, instr., speech, live, BPM compat, key)"
-                : (selected ? "Hide" : "Show") + " " + metric.label + " chart",
+                : (selected ? "Hide" : "Show") +
+                  " " +
+                  MixAppI18n.featureLabel(metric) +
+                  " chart",
             "aria-pressed": selected,
             onClick: () => toggleMetric(metric.id),
           },
@@ -124,7 +126,11 @@ function MixAppStatsPanel(props) {
             style: { background: accent },
             "aria-hidden": "true",
           }),
-          h("span", { className: "mixapp-camelot-chip-label" }, metric.label),
+          h(
+            "span",
+            { className: "mixapp-camelot-chip-label" },
+            MixAppI18n.featureLabel(metric)
+          ),
           h(
             "span",
             { className: "mixapp-camelot-chip-example" },
@@ -138,13 +144,13 @@ function MixAppStatsPanel(props) {
       ? h(
           "p",
           { className: "mixapp-recommend-empty" },
-          "Load a playlist to see charts."
+          MixAppI18n.t("stats.empty")
         )
       : !chartMetrics.length
         ? h(
             "p",
             { className: "mixapp-recommend-empty" },
-            "Turn on at least one feature above."
+            MixAppI18n.t("stats.pickMetric")
           )
         : h(
             "div",

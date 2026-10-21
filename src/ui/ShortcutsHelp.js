@@ -3,34 +3,35 @@
 /** Phase 7 — keyboard shortcuts overlay. */
 function MixAppShortcutsHelp(props) {
   const react = Spicetify.React;
+  const t = MixAppI18n.t;
   const { open, onClose } = props;
 
   const rows = [
-    ["Ctrl/⌘ + Z", "Undo"],
-    ["Ctrl/⌘ + Shift + Z / Y", "Redo"],
-    ["Ctrl/⌘ + S", "Save playlist"],
-    ["Ctrl/⌘ + Shift + S", "Save as new"],
-    ["Ctrl/⌘ + F", "Toggle recommendations"],
-    ["Ctrl/⌘ + Shift + A", "Add track"],
-    ["Ctrl/⌘ + Shift + C", "Copy from playlist"],
-    ["Ctrl/⌘ + Shift + F", "Flowify"],
-    ["Ctrl/⌘ + Shift + G", "Generator"],
-    ["Ctrl/⌘ + Shift + T", "Toggle stats"],
-    ["↑ / ↓", "Select track in arranger (click list first)"],
-    ["Alt + ↑ / ↓", "Move selected track"],
-    ["Home / End", "First / last track"],
-    ["Delete", "Remove selected track"],
-    ["?", "Show this help"],
-    ["Esc", "Close top panel / modal"],
+    ["Ctrl/⌘ + Z", t("shortcuts.undo")],
+    ["Ctrl/⌘ + Shift + Z / Y", t("shortcuts.redo")],
+    ["Ctrl/⌘ + S", t("shortcuts.save")],
+    ["Ctrl/⌘ + Shift + S", t("shortcuts.saveAsNew")],
+    ["Ctrl/⌘ + F", t("shortcuts.toggleRecs")],
+    ["Ctrl/⌘ + Shift + A", t("shortcuts.addTrack")],
+    ["Ctrl/⌘ + Shift + C", t("shortcuts.copy")],
+    ["Ctrl/⌘ + Shift + F", t("shortcuts.flowify")],
+    ["Ctrl/⌘ + Shift + G", t("shortcuts.generator")],
+    ["Ctrl/⌘ + Shift + T", t("shortcuts.toggleStats")],
+    ["↑ / ↓", t("shortcuts.selectTrack")],
+    ["Alt + ↑ / ↓", t("shortcuts.moveTrack")],
+    ["Home / End", t("shortcuts.firstLast")],
+    ["Delete", t("shortcuts.removeTrack")],
+    ["?", t("shortcuts.showHelp")],
+    ["Esc", t("shortcuts.close")],
   ];
 
   return h(
     MixAppModal,
     {
       open,
-      title: "Keyboard shortcuts",
+      title: t("shortcuts.title"),
       onClose,
-      ariaLabel: "Keyboard shortcuts",
+      ariaLabel: t("shortcuts.title"),
       className: "mixapp-find-modal mixapp-shortcuts-modal",
     },
     h(
@@ -52,11 +53,7 @@ function MixAppShortcutsHelp(props) {
           )
         )
       ),
-      h(
-        "p",
-        { className: "mixapp-recommend-meta" },
-        "Shortcuts are ignored while typing in inputs (except Save)."
-      )
+      h("p", { className: "mixapp-recommend-meta" }, t("shortcuts.note"))
     )
   );
 }

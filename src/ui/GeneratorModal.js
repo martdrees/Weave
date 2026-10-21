@@ -40,8 +40,11 @@ function MixAppGeneratorModal(props) {
 
   react.useEffect(() => {
     if (open) {
-      const base = playlist?.name || "Weave";
-      setName(base + " (generated)");
+      setName(
+        playlist?.name
+          ? MixAppI18n.t("playlist.weaveSuffix", { name: playlist.name })
+          : MixAppI18n.t("generator.defaultName")
+      );
       setError(null);
       setPreview([]);
       setBusy(false);
@@ -57,7 +60,7 @@ function MixAppGeneratorModal(props) {
 
   async function runGenerate() {
     if (!canRun) {
-      setError("Load a playlist or mark seed tracks first");
+      setError(MixAppI18n.t("notify.needSeedsOrPlaylist"));
       return;
     }
     const gen = ++genRef.current;
@@ -117,12 +120,12 @@ function MixAppGeneratorModal(props) {
       }
       setPreview(list);
       if (!list.length) {
-        setError("No tracks generated — try wider feature ranges or seeds");
+        setError(MixAppI18n.t("notify.noMatches"));
       }
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
-      setError(err?.message || "Generate failed");
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
       setPreview([]);
     } finally {
       if (gen === genRef.current) setBusy(false);
@@ -134,7 +137,8 @@ function MixAppGeneratorModal(props) {
       setError("Generate tracks first");
       return;
     }
-    const title = String(name || "").trim() || "Weave generated";
+    const title =
+      String(name || "").trim() || MixAppI18n.t("generator.defaultName");
     setBusy(true);
     setError(null);
     try {
@@ -142,12 +146,17 @@ function MixAppGeneratorModal(props) {
         title,
         preview.map((t) => t.uri).filter(Boolean)
       );
-      MixAppApi.notify(`Created “${title}” (${preview.length} tracks)`);
+      MixAppApi.notify(
+        MixAppI18n.t("notify.generatorCreated", {
+          name: title,
+          count: preview.length,
+        })
+      );
       onCreated?.(uri);
       onClose?.();
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Create playlist failed");
+      setError(err?.message || MixAppI18n.t("notify.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -157,10 +166,12 @@ function MixAppGeneratorModal(props) {
     MixAppModal,
     {
       open,
-      title: "Generator",
-      meta: preview.length ? preview.length + " ready" : null,
+      title: MixAppI18n.t("generator.title"),
+      meta: preview.length
+        ? MixAppI18n.t("picker.tracks", { count: preview.length })
+        : null,
       onClose,
-      ariaLabel: "Generator",
+      ariaLabel: MixAppI18n.t("generator.title"),
       className: "mixapp-find-modal mixapp-generator-modal",
       closeDisabled: busy,
     },
@@ -174,7 +185,9 @@ function MixAppGeneratorModal(props) {
           "p",
           { className: "mixapp-recommend-meta" },
           seedCount
-            ? "Using " + seedCount + " marked seed track(s)."
+            ? MixAppI18n.t(seedCount === 1 ? "toolbar.seed" : "toolbar.seeds", {
+                count: seedCount,
+              })
             : "No seeds marked — soft-seeds from the current playlist."
         ),
         h(
@@ -183,7 +196,7 @@ function MixAppGeneratorModal(props) {
           h(
             "label",
             { className: "mixapp-flowify-field" },
-            h("span", null, "New playlist name"),
+            h("span", null, MixAppI18n.t("generator.name")),
             h("input", {
               type: "text",
               className: "mixapp-find-input",
@@ -195,7 +208,7 @@ function MixAppGeneratorModal(props) {
           h(
             "label",
             { className: "mixapp-flowify-field mixapp-generator-limit" },
-            h("span", null, "Track count"),
+            h("span", null, MixAppI18n.t("generator.size")),
             h("input", {
               type: "number",
               className: "mixapp-find-input",
@@ -219,7 +232,7 @@ function MixAppGeneratorModal(props) {
         h(
           "div",
           { className: "mixapp-generator-features" },
-          h("h3", null, "Feature ranges (optional)"),
+          h("h3", null, MixAppI18n.t("search.featureRanges")),
           h(MixAppFeatureSliders, {
             features,
             onChange: setFeatures,
@@ -241,7 +254,7 @@ function MixAppGeneratorModal(props) {
               disabled: busy,
               onChange: (e) => setExcludeExplicit(e.target.checked),
             }),
-            " Exclude explicit"
+            " " + MixAppI18n.t("generator.excludeExplicit")
           ),
           h(
             "label",
@@ -252,7 +265,7 @@ function MixAppGeneratorModal(props) {
               disabled: busy,
               onChange: (e) => setExcludeAberrant(e.target.checked),
             }),
-            " Exclude aberrant titles"
+            " " + MixAppI18n.t("generator.excludeAberrant")
           ),
           h(
             "label",
@@ -263,7 +276,7 @@ function MixAppGeneratorModal(props) {
               disabled: busy,
               onChange: (e) => setFlowifyAfter(e.target.checked),
             }),
-            " Flowify sets after generate"
+            " " + MixAppI18n.t("generator.flowifyAfter")
           )
         ),
         error
@@ -280,7 +293,9 @@ function MixAppGeneratorModal(props) {
               onClick: runGenerate,
               disabled: busy || !canRun,
             },
-            busy && !preview.length ? "Generating…" : "Generate"
+            busy && !preview.length
+              ? MixAppI18n.t("generator.generating")
+              : MixAppI18n.t("generator.generate")
           ),
           h(
             "button",
@@ -290,7 +305,9 @@ function MixAppGeneratorModal(props) {
               onClick: createFromPreview,
               disabled: busy || !preview.length,
             },
-            busy && preview.length ? "Creating…" : "Create playlist"
+            busy && preview.length
+              ? MixAppI18n.t("generator.creating")
+              : MixAppI18n.t("generator.create")
           )
         )
       ),
@@ -300,7 +317,7 @@ function MixAppGeneratorModal(props) {
         h(
           "div",
           { className: "mixapp-generator-preview-head" },
-          h("h3", null, "Preview"),
+          h("h3", null, MixAppI18n.t("generator.preview")),
           preview.length
             ? h(
                 "span",
@@ -318,12 +335,12 @@ function MixAppGeneratorModal(props) {
             isPlaying,
             onPlay,
             loading: busy && !preview.length,
-            loadingLabel: "Generating…",
+            loadingLabel: MixAppI18n.t("generator.generating"),
             emptyLabel: error
               ? error
               : canRun
                 ? "Press Generate to preview tracks here."
-                : "Load a playlist or mark seed tracks first.",
+                : MixAppI18n.t("notify.needSeedsOrPlaylist"),
           })
         )
       )

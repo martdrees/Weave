@@ -153,7 +153,7 @@ function MixAppModal(props) {
         className: dialogClass,
         role: "dialog",
         "aria-modal": "true",
-        "aria-label": ariaLabel || title || "Dialog",
+        "aria-label": ariaLabel || title || MixAppI18n.t("common.dialog"),
         tabIndex: -1,
       },
       h(
@@ -174,8 +174,8 @@ function MixAppModal(props) {
             className: "mixapp-icon-btn",
             onClick: onClose,
             disabled: !!closeDisabled,
-            title: closeTitle || "Close",
-            "aria-label": closeTitle || "Close",
+            title: closeTitle || MixAppI18n.t("common.close"),
+            "aria-label": closeTitle || MixAppI18n.t("common.close"),
           },
           "✕"
         )

@@ -127,7 +127,9 @@ const MixAppHttp = (() => {
         if (notifyUser && Date.now() - rateLimitNotifyAt > 4000) {
           rateLimitNotifyAt = Date.now();
           MixAppNotify.notify(
-            "Spotify rate limit — backing off " + Math.ceil(delay / 1000) + "s…",
+            MixAppI18n.t("notify.rateLimitBackoff", {
+              seconds: Math.ceil(delay / 1000),
+            }),
             true
           );
         }

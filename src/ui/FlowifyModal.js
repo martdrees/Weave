@@ -44,11 +44,11 @@ function MixAppFlowifyModal(props) {
 
   async function handleApply() {
     if (!count) {
-      setError("Load a playlist with tracks first");
+      setError(MixAppI18n.t("flowify.needPlaylist"));
       return;
     }
     if (!active.length) {
-      setError("Set at least one feature weight above 0");
+      setError(MixAppI18n.t("flowify.needWeight"));
       return;
     }
     setBusy(true);
@@ -70,13 +70,13 @@ function MixAppFlowifyModal(props) {
       onApply?.(next);
       MixAppApi.notify(
         options.method === "curves"
-          ? "Playlist rearranged (curves)"
-          : "Playlist rearranged (sets)"
+          ? MixAppI18n.t("flowify.doneCurves")
+          : MixAppI18n.t("flowify.doneSets")
       );
       onClose?.();
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Flowify failed");
+      setError(err?.message || MixAppI18n.t("flowify.failed"));
     } finally {
       setBusy(false);
     }
@@ -86,10 +86,10 @@ function MixAppFlowifyModal(props) {
     MixAppModal,
     {
       open,
-      title: "Flowify",
-      meta: count + " track" + (count === 1 ? "" : "s"),
+      title: MixAppI18n.t("flowify.title"),
+      meta: MixAppI18n.t("picker.tracks", { count }),
       onClose,
-      ariaLabel: "Flowify",
+      ariaLabel: MixAppI18n.t("flowify.title"),
       className: "mixapp-find-modal mixapp-flowify-modal",
       closeDisabled: busy,
     },
@@ -99,7 +99,7 @@ function MixAppFlowifyModal(props) {
       h(
         "p",
         { className: "mixapp-recommend-meta" },
-        "Auto-arrange the current playlist. Undo restores the previous order."
+        MixAppI18n.t("flowify.blurb")
       ),
       h(
         "div",
@@ -113,7 +113,7 @@ function MixAppFlowifyModal(props) {
               (options.method === "sets" ? " mixapp-btn-active" : ""),
             onClick: () => patch({ method: "sets" }),
           },
-          "Sets"
+          MixAppI18n.t("flowify.sets")
         ),
         h(
           "button",
@@ -124,14 +124,14 @@ function MixAppFlowifyModal(props) {
               (options.method === "curves" ? " mixapp-btn-active" : ""),
             onClick: () => patch({ method: "curves" }),
           },
-          "Curves"
+          MixAppI18n.t("flowify.curves")
         )
       ),
       options.method === "sets"
         ? h(
             "label",
             { className: "mixapp-flowify-field" },
-            h("span", null, "Set size"),
+            h("span", null, MixAppI18n.t("flowify.setSize")),
             h("input", {
               type: "number",
               className: "mixapp-find-input",
@@ -147,7 +147,7 @@ function MixAppFlowifyModal(props) {
         : h(
             "label",
             { className: "mixapp-flowify-field" },
-            h("span", null, "Curve shape"),
+            h("span", null, MixAppI18n.t("flowify.curveShape")),
             h(
               "select",
               {
@@ -163,7 +163,7 @@ function MixAppFlowifyModal(props) {
       h(
         "div",
         { className: "mixapp-flowify-weights" },
-        h("h3", null, "Feature weights"),
+        h("h3", null, MixAppI18n.t("flowify.weights")),
         MixAppFlowify.FEATURE_IDS.map((id) =>
           h(
             "div",
@@ -171,7 +171,7 @@ function MixAppFlowifyModal(props) {
             h(
               "span",
               { className: "mixapp-flowify-weight-label" },
-              MixAppFlowify.featureLabel(id)
+              MixAppI18n.featureLabel(id)
             ),
             h("input", {
               type: "range",
@@ -180,7 +180,7 @@ function MixAppFlowifyModal(props) {
               step: 5,
               value: options.weights[id] || 0,
               onChange: (e) => setWeight(id, e.target.value),
-              "aria-label": MixAppFlowify.featureLabel(id) + " weight",
+              "aria-label": MixAppI18n.featureLabel(id),
             }),
             h(
               "span",
@@ -195,10 +195,10 @@ function MixAppFlowifyModal(props) {
                     className:
                       "mixapp-btn mixapp-btn-ghost mixapp-btn-compact" +
                       (options.invert?.[id] ? " mixapp-btn-active" : ""),
-                    title: "Invert this feature’s curve",
+                    title: MixAppI18n.t("flowify.invert"),
                     onClick: () => toggleInvert(id),
                   },
-                  "Inv"
+                  MixAppI18n.t("flowify.inv")
                 )
               : null
           )
@@ -216,7 +216,7 @@ function MixAppFlowifyModal(props) {
             onClick: () => setOptions(MixAppFlowify.defaultOptions()),
             disabled: busy,
           },
-          "Reset"
+          MixAppI18n.t("common.reset")
         ),
         h(
           "button",
@@ -226,7 +226,7 @@ function MixAppFlowifyModal(props) {
             onClick: handleApply,
             disabled: busy || count < 2 || !active.length,
           },
-          busy ? "Working…" : "Apply arrangement"
+          busy ? MixAppI18n.t("flowify.working") : MixAppI18n.t("flowify.apply")
         )
       )
     )

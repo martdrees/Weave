@@ -30,10 +30,7 @@ function MixAppAddTrackModal(props) {
   async function runSearch(e) {
     e?.preventDefault?.();
     const q = String(query || "").trim();
-    if (!q) {
-      setError("Enter a search query");
-      return;
-    }
+    if (!q) return;
     const gen = ++genRef.current;
     setLoading(true);
     setError(null);
@@ -49,12 +46,12 @@ function MixAppAddTrackModal(props) {
       }
       if (gen !== genRef.current) return;
       setResults(list);
-      if (!list.length) setError("No tracks found");
+      if (!list.length) setError(MixAppI18n.t("results.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setResults([]);
-      setError(err?.message || "Search failed");
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -64,10 +61,10 @@ function MixAppAddTrackModal(props) {
     MixAppModal,
     {
       open,
-      title: "Add Track",
-      meta: results.length ? String(results.length) + " tracks" : null,
+      title: MixAppI18n.t("addTrack.title"),
+      meta: results.length ? MixAppI18n.t("results.meta", { count: results.length }) : null,
       onClose,
-      ariaLabel: "Add track",
+      ariaLabel: MixAppI18n.t("addTrack.title"),
       className: "mixapp-find-modal mixapp-add-track-modal",
     },
     h(
@@ -79,7 +76,7 @@ function MixAppAddTrackModal(props) {
       h("input", {
         type: "search",
         className: "mixapp-find-input",
-        placeholder: "Song, artist, or album…",
+        placeholder: MixAppI18n.t("addTrack.placeholder"),
         value: query,
         autoFocus: true,
         onChange: (ev) => setQuery(ev.target.value),
@@ -91,7 +88,7 @@ function MixAppAddTrackModal(props) {
           className: "mixapp-btn mixapp-btn-primary",
           disabled: loading || !String(query || "").trim(),
         },
-        loading ? "Searching…" : "Search"
+        loading ? MixAppI18n.t("picker.loading") : MixAppI18n.t("addTrack.search")
       )
     ),
     error ? h("div", { className: "mixapp-find-error" }, error) : null,
@@ -105,11 +102,13 @@ function MixAppAddTrackModal(props) {
         onPlay,
         onAddTrack,
         disabledReason: (track) =>
-          MixAppPlaylistOps.isInIndex(existingIndex, track) ? "In playlist" : null,
+          MixAppPlaylistOps.isInIndex(existingIndex, track)
+            ? MixAppI18n.t("notify.alreadyInPlaylist")
+            : null,
         rowClassName: (track) =>
           MixAppPlaylistOps.isInIndex(existingIndex, track) ? "is-in-playlist" : "",
         loading,
-        loadingLabel: "Searching…",
+        loadingLabel: MixAppI18n.t("picker.loading"),
         emptyLabel: "Search Spotify’s catalog and add tracks to your playlist.",
       })
     )

@@ -27,6 +27,21 @@ function MixAppSearchPanel(props) {
   const seedCount = (seedUris || []).length;
   const hasPlaylistTracks = Array.isArray(tracks) && tracks.length > 0;
   const canSearch = seedCount > 0 || hasPlaylistTracks;
+  const CAMELOT_KEYS = {
+    same: ["camelot.harmonic", "camelot.harmonicHint"],
+    plus1: ["camelot.moreEnergy", "camelot.moreEnergyHint"],
+    minus1: ["camelot.lessEnergy", "camelot.lessEnergyHint"],
+    brighter: ["camelot.brighter", "camelot.brighterHint"],
+    darker: ["camelot.darker", "camelot.darkerHint"],
+    plus2: ["camelot.boost", "camelot.boostHint"],
+    diagonal: ["camelot.moodShift", "camelot.moodShiftHint"],
+    jaws: ["camelot.harmonicShift", "camelot.harmonicShiftHint"],
+  };
+  const moveLabel = (move) =>
+    CAMELOT_KEYS[move.id] ? MixAppI18n.t(CAMELOT_KEYS[move.id][0]) : move.label;
+  const moveHint = (move) =>
+    CAMELOT_KEYS[move.id] ? MixAppI18n.t(CAMELOT_KEYS[move.id][1]) : move.hint;
+
   const seedNames = (tracks || [])
     .filter((t) => seedUris?.includes(t.uri))
     .map((t) => t.name)
@@ -36,7 +51,7 @@ function MixAppSearchPanel(props) {
     "section",
     {
       className: "mixapp-search-panel",
-      "aria-label": "Search filters",
+      "aria-label": MixAppI18n.t("search.filters"),
     },
     h(
       "div",
@@ -44,20 +59,20 @@ function MixAppSearchPanel(props) {
       h(
         "div",
         { className: "mixapp-search-panel-title-row" },
-        h("h2", null, "Search"),
+        h("h2", null, MixAppI18n.t("search.title")),
         h(
           "span",
           { className: "mixapp-recommend-meta" },
           seedCount
-            ? seedCount +
-                " seed" +
-                (seedCount === 1 ? "" : "s") +
+            ? MixAppI18n.t(seedCount === 1 ? "toolbar.seed" : "toolbar.seeds", {
+                count: seedCount,
+              }) +
                 (seedNames.length
                   ? ": " + seedNames.join(", ") + (seedCount > 8 ? "…" : "")
                   : "")
             : hasPlaylistTracks
               ? "No seeds — searching from this playlist"
-              : "Load a playlist or mark seed tracks"
+              : MixAppI18n.t("search.seedsNeeded")
         )
       ),
       h(
@@ -70,9 +85,9 @@ function MixAppSearchPanel(props) {
             className: "mixapp-btn mixapp-btn-ghost",
             onClick: onFitToSeeds,
             disabled: !seedCount || fitting,
-            title: "Set min/max from selected seed audio features",
+            title: MixAppI18n.t("search.fitTitle"),
           },
-          fitting ? "Fitting…" : "Fit to seeds"
+          fitting ? MixAppI18n.t("search.fitting") : MixAppI18n.t("search.fitToSeeds")
         ),
         h(
           "button",
@@ -81,12 +96,12 @@ function MixAppSearchPanel(props) {
             className: "mixapp-btn mixapp-btn-ghost",
             onClick: onResetFeatures,
           },
-          "Reset ranges"
+          MixAppI18n.t("search.resetRanges")
         ),
         h(
           "label",
           { className: "mixapp-result-limit" },
-          "Max results",
+          MixAppI18n.t("search.maxResults"),
           h(
             "select",
             {
@@ -111,9 +126,9 @@ function MixAppSearchPanel(props) {
               ? seedCount
                 ? "Search from marked seed tracks"
                 : "Search using this playlist as context (no seeds marked)"
-              : "Load a playlist or mark seed tracks",
+              : MixAppI18n.t("search.seedsNeeded"),
           },
-          loading ? "Searching…" : "Search"
+          loading ? MixAppI18n.t("picker.loading") : MixAppI18n.t("common.search")
         ),
         h(
           "button",
@@ -121,8 +136,8 @@ function MixAppSearchPanel(props) {
             type: "button",
             className: "mixapp-icon-btn",
             onClick: onClose,
-            title: "Close search",
-            "aria-label": "Close search",
+            title: MixAppI18n.t("common.close"),
+            "aria-label": MixAppI18n.t("common.close"),
           },
           "✕"
         )
@@ -137,7 +152,7 @@ function MixAppSearchPanel(props) {
       h(
         "div",
         { className: "mixapp-search-panel-block" },
-        h("h3", null, "Feature ranges"),
+        h("h3", null, MixAppI18n.t("search.featureRanges")),
         h(MixAppFeatureSliders, {
           features,
           onChange: onFeaturesChange,
@@ -165,7 +180,7 @@ function MixAppSearchPanel(props) {
               "data-tip":
                 "Keep results that mix harmonically with your seed (or playlist) keys on the Camelot wheel. Select any combination — a track matches if any selected move reaches it. Leave all off to skip key filtering.",
             },
-            "Mix in key"
+            MixAppI18n.t("search.mixInKey")
           ),
           h(
             "span",
@@ -204,7 +219,7 @@ function MixAppSearchPanel(props) {
                 type: "button",
                 className:
                   "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
-                "data-tip": move.hint + " · Example: " + move.example,
+                "data-tip": moveHint(move) + " · " + move.example,
                 "aria-pressed": selected,
                 onClick: () => {
                   const prev = Array.isArray(filters.camelotMoves)
@@ -216,7 +231,7 @@ function MixAppSearchPanel(props) {
                   onFiltersChange?.({ ...filters, camelotMoves: next });
                 },
               },
-              h("span", { className: "mixapp-camelot-chip-label" }, move.label),
+              h("span", { className: "mixapp-camelot-chip-label" }, moveLabel(move)),
               h("span", { className: "mixapp-camelot-chip-example" }, move.example)
             );
           })
@@ -233,7 +248,7 @@ function MixAppSearchPanel(props) {
             "data-tip":
               "Post-filters applied after candidates are fetched. They remove tracks that don’t match these rules.",
           },
-          "Filters"
+          MixAppI18n.t("search.filters")
         ),
         h(
           "div",
@@ -248,7 +263,7 @@ function MixAppSearchPanel(props) {
             [
               {
                 key: "hideExisting",
-                label: "Hide in playlist",
+                label: MixAppI18n.t("search.hideInPlaylist"),
                 tip: "Hide tracks that are already in the current playlist so results only suggest new additions.",
                 on: !!filters.hideExisting,
                 toggle: () =>
@@ -259,7 +274,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "hideExistingArtists",
-                label: "Hide artists",
+                label: MixAppI18n.t("search.hideArtists"),
                 tip: "Hide any track by an artist who already appears on the playlist — useful for more variety.",
                 on: !!filters.hideExistingArtists,
                 toggle: () =>
@@ -270,7 +285,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "excludeExplicit",
-                label: "No explicit",
+                label: MixAppI18n.t("search.noExplicit"),
                 tip: "Exclude tracks marked explicit by Spotify.",
                 on: !!filters.excludeExplicit,
                 toggle: () =>
@@ -281,7 +296,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "excludeAberrant",
-                label: "No aberrant",
+                label: MixAppI18n.t("search.noAberrant"),
                 tip: "Exclude odd versions and mix titles — sped up, slowed + reverb, nightcore, DJ/continuous mixes, TikTok edits, and similar.",
                 on: !!filters.excludeAberrant,
                 toggle: () =>
@@ -318,10 +333,10 @@ function MixAppSearchPanel(props) {
               h(
                 "label",
                 { className: "mixapp-feature-field" },
-                "Year",
+                MixAppI18n.t("search.year"),
                 h("input", {
                   type: "number",
-                  placeholder: "from",
+                  placeholder: MixAppI18n.t("search.yearFrom"),
                   value: filters.yearMin,
                   onChange: (e) =>
                     onFiltersChange?.({ ...filters, yearMin: e.target.value }),
@@ -333,7 +348,7 @@ function MixAppSearchPanel(props) {
                 "\u00a0",
                 h("input", {
                   type: "number",
-                  placeholder: "to",
+                  placeholder: MixAppI18n.t("search.yearTo"),
                   value: filters.yearMax,
                   onChange: (e) =>
                     onFiltersChange?.({ ...filters, yearMax: e.target.value }),

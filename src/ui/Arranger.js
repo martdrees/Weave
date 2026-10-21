@@ -102,43 +102,43 @@ function MixAppArranger(props) {
   const toggleable = MixAppColumnConfig.COLUMNS.filter((c) => !c.always);
 
   const featureCols = [
-    { id: "BPM", label: "BPM", sortKey: "bpm" },
-    { id: "KEY", label: "Key", sortKey: "key" },
-    { id: "ENERGY", label: "Energy", sortKey: "energy", metricId: "energy" },
+    { id: "BPM", label: MixAppI18n.t("col.bpm"), sortKey: "bpm" },
+    { id: "KEY", label: MixAppI18n.t("col.key"), sortKey: "key" },
+    { id: "ENERGY", label: MixAppI18n.t("col.energy"), sortKey: "energy", metricId: "energy" },
     {
       id: "DANCEABILITY",
-      label: "Dance",
+      label: MixAppI18n.t("col.dance"),
       sortKey: "danceability",
       metricId: "danceability",
     },
-    { id: "VALENCE", label: "Valence", sortKey: "valence", metricId: "valence" },
+    { id: "VALENCE", label: MixAppI18n.t("col.valence"), sortKey: "valence", metricId: "valence" },
     {
       id: "ACOUSTICNESS",
-      label: "Acoustic",
+      label: MixAppI18n.t("col.acoustic"),
       sortKey: "acousticness",
       metricId: "acousticness",
     },
     {
       id: "INSTRUMENTALNESS",
-      label: "Instr.",
+      label: MixAppI18n.t("col.instr"),
       sortKey: "instrumentalness",
       metricId: "instrumentalness",
     },
     {
       id: "SPEECHINESS",
-      label: "Speech",
+      label: MixAppI18n.t("col.speech"),
       sortKey: "speechiness",
       metricId: "speechiness",
     },
     {
       id: "LIVENESS",
-      label: "Live",
+      label: MixAppI18n.t("col.live"),
       sortKey: "liveness",
       metricId: "liveness",
     },
     {
       id: "LOUDNESS",
-      label: "Loud",
+      label: MixAppI18n.t("col.loud"),
       sortKey: "loudness",
       metricId: "loudness",
     },
@@ -407,7 +407,7 @@ function MixAppArranger(props) {
           e.stopPropagation();
           cycleSort(sortKey);
         },
-        title: "Sort by " + label,
+        title: MixAppI18n.t("arranger.sortBy", { label }),
       },
       label + arrow
     );
@@ -421,11 +421,11 @@ function MixAppArranger(props) {
         className: "mixapp-spinner",
         "aria-hidden": "true",
       }),
-      h("p", { className: "mixapp-empty-title" }, "Loading tracks…"),
+      h("p", { className: "mixapp-empty-title" }, MixAppI18n.t("picker.loading")),
       h(
         "p",
         { className: "mixapp-empty-hint" },
-        "Fetching playlist contents from Spotify."
+        MixAppI18n.t("arranger.loading")
       )
     );
   }
@@ -434,13 +434,8 @@ function MixAppArranger(props) {
     return h(
       "div",
       { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
-      h("p", { className: "mixapp-empty-title" }, "No tracks yet"),
-      h(
-        "p",
-        { className: "mixapp-empty-hint" },
-        "Pick a playlist from the toolbar, or use Add Track / Generator once one is loaded."
-      ),
-      h("p", { className: "mixapp-empty-hint" }, "Press ? for keyboard shortcuts.")
+      h("p", { className: "mixapp-empty-title" }, MixAppI18n.t("arranger.empty")),
+      h("p", { className: "mixapp-empty-hint" }, MixAppI18n.t("arranger.emptyHint"))
     );
   }
 
@@ -502,12 +497,12 @@ function MixAppArranger(props) {
   function headCells() {
     const cells = [];
     if (show("INDEX")) {
-      cells.push(cell("mixapp-col-num", headButton("#", "index")));
+      cells.push(cell("mixapp-col-num", headButton(MixAppI18n.t("col.index"), "index")));
     }
     if (show("TITLE_AND_ARTIST")) {
-      cells.push(cell("mixapp-col-title", headButton("Track", "name")));
+      cells.push(cell("mixapp-col-title", headButton(MixAppI18n.t("col.track"), "name")));
     }
-    if (show("ADDED_AT")) cells.push(cell("mixapp-col-added", "Date added"));
+    if (show("ADDED_AT")) cells.push(cell("mixapp-col-added", MixAppI18n.t("col.added")));
     for (const col of featureCols) {
       if (show(col.id)) {
         cells.push(
@@ -519,7 +514,7 @@ function MixAppArranger(props) {
       }
     }
     if (show("DURATION")) {
-      cells.push(cell("mixapp-col-dur", headButton("Time", "index")));
+      cells.push(cell("mixapp-col-dur", headButton(MixAppI18n.t("col.time"), "index")));
     }
     if (show("ACTIONS")) cells.push(cell("mixapp-col-actions", ""));
     return cells;
@@ -532,7 +527,7 @@ function MixAppArranger(props) {
     if (show("ALBUM") && track.album) subParts.push(track.album);
     const duration = MixAppApi.formatDuration(track.durationMs);
     const titleText =
-      (track.name || "Unknown") +
+      (track.name || MixAppI18n.t("common.unknown")) +
       (duration && duration !== "—" ? " (" + duration + ")" : "");
     return h(
       "div",
@@ -550,7 +545,9 @@ function MixAppArranger(props) {
             if (di >= 0) selectDisplay(di);
             onToggleSeed?.(track.uri);
           },
-          title: isSeed ? "Remove seed" : "Mark as seed track",
+          title: isSeed
+              ? MixAppI18n.t("arranger.seedUnmark")
+              : MixAppI18n.t("arranger.seedMark"),
         },
         titleText
       ),
@@ -585,8 +582,8 @@ function MixAppArranger(props) {
               {
                 className: "mixapp-drag-handle",
                 draggable: true,
-                title: "Drag to reorder",
-                "aria-label": "Drag to reorder",
+                title: MixAppI18n.t("arranger.drag"),
+                "aria-label": MixAppI18n.t("arranger.drag"),
                 onClick: (e) => e.stopPropagation(),
                 onDragStart: (e) => {
                   e.stopPropagation();
@@ -610,9 +607,10 @@ function MixAppArranger(props) {
     }
     if (show("TITLE_AND_ARTIST")) {
       const active = !!(track.uri && track.uri === playingUri && isPlaying);
+      const playName = track.name || MixAppI18n.t("arranger.trackFallback");
       const playLabel = active
-        ? "Pause " + (track.name || "track")
-        : "Play " + (track.name || "track");
+        ? MixAppI18n.t("arranger.pause", { name: playName })
+        : MixAppI18n.t("arranger.play", { name: playName });
       cells.push(
         cell(
           "mixapp-col-title",
@@ -684,7 +682,7 @@ function MixAppArranger(props) {
                 e.stopPropagation();
                 moveDisplay(index, index - 1);
               },
-              title: "Move up",
+              title: MixAppI18n.t("arranger.moveUp"),
             },
             "↑"
           ),
@@ -699,7 +697,7 @@ function MixAppArranger(props) {
                 e.stopPropagation();
                 moveDisplay(index, index + 1);
               },
-              title: "Move down",
+              title: MixAppI18n.t("arranger.moveDown"),
             },
             "↓"
           ),
@@ -713,8 +711,8 @@ function MixAppArranger(props) {
                 e.stopPropagation();
                 removeDisplay(index);
               },
-              title: "Remove from playlist",
-              "aria-label": "Remove from playlist",
+              title: MixAppI18n.t("arranger.remove"),
+              "aria-label": MixAppI18n.t("arranger.remove"),
             },
             h(
               "svg",
@@ -796,7 +794,7 @@ function MixAppArranger(props) {
           (dragIndex != null ? " is-reordering" : ""),
         role: "listbox",
         tabIndex: 0,
-        "aria-label": "Playlist tracks",
+        "aria-label": MixAppI18n.t("arranger.aria"),
         "aria-activedescendant": activeDescendant,
         onKeyDown: handleListKeyDown,
       },
@@ -806,7 +804,7 @@ function MixAppArranger(props) {
           className: "mixapp-arranger-head",
           style: { gridTemplateColumns: gridTemplate },
           onContextMenu: openColumnMenu,
-          title: "Right-click to show or hide columns",
+          title: MixAppI18n.t("arranger.columnsMenu"),
           role: "presentation",
         },
         ...headCells()
@@ -815,7 +813,7 @@ function MixAppArranger(props) {
         ? h(
             "div",
             { className: "mixapp-arranger-empty" },
-            "Select a playlist to edit its track order."
+            MixAppI18n.t("arranger.empty")
           )
         : displayTracks.map((track, index) =>
             h(
@@ -839,8 +837,8 @@ function MixAppArranger(props) {
                 style: rowDragStyle(index),
                 draggable: false,
                 title: seedSet.has(track.uri)
-                  ? "Seed track — click to unmark · drag ⋮⋮ to reorder"
-                  : "Click to mark as seed · drag ⋮⋮ to reorder",
+                  ? MixAppI18n.t("arranger.rowSeed")
+                  : MixAppI18n.t("arranger.rowNormal"),
                 onClick: (e) => {
                   if (
                     e.target?.closest?.(

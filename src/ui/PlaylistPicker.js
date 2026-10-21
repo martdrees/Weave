@@ -2,6 +2,7 @@
 
 function MixAppPlaylistPicker(props) {
   const react = Spicetify.React;
+  const t = MixAppI18n.t;
   const { playlists, selectedUri, loading, compact, trackCount, onSelect, onRefresh } =
     props;
 
@@ -18,7 +19,7 @@ function MixAppPlaylistPicker(props) {
             className: "mixapp-picker-label",
             htmlFor: "mixapp-playlist-select",
           },
-          "Playlist"
+          t("picker.playlist")
         ),
     h(
       "div",
@@ -31,13 +32,17 @@ function MixAppPlaylistPicker(props) {
           value: selectedUri || "",
           disabled: loading || !playlists?.length,
           onChange: (e) => onSelect(e.target.value || null),
-          "aria-label": "Playlist",
-          title: "Choose playlist",
+          "aria-label": t("picker.playlist"),
+          title: t("picker.choose"),
         },
         h(
           "option",
           { value: "" },
-          loading ? "Loading…" : playlists?.length ? "Select playlist…" : "No playlists"
+          loading
+            ? t("picker.loading")
+            : playlists?.length
+              ? t("picker.select")
+              : t("picker.empty")
         ),
         (playlists || []).map((p) =>
           h(
@@ -52,9 +57,9 @@ function MixAppPlaylistPicker(props) {
             "span",
             {
               className: "mixapp-picker-count",
-              title: trackCount + " tracks",
+              title: t("picker.tracks", { count: trackCount }),
             },
-            trackCount + " tracks"
+            t("picker.tracks", { count: trackCount })
           )
         : null,
       h(
@@ -66,10 +71,10 @@ function MixAppPlaylistPicker(props) {
             : "mixapp-btn mixapp-btn-ghost",
           onClick: onRefresh,
           disabled: loading,
-          title: "Refresh playlist list",
-          "aria-label": "Refresh playlist list",
+          title: t("picker.refreshTitle"),
+          "aria-label": t("picker.refreshTitle"),
         },
-        compact ? "↻" : "Refresh"
+        compact ? "↻" : t("picker.refresh")
       )
     )
   );
