@@ -88,7 +88,6 @@
 
 .mixapp-logo {
   flex: 0 0 auto;
-  color: var(--mix-text, #fff);
   display: block;
 }
 

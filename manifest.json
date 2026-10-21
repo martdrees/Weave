@@ -1,7 +1,7 @@
 {
   "name": "Weave",
-  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"currentColor\" stroke-width=\"2.5\"/></svg>",
-  "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"currentColor\" stroke-width=\"2.5\"/></svg>",
+  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"#5F8F7A\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"#B8D4C4\" stroke-width=\"2.5\"/></svg>",
+  "active-icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 42C16 42 18 22 32 22S48 42 56 42\" stroke=\"#5F8F7A\" stroke-width=\"2.5\"/><path d=\"M8 22C16 22 18 42 32 42S48 22 56 22\" stroke=\"#B8D4C4\" stroke-width=\"2.5\"/></svg>",
   "subfiles": [
     "src/types.js",
     "src/i18n/i18n.js",

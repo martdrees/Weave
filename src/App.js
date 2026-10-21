@@ -152,8 +152,7 @@ function MixAppPage() {
             h("path", {
               d: "M8 42C16 42 18 22 32 22S48 42 56 42",
               fill: "none",
-              stroke: "currentColor",
-              strokeOpacity: 0.55,
+              stroke: "#5F8F7A",
               strokeWidth: 2.5,
               strokeLinecap: "round",
               strokeLinejoin: "round",
@@ -161,7 +160,7 @@ function MixAppPage() {
             h("path", {
               d: "M8 22C16 22 18 42 32 42S48 22 56 22",
               fill: "none",
-              stroke: "currentColor",
+              stroke: "#B8D4C4",
               strokeWidth: 2.5,
               strokeLinecap: "round",
               strokeLinejoin: "round",

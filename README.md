@@ -1,4 +1,6 @@
-# <img src="assets/weave-logo.png" alt="" width="28" height="28" align="absmiddle" /> Weave
+
+
+# <img src="assets/weave-logo.png" alt="" width="70" height="70" /><br /> Weave
 
 Spicetify custom app for editing Spotify playlists in the desktop client — rearrange tracks, pull recommendations, search/add/copy tracks, Flowify auto-arrange, and generate new playlists. Inspired by [MixMoose](https://mixmoose.com).
 
