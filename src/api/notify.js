@@ -3,8 +3,10 @@
 
 const MixAppNotify = (() => {
   function notify(message, isError) {
+    const text = String(message ?? "").trim();
+    if (!text) return;
     if (Spicetify?.showNotification) {
-      Spicetify.showNotification(message, !!isError);
+      Spicetify.showNotification(text, !!isError);
     }
   }
 

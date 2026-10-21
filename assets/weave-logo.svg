@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="weave-logo-title weave-logo-desc">
+  <title id="weave-logo-title">Weave</title>
+  <desc id="weave-logo-desc">Two interlaced threads forming a musical waveform</desc>
+
+  <!--
+    Mark: two waveform threads crossing — weave + sound in one silhouette.
+    Neutrals only. Recolor with CSS (stroke: currentColor) if needed.
+  -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Reverse wave (back / lighter) -->
+    <path
+      d="M8 42C16 42 18 22 32 22S48 42 56 42"
+      stroke="#5c5c5c"
+      stroke-width="2.5"
+    />
+    <!-- Forward wave (front / darker) -->
+    <path
+      d="M8 22C16 22 18 42 32 42S48 22 56 22"
+      stroke="#1a1a1a"
+      stroke-width="2.5"
+    />
+  </g>
+</svg>

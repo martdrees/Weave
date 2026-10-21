@@ -134,7 +134,45 @@ function MixAppPage() {
       h(
         "div",
         { className: "mixapp-header-row" },
-        h("h1", null, "Weave"),
+        h(
+          "div",
+          { className: "mixapp-title-group" },
+          h(
+            "svg",
+            {
+              className: "mixapp-logo",
+              viewBox: "0 0 64 64",
+              width: 36,
+              height: 36,
+              "aria-hidden": "true",
+              focusable: "false",
+            },
+            h("path", {
+              d: "M8 42C16 42 18 22 32 22S48 42 56 42",
+              fill: "none",
+              stroke: "currentColor",
+              strokeOpacity: 0.55,
+              strokeWidth: 2.5,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+            }),
+            h("path", {
+              d: "M8 22C16 22 18 42 32 42S48 22 56 22",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: 2.5,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+            })
+          ),
+          h(
+            "h1",
+            { className: "mixapp-title" },
+            "Weave",
+            h("span", { className: "mixapp-title-sep", "aria-hidden": "true" }, "|"),
+            h("span", { className: "mixapp-subtitle" }, "Playlist weaving for Spotify")
+          )
+        ),
         h(
           "button",
           {
@@ -159,11 +197,6 @@ function MixAppPage() {
             })
           )
         )
-      ),
-      h(
-        "p",
-        { className: "mixapp-subtitle" },
-        "Playlist weaving for Spotify"
       )
     ),
     h(MixAppToolbar, {
