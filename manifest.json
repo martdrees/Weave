@@ -2,8 +2,8 @@
   "name": "Weave",
   "description": "Spicetify custom app for editing Spotify playlists in the desktop client.",
   "preview": "assets/screenshot.png",
-  "readme", "README.md",
-  "branch", "main",
+  "readme": "README.md",
+  "branch": "main",
   "authors": [
     { "name": "Martin Drees", "url": "https://github.com/martdrees" }
   ],
