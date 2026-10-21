@@ -50,5 +50,6 @@
     "src/ui/GeneratorModal.js",
     "src/ui/ShortcutsHelp.js",
     "src/App.js"
-  ]
+  ],
+  "tags": ["playlist","generator","mix"]
 }
