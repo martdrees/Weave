@@ -1,5 +1,3 @@
-
-
 # <img src="assets/weave-logo.png" alt="" width="70" height="70" /><br /> Weave
 
 Spicetify custom app for editing Spotify playlists in the desktop client — rearrange tracks, pull recommendations, search/add/copy tracks, Flowify auto-arrange, and generate new playlists. Inspired by [MixMoose](https://mixmoose.com).
@@ -107,8 +105,11 @@ From the [Spicetify docs](https://spicetify.app/docs/customization/custom-apps):
 | `?`                    | Shortcuts help          |
 | `Esc`                  | Close top panel / modal |
 
+## Support
 
+If Weave helps your playlists, you can [buy me a coffee](https://www.buymeacoffee.com/mdrees).
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mdrees)
 
 ## License
 
