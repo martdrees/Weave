@@ -126,7 +126,20 @@ const MixAppPlaylistOps = (() => {
         setTracks((prev) =>
           prev.map((t) => {
             const n = byUid.get(t.uid);
-            return n ? { ...t, bpm: n.bpm ?? t.bpm, key: n.key ?? t.key } : t;
+            return n
+              ? {
+                  ...t,
+                  bpm: n.bpm ?? t.bpm,
+                  key: n.key ?? t.key,
+                  keyNative: n.keyNative || t.keyNative,
+                  bpmNative: n.bpmNative || t.bpmNative,
+                  keyColor: n.keyColor || t.keyColor,
+                  standardKey: n.standardKey || t.standardKey,
+                  standardMode: n.standardMode || t.standardMode,
+                  keyIndex: n.keyIndex ?? t.keyIndex,
+                  keyMode: n.keyMode ?? t.keyMode,
+                }
+              : t;
           })
         );
       })

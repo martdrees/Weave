@@ -33,6 +33,11 @@
  * @property {boolean} [featuresLoaded]
  * @property {number|null} [keyIndex]
  * @property {number|null} [keyMode]
+ * @property {boolean} [keyNative] Spotify AudioAttributesV2 Camelot
+ * @property {boolean} [bpmNative] Spotify AudioAttributesV2 BPM
+ * @property {string|null} [keyColor] Spotify camelotKey.color
+ * @property {string|null} [standardKey] Spotify standard key root (e.g. F#)
+ * @property {"minor"|"major"|null} [standardMode]
  * @property {number|null} [energy]
  * @property {number|null} [danceability]
  * @property {number|null} [valence]

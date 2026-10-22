@@ -211,6 +211,16 @@ const MixAppPlaylists = (() => {
   }
 
   /**
+   * Same extension Spotify’s playlist Key/BPM columns request
+   * (AudioAttributesV2 → camelotKey / bpm on each item).
+   */
+  const TRACK_EXT_AUDIO_ATTRIBUTES_V2 = 222;
+
+  function playlistContentsOptions() {
+    return { trackExtensions: [TRACK_EXT_AUDIO_ATTRIBUTES_V2] };
+  }
+
+  /**
    * Platform PlaylistAPI.getContents — preferred (keeps item uids / mixing attrs).
    * "Invalid playlist response" usually means deleted/private — do not retry into 429.
    * @returns {{ kind: 'ok', tracks: object[] } | { kind: 'unavailable' } | { kind: 'miss' }}
@@ -219,11 +229,15 @@ const MixAppPlaylists = (() => {
     const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
     if (!PlaylistAPI?.getContents) return { kind: "miss" };
 
+    const opts = playlistContentsOptions();
     let sawInvalid = false;
     let lastErr = null;
-    for (const candidate of playlistUriCandidates(uri)) {
+
+    async function tryGetContents(candidate, useOpts) {
       try {
-        const contents = await PlaylistAPI.getContents(candidate);
+        const contents = useOpts
+          ? await PlaylistAPI.getContents(candidate, useOpts)
+          : await PlaylistAPI.getContents(candidate);
         if (contents && Array.isArray(contents.items)) {
           return { kind: "ok", tracks: mapPlatformContents(contents) };
         }
@@ -231,20 +245,36 @@ const MixAppPlaylists = (() => {
         lastErr = err;
         if (isInvalidPlaylistResponse(err)) {
           sawInvalid = true;
-          continue;
+          return { kind: "invalid" };
         }
         if (MixAppHttp.isRateLimitError(err)) {
           await MixAppHttp.sleep(1000);
           try {
-            const contents = await PlaylistAPI.getContents(candidate);
+            const contents = useOpts
+              ? await PlaylistAPI.getContents(candidate, useOpts)
+              : await PlaylistAPI.getContents(candidate);
             if (contents && Array.isArray(contents.items)) {
               return { kind: "ok", tracks: mapPlatformContents(contents) };
             }
           } catch (err2) {
             lastErr = err2;
-            if (isInvalidPlaylistResponse(err2)) sawInvalid = true;
+            if (isInvalidPlaylistResponse(err2)) {
+              sawInvalid = true;
+              return { kind: "invalid" };
+            }
           }
         }
+      }
+      return { kind: "miss" };
+    }
+
+    for (const candidate of playlistUriCandidates(uri)) {
+      let result = await tryGetContents(candidate, opts);
+      if (result.kind === "ok") return result;
+      // Older clients may reject trackExtensions — retry plain getContents.
+      if (result.kind === "miss" && opts) {
+        result = await tryGetContents(candidate, null);
+        if (result.kind === "ok") return result;
       }
     }
     if (lastErr) {

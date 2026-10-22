@@ -386,26 +386,30 @@ function MixAppCopyPlaylistModal(props) {
                           )
                         ),
                         (() => {
+                          const keyLabel = MixAppFeatures.formatDisplayKey(track);
                           const keyBg = MixAppFeatures.camelotBackground(
                             track.keyIndex,
                             track.keyMode,
-                            track.key
+                            track.key,
+                            track.keyColor
                           );
                           return h(
                             "div",
                             {
                               className:
                                 "mixapp-col-feat mixapp-col-key mixapp-find-key",
-                              title: track.key || MixAppI18n.t("common.unknown"),
+                              title:
+                                keyLabel || MixAppI18n.t("common.unknown"),
                             },
                             h(
                               "span",
                               {
                                 className:
-                                  "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+                                  "mixapp-key-circle" +
+                                  (keyLabel ? "" : " is-empty"),
                                 style: keyBg ? { background: keyBg } : undefined,
                               },
-                              track.key || "—"
+                              keyLabel || "—"
                             )
                           );
                         })(),

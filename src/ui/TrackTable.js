@@ -195,20 +195,23 @@ function MixAppTrackTable(props) {
   /** Feature cells — same rendering as Arranger (key circle / feat pills). */
   function featureCell(track, col) {
     if (col.id === "KEY") {
+      const label = MixAppFeatures.formatDisplayKey(track);
       const bg = MixAppFeatures.camelotBackground(
         track.keyIndex,
         track.keyMode,
-        track.key
+        track.key,
+        track.keyColor
       );
       return cell(
         "mixapp-col-feat mixapp-col-key",
         h(
           "span",
           {
-            className: "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+            className: "mixapp-key-circle" + (label ? "" : " is-empty"),
             style: bg ? { background: bg } : undefined,
+            title: label || undefined,
           },
-          track.key || "—"
+          label || "—"
         )
       );
     }

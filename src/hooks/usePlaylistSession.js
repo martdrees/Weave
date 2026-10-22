@@ -78,7 +78,17 @@ function MixAppUsePlaylistSession(opts) {
     refreshPlaylists();
   }, []);
 
-  async function loadPlaylist(uri) {
+  // Session restore may have Camelot keys from audio-features; reload once so
+  // keys match Spotify’s playlist Key column (AudioAttributesV2).
+  react.useEffect(() => {
+    if (!selectedUri || !tracks.length) return;
+    if (tracks.some((t) => t && t.keyNative)) return;
+    loadPlaylist(selectedUri, { force: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot after restore
+  }, []);
+
+  async function loadPlaylist(uri, opts) {
+    const force = !!(opts && opts.force);
     if (!uri) {
       loadGenRef.current += 1;
       onClearPlaylist?.();
@@ -92,7 +102,7 @@ function MixAppUsePlaylistSession(opts) {
       return;
     }
 
-    if (uri === selectedUri && tracks.length) {
+    if (!force && uri === selectedUri && tracks.length) {
       return;
     }
 
@@ -273,6 +283,13 @@ function MixAppUsePlaylistSession(opts) {
               bpm: prev.bpm ?? t.bpm,
               key: prev.key ?? t.key,
               year: prev.year ?? t.year,
+              keyNative: prev.keyNative || t.keyNative,
+              bpmNative: prev.bpmNative || t.bpmNative,
+              keyColor: prev.keyColor || t.keyColor,
+              standardKey: prev.standardKey || t.standardKey,
+              standardMode: prev.standardMode || t.standardMode,
+              keyIndex: prev.keyIndex ?? t.keyIndex,
+              keyMode: prev.keyMode ?? t.keyMode,
             };
           })
         );

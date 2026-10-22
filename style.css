@@ -459,8 +459,12 @@
 .mixapp-track-row {
   border-bottom: 1px solid var(--mix-border-faint);
   font-size: var(--mix-font-sm);
-  transition: transform 0.16s ease, background-color 0.12s ease, opacity 0.12s ease;
-  will-change: transform;
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+  cursor: grab;
+}
+
+.mixapp-arranger.is-reordering .mixapp-track-row {
+  cursor: grabbing;
 }
 
 .mixapp-track-row:hover {
@@ -549,15 +553,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.45rem;
+  min-width: 1.45rem;
   height: 1.45rem;
-  border-radius: 50%;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+  border-radius: 999px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 0.62rem;
   line-height: 1;
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  color: #111;
+  text-shadow: none;
   background: var(--mix-border);
 }
 
@@ -779,6 +786,24 @@
   display: flex;
   gap: 2px;
   justify-content: flex-end;
+  align-items: center;
+  min-width: 96px;
+}
+
+.mixapp-col-actions .mixapp-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+/* Trash stays readable even before hover */
+.mixapp-col-actions .mixapp-icon-btn-danger {
+  color: rgba(255, 120, 120, 0.85);
+}
+
+/* Don't let action buttons start a row drag */
+.mixapp-col-actions,
+.mixapp-col-actions * {
+  -webkit-user-drag: none;
 }
 
 /* —— Icon button (companion to .mixapp-btn) —— */

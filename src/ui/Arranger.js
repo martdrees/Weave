@@ -19,7 +19,6 @@ function MixAppArranger(props) {
   const flashSet = new Set(flashUids || []);
   const [dragIndex, setDragIndex] = react.useState(null);
   const [dragOverIndex, setDragOverIndex] = react.useState(null);
-  const [dragRowHeight, setDragRowHeight] = react.useState(40);
   const [listFlashOn, setListFlashOn] = react.useState(false);
   /** Display-index of keyboard/mouse selection (R6.2). */
   const [activeIndex, setActiveIndex] = react.useState(null);
@@ -31,6 +30,8 @@ function MixAppArranger(props) {
   const [sort, setSort] = react.useState({ key: null, dir: null });
   const menuRef = react.useRef(null);
   const listRef = react.useRef(null);
+  /** Sync drag indices for drop/dragend (avoids stale React closures). */
+  const dragRef = react.useRef({ from: null, over: null, dropped: false });
 
   react.useEffect(() => {
     setVisibility(MixAppColumnConfig.getVisibility());
@@ -165,7 +166,7 @@ function MixAppArranger(props) {
     show("ADDED_AT") ? "minmax(72px, 0.4fr)" : null,
     ...featureCols.map((c) => (show(c.id) ? featureColWidth(c) : null)),
     show("DURATION") ? "52px" : null,
-    show("ACTIONS") ? "84px" : null,
+    show("ACTIONS") ? "108px" : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -237,42 +238,37 @@ function MixAppArranger(props) {
   }
 
   function clearDrag() {
+    dragRef.current = { from: null, over: null, dropped: false };
     setDragIndex(null);
     setDragOverIndex(null);
-  }
-
-  /** Live shift other rows while dragging (HTML5 DnD keeps DOM order stable). */
-  function rowDragStyle(index) {
-    const base = { gridTemplateColumns: gridTemplate };
-    if (dragIndex == null || dragOverIndex == null || dragIndex === dragOverIndex) {
-      return base;
-    }
-    if (index === dragIndex) return base;
-
-    let ty = 0;
-    if (dragIndex < dragOverIndex) {
-      if (index > dragIndex && index <= dragOverIndex) ty = -dragRowHeight;
-    } else if (index >= dragOverIndex && index < dragIndex) {
-      ty = dragRowHeight;
-    }
-    if (ty) {
-      base.transform = "translateY(" + ty + "px)";
-      base.zIndex = 1;
-    }
-    return base;
   }
 
   function onRowDragOver(e, index) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    if (dragIndex == null) return;
-    if (index !== dragOverIndex) setDragOverIndex(index);
+    if (dragRef.current.from == null) return;
+    if (dragRef.current.over !== index) {
+      dragRef.current.over = index;
+      setDragOverIndex(index);
+    }
   }
 
   function beginRowDrag(e, index) {
-    const row = e.currentTarget?.closest?.(".mixapp-track-row");
-    const hgt = row?.offsetHeight || e.currentTarget?.offsetHeight || 40;
-    setDragRowHeight(hgt);
+    // Don't start a row drag from interactive controls.
+    if (
+      e.target?.closest?.(
+        "button, a, input, .mixapp-play-btn, .mixapp-icon-btn, .mixapp-col-sort, .mixapp-col-actions"
+      )
+    ) {
+      e.preventDefault();
+      return;
+    }
+    const row =
+      e.currentTarget?.classList?.contains?.("mixapp-track-row")
+        ? e.currentTarget
+        : e.currentTarget?.closest?.(".mixapp-track-row");
+    const hgt = row?.offsetHeight || 40;
+    dragRef.current = { from: index, over: index, dropped: false };
     setDragIndex(index);
     setDragOverIndex(index);
     selectDisplay(index);
@@ -287,17 +283,39 @@ function MixAppArranger(props) {
     }
   }
 
+  function applyDragMove(from, to) {
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return;
+    const moved = displayTracks[from];
+    const id = moved?.uid || moved?.uri || null;
+    moveDisplay(from, to);
+    if (id) setFollowId(id);
+    else setActiveIndex(to);
+  }
+
   function finishRowDrop(e, index) {
     e.preventDefault();
+    e.stopPropagation();
     const fromRaw = e.dataTransfer.getData("text/plain");
-    const from = dragIndex != null ? dragIndex : fromRaw !== "" ? Number(fromRaw) : NaN;
-    const to = dragOverIndex != null ? dragOverIndex : index;
-    if (Number.isFinite(from) && Number.isFinite(to) && from !== to) {
-      const moved = displayTracks[from];
-      const id = moved?.uid || moved?.uri || null;
-      moveDisplay(from, to);
-      if (id) setFollowId(id);
-      else setActiveIndex(to);
+    const from =
+      dragRef.current.from != null
+        ? dragRef.current.from
+        : fromRaw !== ""
+          ? Number(fromRaw)
+          : NaN;
+    const to =
+      dragRef.current.over != null ? dragRef.current.over : index;
+    dragRef.current.dropped = true;
+    applyDragMove(from, to);
+    clearDrag();
+  }
+
+  function finishRowDragEnd(e) {
+    // Some Chromium builds skip drop when transforms / overlays interfere —
+    // still commit using the last drag-over index.
+    if (!dragRef.current.dropped && dragRef.current.from != null) {
+      const from = dragRef.current.from;
+      const to = dragRef.current.over != null ? dragRef.current.over : from;
+      applyDragMove(from, to);
     }
     clearDrag();
   }
@@ -445,20 +463,23 @@ function MixAppArranger(props) {
 
   function featureCell(track, col) {
     if (col.id === "KEY") {
+      const label = MixAppFeatures.formatDisplayKey(track);
       const bg = MixAppFeatures.camelotBackground(
         track.keyIndex,
         track.keyMode,
-        track.key
+        track.key,
+        track.keyColor
       );
       return cell(
         "mixapp-col-feat mixapp-col-key",
         h(
           "span",
           {
-            className: "mixapp-key-circle" + (track.key ? "" : " is-empty"),
+            className: "mixapp-key-circle" + (label ? "" : " is-empty"),
             style: bg ? { background: bg } : undefined,
+            title: label || undefined,
           },
-          track.key || "—"
+          label || "—"
         )
       );
     }
@@ -581,18 +602,9 @@ function MixAppArranger(props) {
               "span",
               {
                 className: "mixapp-drag-handle",
-                draggable: true,
                 title: MixAppI18n.t("arranger.drag"),
                 "aria-label": MixAppI18n.t("arranger.drag"),
                 onClick: (e) => e.stopPropagation(),
-                onDragStart: (e) => {
-                  e.stopPropagation();
-                  beginRowDrag(e, index);
-                },
-                onDragEnd: (e) => {
-                  e.stopPropagation();
-                  clearDrag();
-                },
               },
               dragGripIcon
             ),
@@ -834,15 +846,15 @@ function MixAppArranger(props) {
                     ? " is-flash"
                     : "") +
                   (activeIndex === index ? " is-active" : ""),
-                style: rowDragStyle(index),
-                draggable: false,
+                style: { gridTemplateColumns: gridTemplate },
+                draggable: true,
                 title: seedSet.has(track.uri)
                   ? MixAppI18n.t("arranger.rowSeed")
                   : MixAppI18n.t("arranger.rowNormal"),
                 onClick: (e) => {
                   if (
                     e.target?.closest?.(
-                      "button, a, input, .mixapp-play-btn, .mixapp-icon-btn, .mixapp-drag-handle, .mixapp-col-sort"
+                      "button, a, input, .mixapp-play-btn, .mixapp-icon-btn, .mixapp-drag-handle, .mixapp-col-sort, .mixapp-col-actions"
                     )
                   ) {
                     return;
@@ -850,6 +862,8 @@ function MixAppArranger(props) {
                   selectDisplay(index);
                   onToggleSeed?.(track.uri);
                 },
+                onDragStart: (e) => beginRowDrag(e, index),
+                onDragEnd: (e) => finishRowDragEnd(e),
                 onDragOver: (e) => onRowDragOver(e, index),
                 onDrop: (e) => finishRowDrop(e, index),
               },

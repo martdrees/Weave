@@ -81,7 +81,135 @@ const MixAppTrack = (() => {
 
   function normalizeBpm(bpm) {
     if (bpm == null) return null;
-    return typeof bpm === "number" ? Math.round(bpm) : String(bpm);
+    if (typeof bpm === "number") {
+      return Number.isFinite(bpm) ? Math.round(bpm) : null;
+    }
+    const n = parseFloat(String(bpm));
+    return Number.isFinite(n) ? Math.round(n) : String(bpm);
+  }
+
+  /** AudioAttributesV2 mode enum (not Web API 0/1). */
+  const V2_MODE_MINOR = 1;
+  const V2_MODE_MAJOR = 2;
+
+  /**
+   * Spotify playlist Key column uses AudioAttributesV2 → mapped trackKey:
+   * { standardKey, mode: "minor"|"major", camelotKey, color }.
+   * Raw extension shape: { key, mode: 1|2, camelotKey: { value, color } }.
+   * @returns {{
+   *   camelot: string|null,
+   *   standardKey: string|null,
+   *   mode: "minor"|"major"|null,
+   *   color: string|null,
+   *   native: true
+   * }|null}
+   */
+  function coerceSpotifyTrackKey(value) {
+    if (value == null || value === "") return null;
+    if (typeof value === "string") {
+      const s = value.trim();
+      if (!s || s === "[object Object]") return null;
+      const m = s.match(/(\d{1,2})\s*([ABab])/);
+      if (!m) return null;
+      return {
+        camelot: parseInt(m[1], 10) + m[2].toUpperCase(),
+        standardKey: null,
+        mode: null,
+        color: null,
+        native: true,
+      };
+    }
+    if (typeof value !== "object") return null;
+
+    const camelotRaw =
+      (typeof value.camelotKey === "string" && value.camelotKey) ||
+      (value.camelotKey &&
+        typeof value.camelotKey === "object" &&
+        value.camelotKey.value) ||
+      value.camelot ||
+      null;
+    let camelot = null;
+    if (camelotRaw) {
+      const m = String(camelotRaw).match(/(\d{1,2})\s*([ABab])/);
+      if (m) camelot = parseInt(m[1], 10) + m[2].toUpperCase();
+    }
+
+    const standardRaw =
+      (typeof value.standardKey === "string" && value.standardKey) ||
+      (typeof value.key === "string" && value.key) ||
+      null;
+    const standardKey = standardRaw ? String(standardRaw).trim() || null : null;
+
+    let mode = null;
+    if (value.mode === "minor" || value.mode === "major") {
+      mode = value.mode;
+    } else if (value.mode === V2_MODE_MINOR || value.mode === "1") {
+      mode = "minor";
+    } else if (value.mode === V2_MODE_MAJOR || value.mode === "2") {
+      mode = "major";
+    }
+
+    const color =
+      value.color ||
+      (value.camelotKey &&
+        typeof value.camelotKey === "object" &&
+        value.camelotKey.color) ||
+      null;
+
+    if (!camelot && !standardKey) return null;
+    return {
+      camelot,
+      standardKey,
+      mode,
+      color: color ? String(color) : null,
+      native: true,
+    };
+  }
+
+  /**
+   * Apply native Spotify key/BPM fields onto a track row.
+   * @param {object} row
+   * @param {{ camelot?: string|null, standardKey?: string|null, mode?: string|null, color?: string|null }|null} keyInfo
+   * @param {number|string|null} [bpm]
+   */
+  function applyNativeAudioAttrs(row, keyInfo, bpm) {
+    if (!row) return row;
+    if (keyInfo) {
+      if (keyInfo.camelot) {
+        row.key = keyInfo.camelot;
+        row.keyNative = true;
+      }
+      if (keyInfo.standardKey) row.standardKey = keyInfo.standardKey;
+      if (keyInfo.mode === "minor" || keyInfo.mode === "major") {
+        row.standardMode = keyInfo.mode;
+      }
+      if (keyInfo.color) row.keyColor = keyInfo.color;
+    }
+    if (bpm != null && bpm !== "") {
+      const n = normalizeBpm(bpm);
+      if (n != null) {
+        row.bpm = n;
+        row.bpmNative = true;
+      }
+    }
+    return row;
+  }
+
+  function extractPlaylistKey(raw, track, attrs) {
+    const candidates = [
+      raw?.trackKey,
+      track?.trackKey,
+      raw?.key,
+      track?.key,
+      attrs?.camelot,
+      attrs?.["musical-key"],
+      attrs?.key,
+    ];
+    for (const c of candidates) {
+      const parsed = coerceSpotifyTrackKey(c);
+      if (parsed) return parsed;
+    }
+    return null;
   }
 
   /**
@@ -149,10 +277,7 @@ const MixAppTrack = (() => {
       pickAttr(attrs, "bpm", "tempo", "musical-bpm") ??
       pickAttr(track, "bpm", "tempo") ??
       pickAttr(raw, "bpm", "tempo");
-    const key =
-      pickAttr(attrs, "key", "musical-key", "camelot") ??
-      pickAttr(track, "key", "musicalKey") ??
-      pickAttr(raw, "key");
+    const nativeKey = extractPlaylistKey(raw, track, attrs);
     const artistList = Array.isArray(artists) ? artists : [];
     const release =
       album?.date?.isoString ||
@@ -164,7 +289,7 @@ const MixAppTrack = (() => {
       track?.id ||
       (uri && String(uri).includes(":track:") ? String(uri).split(":").pop() : null);
 
-    return blank({
+    const row = blank({
       uri,
       uid: String(uid),
       id,
@@ -185,8 +310,16 @@ const MixAppTrack = (() => {
       addedAt: raw?.addedAt || raw?.added_at || track?.addedAt || null,
       year: yearFromRelease(release),
       bpm: normalizeBpm(bpm),
-      key: key != null ? String(key) : null,
+      key: nativeKey?.camelot || null,
     });
+    // Any BPM on a Platform playlist row is Spotify's (V2 or formatListAttributes).
+    const spotifyBpm =
+      raw?.bpm != null || track?.bpm != null || attrs?.bpm != null
+        ? bpm
+        : null;
+    applyNativeAudioAttrs(row, nativeKey, spotifyBpm);
+    if (row.bpm != null && spotifyBpm != null) row.bpmNative = true;
+    return row;
   }
 
   /**
@@ -313,6 +446,11 @@ const MixAppTrack = (() => {
     for (const k of FEATURE_KEYS) {
       if (track && track[k] != null) core[k] = track[k];
     }
+    if (track?.keyNative) core.keyNative = true;
+    if (track?.bpmNative) core.bpmNative = true;
+    if (track?.keyColor) core.keyColor = track.keyColor;
+    if (track?.standardKey) core.standardKey = track.standardKey;
+    if (track?.standardMode) core.standardMode = track.standardMode;
     return core;
   }
 
@@ -322,6 +460,8 @@ const MixAppTrack = (() => {
     trackIdFromUri,
     blank,
     ensure,
+    coerceSpotifyTrackKey,
+    applyNativeAudioAttrs,
     fromPlaylistItem,
     fromWebApiTrack,
     fromGraphqlTrack,

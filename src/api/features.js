@@ -49,10 +49,39 @@ const MixAppFeatures = (() => {
     return String(uri).split(":").pop() || null;
   }
 
+  /**
+   * Web API / spclient v1: 0 = minor, 1 = major.
+   * Accept string flags; do not treat AudioAttributesV2 enum (1=minor, 2=major) here.
+   */
+  function normalizeMode(mode) {
+    if (mode === 0 || mode === "0" || mode === false || mode === "minor") return 0;
+    if (mode === 1 || mode === "1" || mode === true || mode === "major") return 1;
+    if (mode == null || mode === "") return null;
+    return Number(mode) === 0 ? 0 : 1;
+  }
+
   function formatCamelot(key, mode) {
     if (key == null || key < 0 || key > 11) return null;
-    const n = mode === 0 ? CAMELOT_MINOR[key] : CAMELOT_MAJOR[key];
-    return n + (mode === 0 ? "A" : "B");
+    const m = normalizeMode(mode);
+    if (m == null) return null;
+    const n = m === 0 ? CAMELOT_MINOR[key] : CAMELOT_MAJOR[key];
+    return n + (m === 0 ? "A" : "B");
+  }
+
+  /** Reverse Camelot label → pitch-class + Web API mode for filters/sort. */
+  function indexModeFromCamelotLabel(label) {
+    const parsed = parseCamelot(label);
+    if (!parsed) return null;
+    const table = parsed.letter === "A" ? CAMELOT_MINOR : CAMELOT_MAJOR;
+    const mode = parsed.letter === "A" ? 0 : 1;
+    for (let k = 0; k < 12; k++) {
+      if (table[k] === parsed.n) return { key: k, mode };
+    }
+    return null;
+  }
+
+  function looksLikeCamelotLabel(label) {
+    return !!String(label || "").match(/^\d{1,2}\s*[ABab]$/);
   }
 
   /** Spotify-style Camelot wheel hues (1–12), shared by A/B. */
@@ -81,14 +110,39 @@ const MixAppFeatures = (() => {
   }
 
   function camelotNumber(keyIndex, mode, label) {
+    // Prefer an explicit Camelot label (Spotify playlist Key column) over recomputed pitch+mode.
+    const fromLabel = camelotNumberFromLabel(label);
+    if (fromLabel != null) return fromLabel;
     if (keyIndex != null && keyIndex >= 0 && keyIndex <= 11 && mode != null) {
-      return mode === 0 ? CAMELOT_MINOR[keyIndex] : CAMELOT_MAJOR[keyIndex];
+      const m = normalizeMode(mode);
+      if (m == null) return null;
+      return m === 0 ? CAMELOT_MINOR[keyIndex] : CAMELOT_MAJOR[keyIndex];
     }
-    return camelotNumberFromLabel(label);
+    return null;
   }
 
-  /** Soft colored pill background matching Spotify's Camelot key column. */
-  function camelotBackground(keyIndex, mode, label) {
+  const AUDIO_ATTRIBUTES_V2 = 222;
+  const STANDARD_PITCH = [
+    "C",
+    "C♯",
+    "D",
+    "E♭",
+    "E",
+    "F",
+    "F♯",
+    "G",
+    "A♭",
+    "A",
+    "B♭",
+    "B",
+  ];
+
+  /** Soft pill from Spotify's camelotKey.color, else our Camelot wheel hues. */
+  function camelotBackground(keyIndex, mode, label, keyColor) {
+    if (keyColor) {
+      const c = String(keyColor).trim();
+      if (c) return c;
+    }
     const n = camelotNumber(keyIndex, mode, label);
     if (!n) return null;
     const hue = CAMELOT_HUES[n];
@@ -96,13 +150,163 @@ const MixAppFeatures = (() => {
     return "hsla(" + hue + ", 78%, 46%, 0.55)";
   }
 
+  /**
+   * Spotify playlist mixing notation preference (LocalStorageAPI).
+   * Default matches Spotify: Camelot on, standard off.
+   */
   function getNotationPreference() {
+    try {
+      const raw = Spicetify?.Platform?.LocalStorageAPI?.getItem?.(
+        "key-notation-preference"
+      );
+      if (raw && typeof raw === "object") {
+        const camelot = !!raw.camelot;
+        const standard = !!raw.standard;
+        if (camelot || standard) return { camelot, standard };
+      }
+    } catch {
+      /* ignore */
+    }
     return { camelot: true, standard: false };
   }
 
-  /** Always Camelot (e.g. 8A) — matches Spotify playlist key column. */
+  /** Format standard key like Spotify: F♯ / Am (♯/♭, minor → trailing m). */
+  function formatStandardKey(standardKey, mode) {
+    if (standardKey == null || standardKey === "") return null;
+    let s = String(standardKey)
+      .replace(/#/g, "♯")
+      .replace(/b/g, "♭")
+      .replace(/m$/i, "");
+    if (!s) return null;
+    const minor =
+      mode === "minor" ||
+      mode === 0 ||
+      mode === "0" ||
+      (typeof mode === "string" && /minor/i.test(mode));
+    return minor ? s + "m" : s;
+  }
+
+  function standardFromPitchMode(keyIndex, mode) {
+    if (keyIndex == null || keyIndex < 0 || keyIndex > 11) return null;
+    const m = normalizeMode(mode);
+    if (m == null) return null;
+    return STANDARD_PITCH[keyIndex] + (m === 0 ? "m" : "");
+  }
+
+  /**
+   * Display string for the Key column — same rules as Spotify's playlist Key cell.
+   * track.key stays Camelot for filters; standardKey / pitch used for notation.
+   */
+  function formatDisplayKey(track) {
+    if (!track) return null;
+    const pref = getNotationPreference();
+    const camelot = looksLikeCamelotLabel(track.key) ? String(track.key) : null;
+    const standard =
+      formatStandardKey(track.standardKey, track.standardMode) ||
+      standardFromPitchMode(track.keyIndex, track.keyMode) ||
+      null;
+
+    if (pref.camelot && pref.standard) {
+      if (camelot && standard) return camelot + " • " + standard;
+      return camelot || standard;
+    }
+    if (pref.standard && !pref.camelot) return standard || camelot;
+    return camelot || standard;
+  }
+
+  /** Camelot label for storage / filters (not display). */
   function formatKeyLabel(key, mode) {
     return formatCamelot(key, mode);
+  }
+
+  /** Locate Spotify MetadataExtensionsAPI (fetch + expire). */
+  function findMetadataExtensionsAPI() {
+    const P = Spicetify?.Platform;
+    if (!P || typeof P !== "object") return null;
+    for (const name of [
+      "MetadataExtensionsAPI",
+      "MetadataService",
+      "MetadataAPI",
+    ]) {
+      const api = P[name];
+      if (api && typeof api.fetch === "function") return api;
+    }
+    try {
+      for (const key of Object.keys(P)) {
+        const api = P[key];
+        if (
+          api &&
+          typeof api.fetch === "function" &&
+          typeof api.expire === "function"
+        ) {
+          return api;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  /**
+   * Normalize AudioAttributesV2 payload → native key/BPM fields.
+   * @param {object|null|undefined} raw
+   */
+  function parseAudioAttributesV2(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const keyInfo = MixAppTrack.coerceSpotifyTrackKey(raw.key || raw.trackKey || raw);
+    const bpm =
+      raw.bpm != null
+        ? Math.round(Number(raw.bpm))
+        : null;
+    if (!keyInfo && (bpm == null || Number.isNaN(bpm))) return null;
+    return {
+      keyInfo,
+      bpm: bpm != null && !Number.isNaN(bpm) ? bpm : null,
+    };
+  }
+
+  /**
+   * Fetch AudioAttributesV2 for track URIs (same source as playlist Key/BPM).
+   * @param {string[]} uris
+   * @returns {Promise<Map<string, { keyInfo: object|null, bpm: number|null }>>}
+   */
+  async function fetchAudioAttributesV2Map(uris) {
+    const out = new Map();
+    const unique = [
+      ...new Set(
+        (uris || []).filter((u) => u && String(u).includes(":track:"))
+      ),
+    ];
+    if (!unique.length) return out;
+
+    const api = findMetadataExtensionsAPI();
+    if (!api?.fetch) return out;
+
+    const CHUNK = 50;
+    for (let i = 0; i < unique.length; i += CHUNK) {
+      const chunk = unique.slice(i, i + CHUNK);
+      try {
+        const args = chunk.map((uri) => [uri, AUDIO_ATTRIBUTES_V2]);
+        const res = await api.fetch(...args);
+        if (!res || typeof res !== "object") continue;
+        for (const uri of chunk) {
+          const byUri = res[uri];
+          if (!byUri) continue;
+          const raw =
+            byUri[AUDIO_ATTRIBUTES_V2] ||
+            byUri.AUDIO_ATTRIBUTES_V2 ||
+            byUri.AudioAttributesV2 ||
+            byUri;
+          const parsed = parseAudioAttributesV2(raw);
+          if (parsed) out.set(uri, parsed);
+        }
+      } catch (err) {
+        console.warn("Weave: AudioAttributesV2 fetch failed", err);
+        break;
+      }
+    }
+    return out;
   }
 
   /**
@@ -167,6 +371,11 @@ const MixAppFeatures = (() => {
   function parseCamelot(trackOrLabel) {
     if (trackOrLabel == null) return null;
     if (typeof trackOrLabel === "object") {
+      // Prefer the displayed Camelot label (Spotify playlist Key) over pitch+mode.
+      if (trackOrLabel.key != null && trackOrLabel.key !== "") {
+        const fromLabel = parseCamelot(String(trackOrLabel.key));
+        if (fromLabel) return fromLabel;
+      }
       const fromIdx = formatCamelot(trackOrLabel.keyIndex, trackOrLabel.keyMode);
       if (fromIdx) {
         const m = fromIdx.match(/^(\d{1,2})([AB])$/i);
@@ -178,7 +387,7 @@ const MixAppFeatures = (() => {
           };
         }
       }
-      trackOrLabel = trackOrLabel.key;
+      return null;
     }
     const m = String(trackOrLabel).match(/(\d{1,2})\s*([ABab])/);
     if (!m) return null;
@@ -246,9 +455,20 @@ const MixAppFeatures = (() => {
 
   function pickSample(feat) {
     if (!feat || typeof feat !== "object") return null;
+    const key = typeof feat.key === "number" ? feat.key : Number(feat.key);
+    const mode = normalizeMode(feat.mode);
+    // Some spclient payloads may already include Camelot / standard key.
+    const nativeKey = MixAppTrack.coerceSpotifyTrackKey(
+      feat.trackKey ||
+        feat.camelot_key ||
+        feat.camelotKey ||
+        (feat.camelot || feat.standard_key || feat.standardKey
+          ? feat
+          : null)
+    );
     return {
-      key: feat.key,
-      mode: feat.mode,
+      key: Number.isFinite(key) ? key : feat.key,
+      mode,
       tempo: feat.tempo,
       acousticness: feat.acousticness,
       danceability: feat.danceability,
@@ -261,6 +481,11 @@ const MixAppFeatures = (() => {
       popularity: feat.popularity,
       time_signature: feat.time_signature ?? feat.timeSignature,
       duration_ms: feat.duration_ms ?? feat.durationMs,
+      nativeKey,
+      bpmNative:
+        feat.bpm != null && feat.tempo == null
+          ? Math.round(Number(feat.bpm))
+          : null,
     };
   }
 
@@ -327,12 +552,40 @@ const MixAppFeatures = (() => {
     return CACHE.size;
   }
 
+  function applyNativeParsed(track, parsed) {
+    if (!track || !parsed) return;
+    MixAppTrack.applyNativeAudioAttrs(track, parsed.keyInfo, parsed.bpm);
+    if (track.key) {
+      const idx = indexModeFromCamelotLabel(track.key);
+      if (idx) {
+        track.keyIndex = idx.key;
+        track.keyMode = idx.mode;
+      }
+    }
+  }
+
   /**
    * Enrich track objects with key/BPM + full feature fields.
    * Mutates and returns the same array reference.
+   * Prefers Spotify AudioAttributesV2 (playlist Key/BPM) over audio-features.
    */
   async function enrichTracks(tracks) {
     if (!tracks?.length) return tracks;
+
+    const needV2 = [];
+    for (const t of tracks) {
+      if (!t?.uri) continue;
+      if (t.keyNative && t.bpmNative) continue;
+      needV2.push(t.uri);
+    }
+    if (needV2.length) {
+      const v2map = await fetchAudioAttributesV2Map(needV2);
+      for (const t of tracks) {
+        const parsed = t?.uri ? v2map.get(t.uri) : null;
+        if (parsed) applyNativeParsed(t, parsed);
+      }
+    }
+
     const ids = [];
     for (const t of tracks) {
       const id = t.id || trackIdFromUri(t.uri);
@@ -342,15 +595,24 @@ const MixAppFeatures = (() => {
     for (const t of tracks) {
       const id = t.id || trackIdFromUri(t.uri);
       const feat = id ? CACHE.get(id) : null;
+      const keepNativeKey = t.keyNative === true && looksLikeCamelotLabel(t.key);
+      // Prefer Spotify V2 BPM whenever flagged, or when already set from playlist load.
+      const keepNativeBpm = t.bpmNative === true && t.bpm != null;
+
       if (!feat) {
-        if (t.bpm == null) t.bpm = null;
-        if (t.key == null) t.key = null;
-        t.featuresLoaded = false;
+        if (!keepNativeBpm && t.bpm == null) t.bpm = null;
+        if (!keepNativeKey && t.key == null) t.key = null;
+        if (keepNativeKey && t.key) {
+          const idx = indexModeFromCamelotLabel(t.key);
+          if (idx) {
+            t.keyIndex = idx.key;
+            t.keyMode = idx.mode;
+          }
+        }
+        t.featuresLoaded = keepNativeKey || keepNativeBpm;
         continue;
       }
       t.featuresLoaded = true;
-      t.keyIndex = feat.key;
-      t.keyMode = feat.mode;
       t.energy = feat.energy;
       t.danceability = feat.danceability;
       t.valence = feat.valence;
@@ -361,19 +623,87 @@ const MixAppFeatures = (() => {
       t.loudness = feat.loudness;
       t.tempo = feat.tempo;
       t.popularity = feat.popularity ?? t.popularity;
-      t.bpm =
-        feat.tempo != null && !Number.isNaN(feat.tempo)
-          ? Math.round(feat.tempo)
-          : (t.bpm ?? null);
-      t.key = formatKeyLabel(feat.key, feat.mode);
+
+      if (keepNativeBpm) {
+        // keep Spotify V2 BPM — do not replace with audio-features tempo
+      } else if (feat.tempo != null && !Number.isNaN(feat.tempo)) {
+        t.bpm = Math.round(feat.tempo);
+        t.bpmNative = false;
+      } else if (t.bpm == null) {
+        t.bpm = null;
+      }
+
+      if (keepNativeKey && t.key) {
+        t.keyNative = true;
+        const idx = indexModeFromCamelotLabel(t.key);
+        if (idx) {
+          t.keyIndex = idx.key;
+          t.keyMode = idx.mode;
+        } else if (typeof feat.key === "number") {
+          t.keyIndex = feat.key;
+          t.keyMode = feat.mode;
+        }
+        if (!t.standardKey) {
+          t.standardKey = standardFromPitchMode(t.keyIndex, t.keyMode);
+          t.standardMode =
+            normalizeMode(t.keyMode) === 0 ? "minor" : "major";
+        }
+      } else if (feat.nativeKey) {
+        MixAppTrack.applyNativeAudioAttrs(
+          t,
+          feat.nativeKey,
+          feat.bpmNative
+        );
+        if (t.key) {
+          const idx = indexModeFromCamelotLabel(t.key);
+          if (idx) {
+            t.keyIndex = idx.key;
+            t.keyMode = idx.mode;
+          }
+        }
+        if (!t.standardKey) {
+          t.standardKey = standardFromPitchMode(
+            feat.key,
+            feat.mode
+          );
+          t.standardMode =
+            normalizeMode(feat.mode) === 0 ? "minor" : "major";
+        }
+      } else {
+        t.keyIndex = feat.key;
+        t.keyMode = feat.mode;
+        t.key = formatKeyLabel(feat.key, feat.mode);
+        t.keyNative = false;
+        t.standardKey = standardFromPitchMode(feat.key, feat.mode);
+        t.standardMode = normalizeMode(feat.mode) === 0 ? "minor" : "major";
+      }
     }
     return tracks;
   }
 
   function reformatTrackKeys(tracks) {
     for (const t of tracks || []) {
+      if (t.keyNative && looksLikeCamelotLabel(t.key)) {
+        if (t.keyIndex == null || t.keyMode == null) {
+          const idx = indexModeFromCamelotLabel(t.key);
+          if (idx) {
+            t.keyIndex = idx.key;
+            t.keyMode = idx.mode;
+          }
+        }
+        if (!t.standardKey) {
+          t.standardKey =
+            standardFromPitchMode(t.keyIndex, t.keyMode) || t.standardKey;
+        }
+        continue;
+      }
       if (t.keyIndex == null) continue;
       t.key = formatKeyLabel(t.keyIndex, t.keyMode);
+      if (!t.standardKey) {
+        t.standardKey = standardFromPitchMode(t.keyIndex, t.keyMode);
+        t.standardMode =
+          normalizeMode(t.keyMode) === 0 ? "minor" : "major";
+      }
     }
     return tracks;
   }
@@ -829,6 +1159,8 @@ const MixAppFeatures = (() => {
     enrichTracks,
     reformatTrackKeys,
     formatKeyLabel,
+    formatDisplayKey,
+    formatStandardKey,
     formatCamelot,
     parseCamelot,
     camelotBackground,
@@ -836,6 +1168,7 @@ const MixAppFeatures = (() => {
     camelotAllowedLabels,
     filterTracksByCamelotMoves,
     getNotationPreference,
+    fetchAudioAttributesV2Map,
     getFeatureSamples,
     getFeatureSampleMap,
     trackIdFromUri,
