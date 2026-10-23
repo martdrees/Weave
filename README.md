@@ -21,7 +21,7 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 
 ## How to use
 
-Step-by-step guides with screenshots: **[docs/](docs/README.md)** (getting started, arranger, recommendations, Flowify, Generator, and more).
+Read the **[documentation](docs/README.md)** in the docs folder for more informations.
 
 ## Install
 
