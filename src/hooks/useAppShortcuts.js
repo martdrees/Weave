@@ -68,12 +68,12 @@ function MixAppUseAppShortcuts(handlers) {
 
       if (key === "z" && !e.shiftKey) {
         e.preventDefault();
-        h.handleUndo();
+        if (!h.saving) h.handleUndo();
         return;
       }
       if (key === "y" || (key === "z" && e.shiftKey)) {
         e.preventDefault();
-        h.handleRedo();
+        if (!h.saving) h.handleRedo();
         return;
       }
       if (key === "f" && !e.shiftKey) {

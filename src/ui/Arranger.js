@@ -210,7 +210,15 @@ function MixAppArranger(props) {
   }
 
   function indexInFull(track) {
-    return (tracks || []).findIndex((t) => t.uid === track.uid || t.uri === track.uri);
+    if (!track) return -1;
+    const list = tracks || [];
+    if (track.uid) {
+      const byUid = list.findIndex((t) => t && t.uid === track.uid);
+      if (byUid >= 0) return byUid;
+    }
+    // URI fallback only when uid is missing — avoids grabbing the wrong
+    // duplicate when the same song appears twice.
+    return list.findIndex((t) => t && t.uri && t.uri === track.uri);
   }
 
   function removeDisplay(displayIndex) {

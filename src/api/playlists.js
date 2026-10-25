@@ -6,6 +6,8 @@
 const MixAppPlaylists = (() => {
   /** URIs confirmed missing/private this session (load failed). */
   const unavailableUris = new Set();
+  /** Prevent interleaved differential sync on the same playlist. */
+  const syncInFlight = new Set();
 
   function normalizeTrack(raw, index) {
     return MixAppTrack.fromPlaylistItem(raw, index);
@@ -651,76 +653,85 @@ const MixAppPlaylists = (() => {
    * Keeps Spotify playlist-item uids so per-track mixing settings survive.
    */
   async function syncPlaylistTracks(uri, desiredTracks) {
-    const desired = (desiredTracks || []).filter((t) => t?.uri);
-    let live = await getLivePlaylistItems(uri);
+    if (!uri) throw new Error("Missing playlist URI");
+    if (syncInFlight.has(uri)) {
+      throw new Error("A save is already in progress for this playlist");
+    }
+    syncInFlight.add(uri);
+    try {
+      const desired = (desiredTracks || []).filter((t) => t?.uri);
+      let live = await getLivePlaylistItems(uri);
 
-    const used = new Set();
-    /** @type {{ uri: string, uid: string|null, isNew: boolean }[]} */
-    const plan = [];
+      const used = new Set();
+      /** @type {{ uri: string, uid: string|null, isNew: boolean }[]} */
+      const plan = [];
 
-    for (const t of desired) {
-      if (isSpotifyItemUid(t.uid)) {
-        const hit = live.find((l) => l.uid === t.uid && !used.has(l.uid));
+      for (const t of desired) {
+        if (isSpotifyItemUid(t.uid)) {
+          const hit = live.find((l) => l.uid === t.uid && !used.has(l.uid));
+          if (hit) {
+            used.add(hit.uid);
+            plan.push({ uri: hit.uri, uid: hit.uid, isNew: false });
+            continue;
+          }
+        }
+        const hit = live.find((l) => l.uri === t.uri && !used.has(l.uid));
         if (hit) {
           used.add(hit.uid);
           plan.push({ uri: hit.uri, uid: hit.uid, isNew: false });
-          continue;
+        } else {
+          plan.push({ uri: t.uri, uid: null, isNew: true });
         }
       }
-      const hit = live.find((l) => l.uri === t.uri && !used.has(l.uid));
-      if (hit) {
-        used.add(hit.uid);
-        plan.push({ uri: hit.uri, uid: hit.uid, isNew: false });
-      } else {
-        plan.push({ uri: t.uri, uid: null, isNew: true });
+
+      const toRemove = live.filter((l) => !used.has(l.uid));
+      if (toRemove.length) {
+        await playlistApiRemove(uri, toRemove);
       }
-    }
 
-    const toRemove = live.filter((l) => !used.has(l.uid));
-    if (toRemove.length) {
-      await playlistApiRemove(uri, toRemove);
-    }
-
-    const toAdd = plan.filter((p) => p.isNew).map((p) => p.uri);
-    if (toAdd.length) {
-      await playlistApiAdd(uri, toAdd, { after: "end" });
-    }
-
-    // Refresh and resolve uids for newly added rows (preserve order of first unused uri match).
-    live = await getLivePlaylistItems(uri);
-    const claimed = new Set();
-    const targetUids = [];
-    for (const p of plan) {
-      if (!p.isNew && p.uid && live.some((l) => l.uid === p.uid)) {
-        claimed.add(p.uid);
-        targetUids.push(p.uid);
-        continue;
+      const toAdd = plan.filter((p) => p.isNew).map((p) => p.uri);
+      if (toAdd.length) {
+        await playlistApiAdd(uri, toAdd, { after: "end" });
       }
-      const hit = live.find((l) => l.uri === p.uri && !claimed.has(l.uid));
-      if (!hit) {
-        throw new Error(`Missing playlist item after sync: ${p.uri}`);
-      }
-      claimed.add(hit.uid);
-      targetUids.push(hit.uid);
-    }
 
-    // Drop any unexpected leftovers (race / concurrent edit).
-    const extras = live.filter((l) => !claimed.has(l.uid));
-    if (extras.length) {
-      await playlistApiRemove(uri, extras);
+      // Refresh and resolve uids for newly added rows (preserve order of first unused uri match).
       live = await getLivePlaylistItems(uri);
-    }
+      const claimed = new Set();
+      const targetUids = [];
+      for (const p of plan) {
+        if (!p.isNew && p.uid && live.some((l) => l.uid === p.uid)) {
+          claimed.add(p.uid);
+          targetUids.push(p.uid);
+          continue;
+        }
+        const hit = live.find((l) => l.uri === p.uri && !claimed.has(l.uid));
+        if (!hit) {
+          throw new Error(`Missing playlist item after sync: ${p.uri}`);
+        }
+        claimed.add(hit.uid);
+        targetUids.push(hit.uid);
+      }
 
-    const liveUids = live.map((l) => l.uid);
-    const alreadyOrdered =
-      liveUids.length === targetUids.length &&
-      liveUids.every((uid, i) => uid === targetUids[i]);
-    if (!alreadyOrdered) {
-      await reorderLiveToTarget(uri, live, targetUids);
-    }
+      // Drop any unexpected leftovers (race / concurrent edit).
+      const extras = live.filter((l) => !claimed.has(l.uid));
+      if (extras.length) {
+        await playlistApiRemove(uri, extras);
+        live = await getLivePlaylistItems(uri);
+      }
 
-    // Return fresh tracks so callers can refresh uids for next save.
-    return getPlaylistTracks(uri);
+      const liveUids = live.map((l) => l.uid);
+      const alreadyOrdered =
+        liveUids.length === targetUids.length &&
+        liveUids.every((uid, i) => uid === targetUids[i]);
+      if (!alreadyOrdered) {
+        await reorderLiveToTarget(uri, live, targetUids);
+      }
+
+      // Return fresh tracks so callers can refresh uids for next save.
+      return getPlaylistTracks(uri);
+    } finally {
+      syncInFlight.delete(uri);
+    }
   }
 
   function playlistUriFromCreateResult(created) {

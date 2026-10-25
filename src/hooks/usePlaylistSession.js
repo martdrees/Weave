@@ -52,6 +52,22 @@ function MixAppUsePlaylistSession(opts) {
   selectedUriRef.current = selectedUri;
   const tracksLoadingRef = react.useRef(tracksLoading);
   tracksLoadingRef.current = tracksLoading;
+  /** Synchronous save lock — React `saving` state alone cannot block double Ctrl+S. */
+  const savingRef = react.useRef(false);
+  const tracksRef = react.useRef(tracks);
+  tracksRef.current = tracks;
+
+  function sameTrackIdentityOrder(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
+    return a.every((t, i) => {
+      const u = b[i];
+      if (!t || !u) return false;
+      if (t.uid && u.uid) return t.uid === u.uid;
+      return !!(t.uri && u.uri && t.uri === u.uri);
+    });
+  }
 
   function syncUndoFlags() {
     setCanUndo(undoRef.current.canUndo());
@@ -80,8 +96,10 @@ function MixAppUsePlaylistSession(opts) {
 
   // Session restore may have Camelot keys from audio-features; reload once so
   // keys match Spotify’s playlist Key column (AudioAttributesV2).
+  // Skip when the restored session is dirty — a force reload would wipe unsaved order.
   react.useEffect(() => {
     if (!selectedUri || !tracks.length) return;
+    if (dirty) return;
     if (tracks.some((t) => t && t.keyNative)) return;
     loadPlaylist(selectedUri, { force: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot after restore
@@ -94,6 +112,7 @@ function MixAppUsePlaylistSession(opts) {
       onClearPlaylist?.();
       setSelectedUri(null);
       setPlaylist(null);
+      tracksRef.current = [];
       setTracks([]);
       setDirty(false);
       undoRef.current.clear();
@@ -139,6 +158,7 @@ function MixAppUsePlaylistSession(opts) {
 
       setPlaylist(meta);
       setTracks(items);
+      tracksRef.current = items;
       setDirty(false);
       undoRef.current.clear();
       syncUndoFlags();
@@ -146,7 +166,37 @@ function MixAppUsePlaylistSession(opts) {
       try {
         const enriched = await MixAppFeatures.enrichTracks(items.slice());
         if (loadGen !== loadGenRef.current) return;
-        setTracks(enriched.slice());
+        // Merge features into whatever the user currently has — never hard-replace
+        // after enrich, or mid-load reorders/adds are wiped while dirty stays true.
+        const byUid = new Map(
+          (enriched || []).filter((t) => t?.uid).map((t) => [t.uid, t])
+        );
+        setTracks((prev) => {
+          if (sameTrackIdentityOrder(prev, items)) {
+            const next = enriched.slice();
+            tracksRef.current = next;
+            return next;
+          }
+          const next = prev.map((t) => {
+            const n = (t?.uid && byUid.get(t.uid)) || null;
+            if (!n) return t;
+            return {
+              ...t,
+              bpm: n.bpm ?? t.bpm,
+              key: n.key ?? t.key,
+              year: n.year ?? t.year,
+              keyNative: n.keyNative || t.keyNative,
+              bpmNative: n.bpmNative || t.bpmNative,
+              keyColor: n.keyColor || t.keyColor,
+              standardKey: n.standardKey || t.standardKey,
+              standardMode: n.standardMode || t.standardMode,
+              keyIndex: n.keyIndex ?? t.keyIndex,
+              keyMode: n.keyMode ?? t.keyMode,
+            };
+          });
+          tracksRef.current = next;
+          return next;
+        });
       } catch (featErr) {
         console.warn("Weave: feature enrich failed", featErr);
       }
@@ -205,42 +255,51 @@ function MixAppUsePlaylistSession(opts) {
   }
 
   function commitTracks(next, { recordUndo } = { recordUndo: true }) {
+    if (savingRef.current) return;
     if (recordUndo) {
-      undoRef.current.push(tracks);
+      undoRef.current.push(tracksRef.current);
     }
+    tracksRef.current = next;
     setTracks(next);
     setDirty(true);
     syncUndoFlags();
   }
 
   function handleReorder(from, to) {
+    if (savingRef.current) return;
     if (from === to) return;
-    const next = tracks.slice();
+    const next = tracksRef.current.slice();
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
     commitTracks(next);
   }
 
   function handleRemoveTrack(index, track) {
-    if (index == null || index < 0 || index >= tracks.length) return null;
-    const removed = track || tracks[index];
-    const next = tracks.slice();
+    if (savingRef.current) return null;
+    const list = tracksRef.current;
+    if (index == null || index < 0 || index >= list.length) return null;
+    const removed = track || list[index];
+    const next = list.slice();
     next.splice(index, 1);
     commitTracks(next);
     return removed || null;
   }
 
   function handleUndo() {
-    const prev = undoRef.current.undo(tracks);
+    if (savingRef.current) return;
+    const prev = undoRef.current.undo(tracksRef.current);
     if (!prev) return;
+    tracksRef.current = prev;
     setTracks(prev);
     setDirty(true);
     syncUndoFlags();
   }
 
   function handleRedo() {
-    const next = undoRef.current.redo(tracks);
+    if (savingRef.current) return;
+    const next = undoRef.current.redo(tracksRef.current);
     if (!next) return;
+    tracksRef.current = next;
     setTracks(next);
     setDirty(true);
     syncUndoFlags();
@@ -248,9 +307,10 @@ function MixAppUsePlaylistSession(opts) {
 
   async function handleSave() {
     if (!playlist?.uri || !dirty) return;
-    if (tracksLoadingRef.current || saving) return;
+    if (tracksLoadingRef.current || savingRef.current) return;
     const uriAtStart = playlist.uri;
-    const tracksAtStart = tracks;
+    const tracksAtStart = tracksRef.current.slice();
+    savingRef.current = true;
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {
@@ -266,6 +326,12 @@ function MixAppUsePlaylistSession(opts) {
         MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
         return;
       }
+      // If something still mutated local state during save, do not clear dirty /
+      // overwrite the editor with a stale snapshot.
+      if (!sameTrackIdentityOrder(tracksRef.current, tracksAtStart)) {
+        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
+        return;
+      }
       if (Array.isArray(savedTracks) && savedTracks.length) {
         const byUri = new Map();
         for (const t of tracksAtStart) {
@@ -273,26 +339,26 @@ function MixAppUsePlaylistSession(opts) {
           if (!byUri.has(t.uri)) byUri.set(t.uri, []);
           byUri.get(t.uri).push(t);
         }
-        setTracks(
-          savedTracks.map((t) => {
-            const queue = byUri.get(t.uri);
-            const prev = queue && queue.length ? queue.shift() : null;
-            if (!prev) return t;
-            return {
-              ...t,
-              bpm: prev.bpm ?? t.bpm,
-              key: prev.key ?? t.key,
-              year: prev.year ?? t.year,
-              keyNative: prev.keyNative || t.keyNative,
-              bpmNative: prev.bpmNative || t.bpmNative,
-              keyColor: prev.keyColor || t.keyColor,
-              standardKey: prev.standardKey || t.standardKey,
-              standardMode: prev.standardMode || t.standardMode,
-              keyIndex: prev.keyIndex ?? t.keyIndex,
-              keyMode: prev.keyMode ?? t.keyMode,
-            };
-          })
-        );
+        const merged = savedTracks.map((t) => {
+          const queue = byUri.get(t.uri);
+          const prev = queue && queue.length ? queue.shift() : null;
+          if (!prev) return t;
+          return {
+            ...t,
+            bpm: prev.bpm ?? t.bpm,
+            key: prev.key ?? t.key,
+            year: prev.year ?? t.year,
+            keyNative: prev.keyNative || t.keyNative,
+            bpmNative: prev.bpmNative || t.bpmNative,
+            keyColor: prev.keyColor || t.keyColor,
+            standardKey: prev.standardKey || t.standardKey,
+            standardMode: prev.standardMode || t.standardMode,
+            keyIndex: prev.keyIndex ?? t.keyIndex,
+            keyMode: prev.keyMode ?? t.keyMode,
+          };
+        });
+        tracksRef.current = merged;
+        setTracks(merged);
       }
       setDirty(false);
       undoRef.current.clear();
@@ -302,25 +368,25 @@ function MixAppUsePlaylistSession(opts) {
       console.error(err);
       MixAppApi.notify(err?.message || MixAppI18n.t("notify.saveFailed"), true);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
   async function handleSaveAsNew() {
-    if (!tracks.length) return;
-    if (tracksLoadingRef.current || saving) return;
+    if (!tracksRef.current.length) return;
+    if (tracksLoadingRef.current || savingRef.current) return;
     const base = playlist?.name || MixAppI18n.t("playlist.defaultName");
     const name = MixAppI18n.t("playlist.weaveSuffix", { name: base });
+    const uris = tracksRef.current.map((t) => t.uri);
+    savingRef.current = true;
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {
         MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
         return;
       }
-      const uri = await MixAppApi.createPlaylist(
-        name,
-        tracks.map((t) => t.uri)
-      );
+      const uri = await MixAppApi.createPlaylist(name, uris);
       MixAppApi.notify(MixAppI18n.t("notify.created", { name }));
       await refreshPlaylists();
       await loadPlaylist(uri);
@@ -328,12 +394,17 @@ function MixAppUsePlaylistSession(opts) {
       console.error(err);
       MixAppApi.notify(err?.message || MixAppI18n.t("notify.createFailed"), true);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
   function handleAddCatalogTrack(track) {
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
+    if (savingRef.current) return;
+    const { next, added } = MixAppPlaylistOps.appendTracks(
+      tracksRef.current,
+      [track]
+    );
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return;
@@ -345,7 +416,11 @@ function MixAppUsePlaylistSession(opts) {
   }
 
   function handleAddCatalogTracks(batch) {
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, batch);
+    if (savingRef.current) return;
+    const { next, added } = MixAppPlaylistOps.appendTracks(
+      tracksRef.current,
+      batch
+    );
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.noNewTracks"), true);
       return;
@@ -362,7 +437,11 @@ function MixAppUsePlaylistSession(opts) {
 
   /** Add a rec result track; returns true if added. */
   function handleAddRecommendedTrack(track) {
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracks, [track]);
+    if (savingRef.current) return false;
+    const { next, added } = MixAppPlaylistOps.appendTracks(
+      tracksRef.current,
+      [track]
+    );
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return false;
