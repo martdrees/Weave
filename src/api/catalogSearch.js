@@ -406,27 +406,168 @@ const MixAppCatalogSearch = (() => {
     }
   }
 
+  function artistUriFrom(idOrUri) {
+    const raw = String(idOrUri || "").trim();
+    if (!raw) return null;
+    if (raw.includes(":artist:")) return raw;
+    return "spotify:artist:" + raw;
+  }
+
+  function artistIdFrom(idOrUri) {
+    const uri = artistUriFrom(idOrUri);
+    return uri ? uri.split(":").pop() : null;
+  }
+
+  /** Pull track-like nodes from queryArtistOverview (shape varies by client). */
+  function tracksFromArtistOverview(res) {
+    const artist =
+      res?.data?.artistUnion ||
+      res?.data?.artist ||
+      res?.artistUnion ||
+      res?.artist ||
+      null;
+    if (!artist) return [];
+
+    const buckets = [
+      artist.discography?.topTracks?.items,
+      artist.discography?.topTracks?.tracks,
+      artist.relatedContent?.topTracks?.items,
+      artist.stats?.topTracks?.items,
+      artist.topTracks?.items,
+      artist.discography?.popularReleasesTracks?.items,
+    ];
+
+    const out = [];
+    const seen = new Set();
+    for (const items of buckets) {
+      if (!Array.isArray(items)) continue;
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i];
+        const raw =
+          entry?.track ||
+          entry?.item?.data ||
+          entry?.itemV2?.data ||
+          entry?.data ||
+          entry?.item ||
+          entry;
+        if (!raw) continue;
+        let track = normalizeGraphqlTrack(raw, out.length);
+        if (!track?.uri && raw?.uri && String(raw.uri).includes(":track:")) {
+          track = normalizeGraphqlTrack(raw, out.length);
+        }
+        // Some overview rows are thin wrappers with only uri/name.
+        if (!track?.uri && raw?.uri && String(raw.uri).includes(":track:")) {
+          track = MixAppTrack.fromWebApiTrack(
+            {
+              uri: raw.uri,
+              id: raw.id || String(raw.uri).split(":").pop(),
+              name: raw.name || "Unknown",
+              artists: raw.artists || [],
+              album: raw.album || {},
+              duration_ms: raw.duration_ms || raw.durationMs || 0,
+              explicit: !!raw.explicit,
+            },
+            out.length
+          );
+        }
+        if (!track?.uri || seen.has(track.uri)) continue;
+        seen.add(track.uri);
+        out.push(track);
+      }
+      if (out.length) break;
+    }
+    return out;
+  }
+
+  async function getArtistTopTracksViaGraphQL(artistUri, want) {
+    const GQL = Spicetify?.GraphQL;
+    const defs = GQL?.Definitions;
+    if (!GQL?.Request || !defs?.queryArtistOverview) return [];
+
+    const attempts = [
+      { uri: artistUri, locale: Spicetify?.Locale?.getLocale?.() || "en" },
+      { uri: artistUri },
+      {
+        uri: artistUri,
+        locale: "en",
+        includePrerelease: false,
+      },
+    ];
+
+    for (const variables of attempts) {
+      try {
+        const res = await GQL.Request(defs.queryArtistOverview, variables);
+        if (res?.errors?.length) {
+          console.warn("Weave: queryArtistOverview errors", res.errors);
+          continue;
+        }
+        const tracks = tracksFromArtistOverview(res);
+        if (tracks.length) return tracks.slice(0, want);
+      } catch (err) {
+        console.warn("Weave: queryArtistOverview failed", err);
+      }
+    }
+    return [];
+  }
+
   /**
-   * Popular tracks for an artist (Web API top-tracks).
-   * @param {string} artistIdOrUri
-   * @param {object} [opts]
-   * @returns {Promise<MixAppTrackRow[]>}
+   * Artist Song Radio playlist via inspiredby-mix (client endpoint — avoids Web API 429).
    */
-  async function getArtistTopTracks(artistIdOrUri, opts = {}) {
-    const raw = String(artistIdOrUri || "").trim();
-    if (!raw) return [];
-    const id = raw.includes(":") ? raw.split(":").pop() : raw;
-    if (!id) return [];
-    const market = opts.market || userMarket();
-    const want = Math.min(50, Math.max(1, Number(opts.limit) || 20));
+  async function getArtistTracksViaRadio(artistId, want) {
+    if (!artistId || typeof MixAppPlaylists?.getPlaylistTracks !== "function") {
+      return [];
+    }
+    const urls = [
+      "https://spclient.wg.spotify.com/inspiredby-mix/v2/seed_to_playlist/spotify:artist:" +
+        artistId +
+        "?response-format=json",
+      "https://api.spotify.com/v1/inspiredby-mix/v2/seed_to_playlist/spotify:artist:" +
+        artistId +
+        "?response-format=json",
+    ];
+    let playlistUri = null;
+    for (const url of urls) {
+      try {
+        const res = await MixAppHttp.cosmosGet(url, {
+          retries: 1,
+          label: "artist-radio",
+          notifyUser: false,
+        });
+        const items = res?.mediaItems || res?.media_items || res?.items || [];
+        const uri =
+          (Array.isArray(items) && items[0]?.uri) ||
+          res?.uri ||
+          res?.playlist?.uri ||
+          null;
+        if (uri && String(uri).includes("playlist")) {
+          playlistUri = uri;
+          break;
+        }
+      } catch (err) {
+        console.warn("Weave: artist radio resolve failed", err);
+      }
+    }
+    if (!playlistUri) return [];
+    try {
+      const tracks = await MixAppPlaylists.getPlaylistTracks(playlistUri);
+      return (tracks || []).slice(0, want);
+    } catch (err) {
+      console.warn("Weave: artist radio playlist load failed", err);
+      return [];
+    }
+  }
+
+  /** Last resort — often 429 under desktop client tokens. */
+  async function getArtistTopTracksViaWebApi(artistId, market, want) {
     const url =
       "https://api.spotify.com/v1/artists/" +
-      encodeURIComponent(id) +
+      encodeURIComponent(artistId) +
       "/top-tracks?market=" +
-      encodeURIComponent(market);
+      encodeURIComponent(market || "US");
     const res = await MixAppHttp.cosmosGet(url, {
-      retries: 3,
+      retries: 2,
       label: "artist top-tracks",
+      notifyUser: false,
     });
     const items = res?.tracks || [];
     const out = [];
@@ -439,6 +580,44 @@ const MixAppCatalogSearch = (() => {
       if (out.length >= want) break;
     }
     return out;
+  }
+
+  /**
+   * Popular / representative tracks for an artist.
+   * Prefers client GraphQL + artist radio; Web API top-tracks is last resort (429-prone).
+   * @param {string} artistIdOrUri
+   * @param {object} [opts]
+   * @returns {Promise<MixAppTrackRow[]>}
+   */
+  async function getArtistTopTracks(artistIdOrUri, opts = {}) {
+    const uri = artistUriFrom(artistIdOrUri);
+    const id = artistIdFrom(artistIdOrUri);
+    if (!uri || !id) return [];
+    const want = Math.min(50, Math.max(1, Number(opts.limit) || 20));
+
+    const fromGql = await getArtistTopTracksViaGraphQL(uri, want);
+    if (fromGql.length) return fromGql;
+
+    const fromRadio = await getArtistTracksViaRadio(id, want);
+    if (fromRadio.length) return fromRadio;
+
+    try {
+      return await getArtistTopTracksViaWebApi(
+        id,
+        opts.market || userMarket(),
+        want
+      );
+    } catch (err) {
+      console.error("Weave: artist tracks unavailable", err);
+      if (MixAppHttp?.isRateLimitError?.(err)) {
+        throw new Error(
+          "Artist tracks rate-limited — wait a moment and try again"
+        );
+      }
+      throw new Error(
+        "Could not load artist tracks (client search blocked). Try again in a moment."
+      );
+    }
   }
 
   return {
