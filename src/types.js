@@ -89,6 +89,8 @@
  * @property {() => Promise<string|null>} getCurrentUserId
  * @property {(query: string, opts?: object) => Promise<MixAppTrackRow[]>} searchTracks
  * @property {(query: string, opts?: object) => Promise<object[]>} searchPlaylists
+ * @property {(query: string, opts?: object) => Promise<object[]>} searchArtists
+ * @property {(artistIdOrUri: string, opts?: object) => Promise<MixAppTrackRow[]>} getArtistTopTracks
  */
 
 void 0;

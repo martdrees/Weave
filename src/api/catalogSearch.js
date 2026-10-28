@@ -39,6 +39,71 @@ const MixAppCatalogSearch = (() => {
     };
   }
 
+  function pickImageUrl(sources) {
+    if (!Array.isArray(sources) || !sources.length) return null;
+    // Prefer a mid-size source when width is present; else last (often largest).
+    const withUrl = sources.filter((s) => s && (s.url || s.uri));
+    if (!withUrl.length) return null;
+    const ranked = withUrl
+      .map((s) => ({
+        url: s.url || s.uri,
+        w: Number(s.width) || Number(s.maxWidth) || 0,
+      }))
+      .sort((a, b) => a.w - b.w);
+    const mid = ranked.find((s) => s.w >= 64) || ranked[ranked.length - 1];
+    return mid?.url || null;
+  }
+
+  function normalizeGraphqlArtist(data) {
+    if (!data?.uri || !String(data.uri).includes(":artist:")) return null;
+    const id = data.id || String(data.uri).split(":").pop() || null;
+    const imageUrl =
+      pickImageUrl(data.visuals?.avatarImage?.sources) ||
+      pickImageUrl(data.avatarImage?.sources) ||
+      pickImageUrl(data.images) ||
+      pickImageUrl(data.avatar?.sources) ||
+      null;
+    const followers =
+      data.stats?.followers ??
+      data.followers?.total ??
+      data.stats?.monthlyListeners ??
+      null;
+    return {
+      uri: data.uri,
+      id,
+      name: data.name || data.profile?.name || "Unknown",
+      imageUrl,
+      followers: followers != null && Number.isFinite(Number(followers))
+        ? Number(followers)
+        : null,
+    };
+  }
+
+  function normalizeWebArtist(raw) {
+    if (!raw?.uri && !raw?.id) return null;
+    const id = raw.id || (raw.uri ? String(raw.uri).split(":").pop() : null);
+    const uri = raw.uri || (id ? "spotify:artist:" + id : null);
+    if (!uri || !String(uri).includes(":artist:")) return null;
+    return {
+      uri,
+      id,
+      name: raw.name || "Unknown",
+      imageUrl: pickImageUrl(raw.images),
+      followers:
+        raw.followers?.total != null && Number.isFinite(Number(raw.followers.total))
+          ? Number(raw.followers.total)
+          : null,
+    };
+  }
+
+  function userMarket() {
+    return (
+      Spicetify?.Platform?.Session?.country ||
+      Spicetify?.Platform?.PlatformData?.country ||
+      "US"
+    );
+  }
+
   function collectGraphqlItems(searchV2, preferKeys) {
     const out = [];
     const seen = new Set();
@@ -195,6 +260,36 @@ const MixAppCatalogSearch = (() => {
     return out;
   }
 
+  async function searchArtistsWebApi(query, want) {
+    const out = [];
+    let offset = 0;
+    while (out.length < want) {
+      const pageSize = Math.min(10, want - out.length);
+      const url =
+        "https://api.spotify.com/v1/search?type=artist&limit=" +
+        pageSize +
+        "&offset=" +
+        offset +
+        "&q=" +
+        encodeURIComponent(query);
+      const res = await MixAppHttp.cosmosGet(url, {
+        retries: 3,
+        label: "artist search",
+      });
+      const items = res?.artists?.items || [];
+      if (!items.length) break;
+      for (const a of items) {
+        const artist = normalizeWebArtist(a);
+        if (!artist?.uri) continue;
+        out.push(artist);
+        if (out.length >= want) break;
+      }
+      offset += items.length;
+      if (!res?.artists?.next || items.length < pageSize) break;
+    }
+    return out;
+  }
+
   /**
    * Catalog track search via client GraphQL (preferred) or Web API fallback.
    */
@@ -271,9 +366,86 @@ const MixAppCatalogSearch = (() => {
     }
   }
 
+  /**
+   * Artist catalog search for Add Track suggestions.
+   * @returns {Promise<object[]>}
+   */
+  async function searchArtists(query, opts = {}) {
+    const q = String(query || "").trim();
+    if (!q) return [];
+    const want = Math.min(20, Math.max(1, Number(opts.limit) || 8));
+
+    const searchV2 = await graphqlSearchV2(q, want);
+    if (searchV2) {
+      let entities = collectGraphqlItems(searchV2, [
+        "artistsV2",
+        "artists",
+        "topResultsV2",
+        "topResults",
+      ]);
+      if (!entities.length) entities = collectGraphqlItems(searchV2, null);
+      const out = [];
+      const seen = new Set();
+      for (const data of entities) {
+        const artist = normalizeGraphqlArtist(data);
+        if (!artist?.uri || seen.has(artist.uri)) continue;
+        seen.add(artist.uri);
+        out.push(artist);
+        if (out.length >= want) break;
+      }
+      return out;
+    }
+
+    try {
+      return await searchArtistsWebApi(q, want);
+    } catch (err) {
+      console.error("Weave artist search failed", err);
+      throw new Error(
+        "Artist search unavailable (client search blocked). Try again in a moment."
+      );
+    }
+  }
+
+  /**
+   * Popular tracks for an artist (Web API top-tracks).
+   * @param {string} artistIdOrUri
+   * @param {object} [opts]
+   * @returns {Promise<MixAppTrackRow[]>}
+   */
+  async function getArtistTopTracks(artistIdOrUri, opts = {}) {
+    const raw = String(artistIdOrUri || "").trim();
+    if (!raw) return [];
+    const id = raw.includes(":") ? raw.split(":").pop() : raw;
+    if (!id) return [];
+    const market = opts.market || userMarket();
+    const want = Math.min(50, Math.max(1, Number(opts.limit) || 20));
+    const url =
+      "https://api.spotify.com/v1/artists/" +
+      encodeURIComponent(id) +
+      "/top-tracks?market=" +
+      encodeURIComponent(market);
+    const res = await MixAppHttp.cosmosGet(url, {
+      retries: 3,
+      label: "artist top-tracks",
+    });
+    const items = res?.tracks || [];
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; i < items.length; i++) {
+      const track = normalizeCatalogTrack(items[i], i);
+      if (!track?.uri || seen.has(track.uri)) continue;
+      seen.add(track.uri);
+      out.push(track);
+      if (out.length >= want) break;
+    }
+    return out;
+  }
+
   return {
     searchTracks,
     searchPlaylists,
+    searchArtists,
+    getArtistTopTracks,
     normalizeCatalogTrack,
     normalizeGraphqlTrack,
   };

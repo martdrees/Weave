@@ -293,6 +293,7 @@ function MixAppPage() {
       isPlaying: playback.isPlaying,
       onClose: () => panels.closePanel("addTrack"),
       onAddTrack: session.handleAddCatalogTrack,
+      onAddTracks: session.handleAddCatalogTracks,
       onPlay: handlePlay,
     }),
     h(MixAppCopyPlaylistModal, {

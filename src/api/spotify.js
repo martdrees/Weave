@@ -19,6 +19,8 @@ const MixAppApi = (() => {
     getCurrentUserId: MixAppPlaylists.getCurrentUserId,
     searchTracks: MixAppCatalogSearch.searchTracks,
     searchPlaylists: MixAppCatalogSearch.searchPlaylists,
+    searchArtists: MixAppCatalogSearch.searchArtists,
+    getArtistTopTracks: MixAppCatalogSearch.getArtistTopTracks,
   };
   return /** @type {MixAppApiFacade} */ (api);
 })();

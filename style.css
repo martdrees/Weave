@@ -980,6 +980,120 @@
   opacity: 0.55;
 }
 
+.mixapp-add-track-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.mixapp-add-track-modes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 18px 0;
+}
+
+.mixapp-add-track-search {
+  border-bottom: none;
+  padding-top: 10px;
+}
+
+.mixapp-add-track-artist-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 12px;
+  flex-wrap: wrap;
+}
+
+.mixapp-add-track-back {
+  flex: 0 0 auto;
+}
+
+.mixapp-add-track-artist-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mixapp-add-track-artist-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--mix-hover);
+}
+
+.mixapp-add-track-artist-avatar-fallback {
+  background: var(--mix-hover-strong);
+}
+
+.mixapp-add-track-artist-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mixapp-add-track-artist-sub {
+  font-size: 0.78rem;
+  color: var(--mix-subtext);
+}
+
+.mixapp-add-track-suggest {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 0 16px;
+}
+
+.mixapp-add-track-suggest-status {
+  padding: 16px 18px;
+  color: var(--mix-subtext);
+  font-size: 0.9rem;
+}
+
+.mixapp-add-track-artist-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mixapp-add-track-artist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 1px solid var(--mix-border-faint);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mixapp-add-track-artist-row:hover {
+  background: var(--mix-hover);
+}
+
+.mixapp-add-track-artist-row .mixapp-add-track-artist-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.mixapp-add-track-artist-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .mixapp-copy-modal {
   max-width: 1080px;
   width: min(1080px, 100%);
