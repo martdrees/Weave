@@ -184,8 +184,9 @@ function MixAppUseRecommendSearch(opts) {
         ? filtersSnap.camelotMoves.filter(Boolean)
         : [];
       const wantLimit = Number(resultLimitSnap) || MixAppRecommend.DEFAULT_LIMIT;
+      // Mild over-fetch for Camelot — collection stops early once enough in-key hits.
       const fetchLimit = camelotMoves.length
-        ? Math.min(MixAppRecommend.MAX_LIMIT, Math.max(wantLimit * 3, wantLimit + 80))
+        ? Math.min(MixAppRecommend.MAX_LIMIT, Math.max(wantLimit * 2, wantLimit + 40))
         : wantLimit;
 
       const postFilters = {
@@ -210,6 +211,9 @@ function MixAppUseRecommendSearch(opts) {
         contextTracks: tracksSnap,
         features: featuresSnap,
         limit: fetchLimit,
+        matchTarget: wantLimit,
+        camelotMoves,
+        camelotSeeds,
         avoidUris,
         filters: postFilters,
       });
@@ -217,23 +221,28 @@ function MixAppUseRecommendSearch(opts) {
       if (gen !== searchGenRef.current) return;
 
       let list = Array.isArray(result?.tracks) ? result.tracks : [];
-      try {
-        list = await MixAppFeatures.enrichTracks(list.slice());
-      } catch (featErr) {
-        console.warn("Weave: result key enrich failed", featErr);
+
+      // recommend() already applied Mix in Key + hide-existing when moves are on.
+      // Enrich again only for display fields when camelot wasn't applied upstream.
+      if (!result?.camelotApplied) {
+        try {
+          list = await MixAppFeatures.enrichTracks(list.slice());
+        } catch (featErr) {
+          console.warn("Weave: result key enrich failed", featErr);
+        }
+        if (gen !== searchGenRef.current) return;
+        if (camelotMoves.length) {
+          list = MixAppFeatures.filterTracksByCamelotMoves(
+            list,
+            camelotSeeds,
+            camelotMoves
+          );
+        }
+        list = MixAppRecommend.applyPostFilters(list, postFilters);
+      } else if (gen !== searchGenRef.current) {
+        return;
       }
 
-      if (gen !== searchGenRef.current) return;
-
-      if (camelotMoves.length) {
-        list = MixAppFeatures.filterTracksByCamelotMoves(
-          list,
-          camelotSeeds,
-          camelotMoves
-        );
-      }
-
-      list = MixAppRecommend.applyPostFilters(list, postFilters);
       if (list.length > wantLimit) {
         list = MixAppRecommend.sampleResults
           ? MixAppRecommend.sampleResults(list, wantLimit, avoidUris)
@@ -250,6 +259,17 @@ function MixAppUseRecommendSearch(opts) {
       setSearchResults(list);
       if (!list.length) {
         MixAppApi.notify(MixAppI18n.t("notify.noMatches"), true);
+      } else if (
+        camelotMoves.length &&
+        result?.rateLimited &&
+        list.length < Math.min(wantLimit, 20)
+      ) {
+        MixAppApi.notify(
+          MixAppI18n.t("notify.rateLimitPartialCamelot", {
+            count: list.length,
+          }),
+          true
+        );
       }
     } catch (err) {
       if (gen !== searchGenRef.current) return;

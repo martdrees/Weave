@@ -270,6 +270,8 @@ MixAppI18n.register("fr", {
     "Limite de requêtes Spotify atteinte — patientez un instant puis réessayez",
   "notify.rateLimitBackoff":
     "Limite de requêtes Spotify atteinte — nouvelle tentative dans {seconds} s…",
+  "notify.rateLimitPartialCamelot":
+    "Limite atteinte — seulement {count} titres compatibles. Attendez quelques secondes et relancez.",
   "notify.failedPlaylist": "Impossible de charger la playlist",
   "notify.cannotSaveLoading":
     "Impossible d’enregistrer pendant le chargement de la playlist",

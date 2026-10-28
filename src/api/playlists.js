@@ -118,10 +118,10 @@ const MixAppPlaylists = (() => {
   async function getCurrentUserId() {
     if (cachedUserId) return cachedUserId;
     try {
-      const me = await MixAppHttp.cosmosGet("https://api.spotify.com/v1/me");
+      const me = await MixAppHttp.getMeProfile();
       cachedUserId = me?.id || null;
     } catch (err) {
-      console.warn("Weave: failed to fetch /me", err);
+      console.warn("Weave: failed to resolve user id", err);
     }
     return cachedUserId;
   }

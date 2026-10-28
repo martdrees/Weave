@@ -124,7 +124,13 @@ function MixAppPage() {
     }
   }
 
+  /** Preview a single track (search / add-track / etc.). */
   function handlePlay(track, index) {
+    playback.handlePlay(track, index, {});
+  }
+
+  /** Play from the arranger — load playlist context so Next continues the list. */
+  function handlePlaylistPlay(track, index) {
     playback.handlePlay(track, index, {
       tracks: session.tracks,
       playlistUri: session.playlist?.uri,
@@ -274,7 +280,7 @@ function MixAppPage() {
           flashUids: session.rowFlashUids,
           listFlashKey: session.listFlashKey,
           onReorder: session.handleReorder,
-          onPlay: handlePlay,
+          onPlay: handlePlaylistPlay,
           onToggleSeed: search.handleToggleSeed,
           onRemove: handleRemoveTrack,
         })

@@ -446,7 +446,13 @@ const MixAppFeatures = (() => {
   function filterTracksByCamelotMoves(tracks, seedTracks, moveIds) {
     const allowed = camelotAllowedLabels(seedTracks, moveIds);
     if (!allowed) return tracks || [];
-    if (!allowed.size) return [];
+    // Seed(s) have no parseable Camelot key — skip filter instead of wiping results.
+    if (!allowed.size) {
+      console.warn(
+        "Weave: Mix in Key is on but seed has no Camelot key — skipping key filter"
+      );
+      return tracks || [];
+    }
     return (tracks || []).filter((t) => {
       const key = parseCamelot(t);
       return !!(key && allowed.has(key.label));
@@ -493,30 +499,51 @@ const MixAppFeatures = (() => {
     if (!ids.length) return;
     const missing = ids.filter((id) => !CACHE.has(id));
     for (let i = 0; i < missing.length; i += BATCH) {
+      // Don't dig the Web API hole deeper while Spotify is cooling down.
+      if (MixAppHttp?.isCoolingDown?.()) break;
+
       const chunk = missing.slice(i, i + BATCH);
       let list = null;
 
       try {
-        const getter = MixAppApi?.withRetry || ((fn) => fn());
-        const res = await getter(
-          () => Spicetify.CosmosAsync.get(SPCLIENT + "?ids=" + chunk.join(",")),
-          { retries: 4, label: "audio-attributes", notifyUser: false }
-        );
+        const res = MixAppHttp?.cosmosGet
+          ? await MixAppHttp.cosmosGet(
+              SPCLIENT + "?ids=" + chunk.join(","),
+              {
+                retries: 2,
+                label: "audio-attributes",
+                notifyUser: false,
+                failFastOnCooldown: true,
+              }
+            )
+          : await Spicetify.CosmosAsync.get(
+              SPCLIENT + "?ids=" + chunk.join(",")
+            );
         list = res?.audio_features || res?.audioFeatures || null;
       } catch (err) {
         console.warn("Weave: audio-attributes batch failed", err);
+        if (MixAppHttp?.isRateLimitError?.(err)) break;
       }
 
-      if (!list) {
+      if (!list && !MixAppHttp?.isCoolingDown?.()) {
         try {
-          const getter = MixAppApi?.withRetry || ((fn) => fn());
-          const res = await getter(
-            () => Spicetify.CosmosAsync.get(WEB_FEATURES + "?ids=" + chunk.join(",")),
-            { retries: 4, label: "audio-features", notifyUser: false }
-          );
+          const res = MixAppHttp?.cosmosGet
+            ? await MixAppHttp.cosmosGet(
+                WEB_FEATURES + "?ids=" + chunk.join(","),
+                {
+                  retries: 2,
+                  label: "audio-features",
+                  notifyUser: false,
+                  failFastOnCooldown: true,
+                }
+              )
+            : await Spicetify.CosmosAsync.get(
+                WEB_FEATURES + "?ids=" + chunk.join(",")
+              );
           list = res?.audio_features || null;
         } catch (err) {
           console.warn("Weave: /v1/audio-features batch failed", err);
+          if (MixAppHttp?.isRateLimitError?.(err)) break;
         }
       }
 

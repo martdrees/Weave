@@ -251,6 +251,8 @@ MixAppI18n.register("en", {
     "This playlist is no longer available (deleted or made private)",
   "notify.rateLimit": "Spotify rate limit — wait a moment and try again",
   "notify.rateLimitBackoff": "Spotify rate limit — backing off {seconds}s…",
+  "notify.rateLimitPartialCamelot":
+    "Rate limited — only {count} in-key matches. Wait a few seconds and search again.",
   "notify.failedPlaylist": "Failed to load playlist",
   "notify.cannotSaveLoading": "Cannot save while playlist is loading",
   "notify.playlistChangedCancel": "Playlist changed — save cancelled",

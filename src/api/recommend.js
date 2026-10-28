@@ -8,19 +8,15 @@ const MixAppRecommend = (() => {
   const DEFAULT_LIMIT = 100;
   const MAX_LIMIT = 200;
   /** Max inspiredby-mix playlist resolutions (track/artist/album). */
-  const MAX_RADIO_FETCHES = 40;
-  /** Max related-artist / top-tracks API calls for padding. */
-  const MAX_ARTIST_FETCHES = 25;
+  const MAX_RADIO_FETCHES = 12;
+  /** Max related-artist / top-tracks API calls for padding (last resort). */
+  const MAX_ARTIST_FETCHES = 6;
 
   function radioUrls(kind, id) {
     const k = kind || "track";
+    // spclient only — the api.spotify.com twin burns the shared Web API budget.
     return [
       "https://spclient.wg.spotify.com/inspiredby-mix/v2/seed_to_playlist/spotify:" +
-        k +
-        ":" +
-        id +
-        "?response-format=json",
-      "https://api.spotify.com/v1/inspiredby-mix/v2/seed_to_playlist/spotify:" +
         k +
         ":" +
         id +
@@ -335,6 +331,7 @@ const MixAppRecommend = (() => {
         retries: 2,
         label: label || "recommend",
         notifyUser: false,
+        failFastOnCooldown: true,
       });
     }
     return Spicetify.CosmosAsync.get(url);
@@ -342,9 +339,35 @@ const MixAppRecommend = (() => {
 
   let cachedMarket = null;
   let rateLimitedPad = false;
+  /** Stops further radio / pad fetches for this search after a 429. */
+  let networkLimited = false;
+  let loggedNetworkLimit = false;
+
+  function noteNetworkLimit() {
+    networkLimited = true;
+    rateLimitedPad = true;
+    MixAppHttp?.markRateLimited?.(4000);
+    if (!loggedNetworkLimit) {
+      loggedNetworkLimit = true;
+      console.warn(
+        "Weave: recommendations rate-limited — stopping further seed fetches"
+      );
+    }
+  }
+
+  function networkBlocked() {
+    if (networkLimited) return true;
+    if (MixAppHttp?.isCoolingDown?.()) {
+      noteNetworkLimit();
+      return true;
+    }
+    return false;
+  }
 
   async function resolveRadioPlaylistUri(kind, id) {
+    if (networkBlocked()) return null;
     for (const url of radioUrls(kind, id)) {
+      if (networkBlocked()) return null;
       try {
         const res = await cosmosGetRetry(url, "song-radio");
         const items = res?.mediaItems || res?.media_items || res?.items || [];
@@ -356,7 +379,11 @@ const MixAppRecommend = (() => {
         if (uri && String(uri).includes(":playlist:")) return uri;
         if (uri && String(uri).includes("playlist")) return uri;
       } catch (err) {
-        console.warn("Weave: radio seed failed", kind, id, err);
+        if (MixAppHttp?.isRateLimitError?.(err)) {
+          noteNetworkLimit();
+          return null;
+        }
+        // Soft miss (empty/404) — try the alternate endpoint quietly.
       }
     }
     return null;
@@ -415,28 +442,25 @@ const MixAppRecommend = (() => {
 
   async function getUserMarket() {
     if (cachedMarket) return cachedMarket;
-    const fromPlatform =
-      Spicetify?.Platform?.Session?.country ||
-      Spicetify?.Platform?.PlatformData?.country ||
-      null;
-    if (fromPlatform) {
-      cachedMarket = String(fromPlatform);
-      return cachedMarket;
-    }
     try {
-      const me = await cosmosGetRetry("https://api.spotify.com/v1/me", "profile");
-      if (me?.country) {
-        cachedMarket = me.country;
-        return cachedMarket;
+      const me = await MixAppHttp.getMeProfile();
+      cachedMarket = me?.country || "US";
+      if (me?.source === "fallback" && MixAppHttp.isCoolingDown?.()) {
+        noteNetworkLimit();
       }
     } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
+      if (MixAppHttp?.isRateLimitError?.(err)) noteNetworkLimit();
+      cachedMarket = "US";
     }
-    return "US";
+    return cachedMarket;
+  }
+
+  function paddingBlocked() {
+    return networkBlocked() || rateLimitedPad;
   }
 
   async function fetchArtistTopTracks(artistId, market) {
-    if (rateLimitedPad) return [];
+    if (paddingBlocked()) return [];
     try {
       const res = await cosmosGetRetry(
         "https://api.spotify.com/v1/artists/" +
@@ -447,14 +471,17 @@ const MixAppRecommend = (() => {
       );
       return (res?.tracks || []).map((t, i) => normalizeWebTrack(t, i));
     } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
-      console.warn("Weave: artist top-tracks failed", artistId, err);
+      if (MixAppHttp?.isRateLimitError?.(err)) {
+        noteNetworkLimit();
+      } else {
+        console.warn("Weave: artist top-tracks failed", artistId, err);
+      }
       return [];
     }
   }
 
   async function fetchRelatedArtistIds(artistId) {
-    if (rateLimitedPad) return [];
+    if (paddingBlocked()) return [];
     try {
       const res = await cosmosGetRetry(
         "https://api.spotify.com/v1/artists/" + artistId + "/related-artists",
@@ -465,18 +492,58 @@ const MixAppRecommend = (() => {
         .filter(Boolean)
         .slice(0, 12);
     } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) rateLimitedPad = true;
-      console.warn("Weave: related-artists failed", artistId, err);
+      if (MixAppHttp?.isRateLimitError?.(err)) {
+        noteNetworkLimit();
+      } else {
+        console.warn("Weave: related-artists failed", artistId, err);
+      }
       return [];
     }
   }
 
   /**
-   * Collect candidates until rawTarget. Song Radio lists are ~50 tracks and
-   * often resolve to the same playlist for similar seeds — so we skip duplicate
-   * playlist URIs and also expand via artist/album radio + top tracks.
+   * Fill missing Camelot labels via AudioAttributesV2 (Platform metadata —
+   * not the rate-limited Web API). Needed before Mix in Key can count matches.
    */
-  async function collectCandidates({ seedTrackIds, seedTracks, rawTarget }) {
+  async function ensureCamelotKeys(tracks) {
+    if (!MixAppFeatures?.fetchAudioAttributesV2Map || !MixAppFeatures?.parseCamelot) {
+      return;
+    }
+    const need = [];
+    for (const t of tracks || []) {
+      if (!t?.uri) continue;
+      if (MixAppFeatures.parseCamelot(t)) continue;
+      need.push(t);
+    }
+    if (!need.length) return;
+    try {
+      const map = await MixAppFeatures.fetchAudioAttributesV2Map(
+        need.map((t) => t.uri)
+      );
+      for (const t of need) {
+        const parsed = map.get(t.uri);
+        if (!parsed?.keyInfo) continue;
+        MixAppTrack.applyNativeAudioAttrs(t, parsed.keyInfo, parsed.bpm);
+      }
+    } catch (err) {
+      console.warn("Weave: camelot key enrich failed", err);
+    }
+  }
+
+  /**
+   * Collect candidates until rawTarget (or camelot matchTarget).
+   * Prefers seed track → album → artist radios; expands sparingly so one seed
+   * does not stampede inspiredby-mix / Web API.
+   */
+  async function collectCandidates({
+    seedTrackIds,
+    seedTracks,
+    rawTarget,
+    camelotMoves = [],
+    camelotSeeds = [],
+    matchTarget = null,
+    progressFilters = null,
+  }) {
     const byUri = new Map();
     const usedSeeds = new Set();
     const usedPlaylists = new Set();
@@ -484,31 +551,95 @@ const MixAppRecommend = (() => {
     let radios = 0;
     let artistFetches = 0;
     let market = null;
+    let waitedForCooldown = false;
     rateLimitedPad = false;
+    networkLimited = false;
+    loggedNetworkLimit = false;
+
+    const wantCamelot = Array.isArray(camelotMoves) && camelotMoves.length > 0;
+    const camelotGoal =
+      wantCamelot && matchTarget != null
+        ? Math.max(1, Number(matchTarget) || 1)
+        : null;
+    // Camelot + hide-existing needs more radios — many in-key hits are already
+    // in the playlist and get dropped after collection.
+    const maxRadios = wantCamelot
+      ? Math.max(MAX_RADIO_FETCHES, 24)
+      : MAX_RADIO_FETCHES;
+    const maxSteps = wantCamelot ? 60 : 40;
 
     function enqueue(kind, id) {
       if (!id) return;
       const key = kind + ":" + id;
       if (usedSeeds.has(key)) return;
-      // Skip if already waiting in queue.
       if (queue.some((q) => q.key === key)) return;
       queue.push({ kind, id, key });
     }
 
-    // Random seed order → different radios get fetched before rawTarget fills.
-    for (const id of shuffleInPlace([...(seedTrackIds || [])])) {
-      enqueue("track", id);
+    function popNext() {
+      if (!queue.length) return null;
+      // Prefer track radios (best Song Radio signal), then album, then artist.
+      for (const kind of ["track", "album", "artist"]) {
+        const idx = queue.findIndex((q) => q.kind === kind);
+        if (idx >= 0) return queue.splice(idx, 1)[0];
+      }
+      return queue.shift();
     }
 
-    // Seed artist / album radios from the playlist rows when available.
-    for (const t of shuffleInPlace([...(seedTracks || [])])) {
-      for (const aid of shuffleInPlace([...(t.artistIds || [])])) {
-        enqueue("artist", aid);
+    /** Matches that would survive hide-existing / bans (not raw radio echoes). */
+    function usablePool() {
+      let list = [...byUri.values()];
+      if (progressFilters) list = applyPostFilters(list, progressFilters);
+      return list;
+    }
+
+    function camelotMatchCount() {
+      if (!camelotGoal || typeof MixAppFeatures?.filterTracksByCamelotMoves !== "function") {
+        return usablePool().length;
       }
+      return MixAppFeatures.filterTracksByCamelotMoves(
+        usablePool(),
+        camelotSeeds.length ? camelotSeeds : seedTracks,
+        camelotMoves
+      ).length;
+    }
+
+    function collectionDone() {
+      if (camelotGoal != null) return camelotMatchCount() >= camelotGoal;
+      return byUri.size >= rawTarget;
+    }
+
+    /** Expand graph only while the pool is still thin. */
+    function shouldExpand() {
+      if (collectionDone()) return false;
+      if (wantCamelot) return camelotMatchCount() < camelotGoal;
+      return byUri.size < Math.ceil(rawTarget * 0.45);
+    }
+
+    async function waitOutCooldownOnce() {
+      if (waitedForCooldown) return false;
+      if (!MixAppHttp?.isCoolingDown?.()) return false;
+      waitedForCooldown = true;
+      const ms = Math.min(
+        Math.max(MixAppHttp.coolDownRemainingMs?.() || 3000, 1500),
+        8000
+      );
+      console.warn(
+        "Weave: waiting " + Math.ceil(ms / 1000) + "s for Spotify rate limit…"
+      );
+      await MixAppHttp.sleep(ms + 250);
+      networkLimited = false;
+      rateLimitedPad = false;
+      return true;
+    }
+
+    // Seed track radios first (stable order), then artists / albums.
+    for (const id of seedTrackIds || []) enqueue("track", id);
+    for (const t of seedTracks || []) {
+      for (const aid of t.artistIds || []) enqueue("artist", aid);
       const albumId = albumIdFromTrack(t);
       if (albumId) enqueue("album", albumId);
     }
-    shuffleInPlace(queue);
 
     async function ensureMarket() {
       if (!market) market = await getUserMarket();
@@ -516,6 +647,7 @@ const MixAppRecommend = (() => {
     }
 
     async function loadRadio(kind, id) {
+      if (networkBlocked()) return 0;
       const playlistUri = await resolveRadioPlaylistUri(kind, id);
       if (!playlistUri) return 0;
       if (usedPlaylists.has(playlistUri)) return 0;
@@ -526,24 +658,35 @@ const MixAppRecommend = (() => {
         const items = shuffleInPlace(
           (await MixAppApi.getPlaylistTracks(playlistUri)).slice()
         );
+        const expand = shouldExpand();
+        const freshlyAdded = [];
         for (let i = 0; i < items.length; i++) {
           const t = items[i];
-          // Random skips diversify which radio rows enter the pool.
-          if (Math.random() < 0.2) continue;
           if (!ingestTrack(byUri, t, "radio:")) continue;
           added += 1;
-          const tid = t.id || trackIdFromUri(t.uri);
-          // Sparse, random expansion — explore different graph branches per run.
-          if (tid && Math.random() < 0.28) enqueue("track", tid);
-          for (const aid of t.artistIds || []) {
-            if (Math.random() < 0.45) enqueue("artist", aid);
+          freshlyAdded.push(byUri.get(t.uri) || t);
+          if (expand) {
+            const tid = t.id || trackIdFromUri(t.uri);
+            // Sparse expansion — far less aggressive than before.
+            if (tid && Math.random() < 0.12) enqueue("track", tid);
+            for (const aid of t.artistIds || []) {
+              if (Math.random() < 0.18) enqueue("artist", aid);
+            }
+            const albumId = albumIdFromTrack(t);
+            if (albumId && Math.random() < 0.12) enqueue("album", albumId);
           }
-          const albumId = albumIdFromTrack(t);
-          if (albumId && Math.random() < 0.35) enqueue("album", albumId);
-          if (byUri.size >= rawTarget) break;
+        }
+        // Keys before Mix in Key progress check — otherwise we stop on
+        // keyless rows or count playlist echoes that hide-existing will drop.
+        if (wantCamelot && freshlyAdded.length) {
+          await ensureCamelotKeys(freshlyAdded);
         }
       } catch (err) {
-        console.warn("Weave: failed to load radio playlist", playlistUri, err);
+        if (MixAppHttp?.isRateLimitError?.(err)) {
+          noteNetworkLimit();
+        } else {
+          console.warn("Weave: failed to load radio playlist", playlistUri, err);
+        }
       }
       return added;
     }
@@ -553,41 +696,45 @@ const MixAppRecommend = (() => {
       artistFetches += 1;
       const m = await ensureMarket();
       const tops = shuffleInPlace((await fetchArtistTopTracks(artistId, m)).slice());
+      const freshlyAdded = [];
       let added = 0;
       for (const t of tops) {
-        if (Math.random() < 0.15) continue;
-        if (ingestTrack(byUri, t, "top:")) added += 1;
-        if (byUri.size >= rawTarget) break;
+        if (!ingestTrack(byUri, t, "top:")) continue;
+        added += 1;
+        freshlyAdded.push(byUri.get(t.uri) || t);
+        if (collectionDone()) break;
       }
-      if (byUri.size < rawTarget && artistFetches < MAX_ARTIST_FETCHES) {
-        const related = shuffleInPlace((await fetchRelatedArtistIds(artistId)).slice());
-        for (const rid of related) {
-          if (Math.random() < 0.7) enqueue("artist", rid);
-        }
+      if (wantCamelot && freshlyAdded.length) {
+        await ensureCamelotKeys(freshlyAdded);
       }
       return added;
     }
 
     let steps = 0;
-    const maxSteps = 120;
-    while (queue.length > 0 && byUri.size < rawTarget && steps < maxSteps) {
+    while (queue.length > 0 && !collectionDone() && steps < maxSteps) {
+      if (networkBlocked()) {
+        const resumed = await waitOutCooldownOnce();
+        if (!resumed || networkBlocked()) break;
+      }
       steps += 1;
-      // Pop a random queued seed so exploration order differs each search.
-      const idx = Math.floor(Math.random() * queue.length);
-      const next = queue.splice(idx, 1)[0];
+      const next = popNext();
       if (!next || usedSeeds.has(next.key)) continue;
       usedSeeds.add(next.key);
 
       if (next.kind === "track" || next.kind === "album") {
-        if (radios >= MAX_RADIO_FETCHES) continue;
+        if (radios >= maxRadios) continue;
         await loadRadio(next.kind, next.id);
       } else if (next.kind === "artist") {
-        // Artist radio first (Platform playlist load). Skip Web API top/related
-        // padding once rate-limited so create/save still has budget.
-        if (radios < MAX_RADIO_FETCHES) {
+        if (radios < maxRadios) {
           await loadRadio("artist", next.id);
         }
-        if (byUri.size < rawTarget && !rateLimitedPad) {
+        // Web API top-tracks only if radios left the pool tiny.
+        if (
+          usablePool().length < 25 &&
+          !collectionDone() &&
+          !paddingBlocked() &&
+          radios >= Math.min(2, maxRadios)
+        ) {
           await loadArtistPad(next.id);
         }
       }
@@ -598,6 +745,8 @@ const MixAppRecommend = (() => {
       radios,
       rawTotal: byUri.size,
       playlistsUsed: usedPlaylists.size,
+      rateLimited: networkLimited || rateLimitedPad,
+      camelotMatched: wantCamelot ? camelotMatchCount() : null,
     };
   }
 
@@ -693,19 +842,51 @@ const MixAppRecommend = (() => {
 
     const features = cloneFeatures(opts.features || defaultFeatureState());
 
+    const camelotMoves = Array.isArray(opts.camelotMoves)
+      ? opts.camelotMoves.filter(Boolean)
+      : [];
+    const camelotSeeds = Array.isArray(opts.camelotSeeds)
+      ? opts.camelotSeeds
+      : seedTracks;
+    const matchTarget =
+      opts.matchTarget != null ? Number(opts.matchTarget) : target;
+
     // Over-fetch so post-filters can still leave up to `target` rows.
-    // Soft-seed + hide-existing drops a large share of radio echoes — fetch more.
-    const overFetch = usedSoftSeeds && hidingExisting ? 3.2 : 1.8;
+    // Camelot + hide-existing: collect plenty; early-stop counts only usable hits.
+    const overFetch = camelotMoves.length
+      ? hidingExisting
+        ? 3.0
+        : 2.2
+      : usedSoftSeeds && hidingExisting
+        ? 2.4
+        : 1.6;
     const rawTarget = Math.min(
       MAX_LIMIT,
-      Math.max(target + 40, Math.ceil(target * overFetch))
+      Math.max(target + 24, Math.ceil(target * overFetch))
     );
 
-    const { tracks, radios, rawTotal, playlistsUsed } = await collectCandidates({
-      seedTrackIds,
-      seedTracks,
-      rawTarget,
-    });
+    // Same exclusions used for Mix in Key progress — don't stop early on
+    // in-key tracks that hide-existing will throw away.
+    const progressFilters = {
+      hideExistingUris: filters.hideExistingUris || [],
+      hideExistingTracks: filters.hideExistingTracks || [],
+      bannedUris: filters.bannedUris || [],
+      excludeTrackIds: filters.excludeTrackIds || [],
+      excludeArtistIds: filters.excludeArtistIds || [],
+      seedTrackIds: filters.seedTrackIds || [],
+      includeSeedTracks: !!filters.includeSeedTracks,
+    };
+
+    const { tracks, radios, rawTotal, playlistsUsed, rateLimited, camelotMatched } =
+      await collectCandidates({
+        seedTrackIds,
+        seedTracks,
+        rawTarget,
+        camelotMoves,
+        camelotSeeds,
+        matchTarget: camelotMoves.length ? matchTarget : null,
+        progressFilters,
+      });
 
     if (!rawTotal) {
       throw new Error(
@@ -715,9 +896,30 @@ const MixAppRecommend = (() => {
       );
     }
 
-    let pool = applyPostFilters(tracks, filters);
+    let pool = tracks.slice();
+
+    // Keys first, then Mix in Key, then hide-existing / feature ranges.
+    if (camelotMoves.length && typeof MixAppFeatures?.enrichTracks === "function") {
+      try {
+        pool = await MixAppFeatures.enrichTracks(pool);
+      } catch (err) {
+        console.warn("Weave: recommend enrich failed", err);
+        await ensureCamelotKeys(pool);
+      }
+      pool = MixAppFeatures.filterTracksByCamelotMoves(
+        pool,
+        camelotSeeds,
+        camelotMoves
+      );
+    }
+
+    pool = applyPostFilters(pool, filters);
     pool = await filterByLocalFeatures(pool, features);
-    pool = sampleResults(pool, target, opts.avoidUris || []);
+    pool = sampleResults(
+      pool,
+      camelotMoves.length ? matchTarget : target,
+      opts.avoidUris || []
+    );
 
     return {
       tracks: pool,
@@ -727,6 +929,9 @@ const MixAppRecommend = (() => {
       playlistsUsed,
       rawTotal,
       usedSoftSeeds,
+      rateLimited: !!rateLimited,
+      camelotMatched,
+      camelotApplied: camelotMoves.length > 0,
     };
   }
 

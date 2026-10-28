@@ -265,6 +265,8 @@ MixAppI18n.register("es", {
     "Límite de solicitudes de Spotify alcanzado — espera un momento e inténtalo de nuevo",
   "notify.rateLimitBackoff":
     "Límite de solicitudes de Spotify alcanzado — esperando {seconds} s…",
+  "notify.rateLimitPartialCamelot":
+    "Límite de solicitudes — solo {count} coincidencias de tonalidad. Espera unos segundos y vuelve a buscar.",
   "notify.failedPlaylist": "No se pudo cargar la playlist",
   "notify.cannotSaveLoading": "No se puede guardar mientras se carga la playlist",
   "notify.playlistChangedCancel": "La playlist cambió — se canceló el guardado",

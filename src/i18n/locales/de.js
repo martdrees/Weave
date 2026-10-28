@@ -266,6 +266,8 @@ MixAppI18n.register("de", {
     "Spotify-Anfragelimit erreicht — warte einen Moment und versuche es erneut",
   "notify.rateLimitBackoff":
     "Spotify-Anfragelimit erreicht — Pause für {seconds} s…",
+  "notify.rateLimitPartialCamelot":
+    "Anfragelimit — nur {count} passende Tonarten. Kurz warten und erneut suchen.",
   "notify.failedPlaylist": "Playlist konnte nicht geladen werden",
   "notify.cannotSaveLoading":
     "Speichern nicht möglich, während die Playlist lädt",
