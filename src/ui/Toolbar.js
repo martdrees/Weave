@@ -7,6 +7,7 @@ function MixAppToolbar(props) {
     playlist,
     tracks,
     dirty,
+    remoteIgnored,
     canUndo,
     canRedo,
     saving,
@@ -50,6 +51,16 @@ function MixAppToolbar(props) {
         onRefresh: onRefreshPlaylists,
       }),
       dirty ? h("span", { className: "mixapp-badge" }, t("toolbar.unsaved")) : null,
+      remoteIgnored
+        ? h(
+            "span",
+            {
+              className: "mixapp-badge mixapp-badge-remote",
+              title: t("toolbar.spotifyChangedTitle"),
+            },
+            t("toolbar.spotifyChanged")
+          )
+        : null,
       seedCount > 0
         ? h(
             "span",

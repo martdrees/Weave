@@ -52,6 +52,7 @@
     "src/ui/SearchPanel.js",
     "src/ui/SearchResults.js",
     "src/ui/AddTrackModal.js",
+    "src/ui/SyncConflictModal.js",
     "src/ui/CopyPlaylistModal.js",
     "src/ui/FlowifyModal.js",
     "src/ui/GeneratorModal.js",

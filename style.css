@@ -1094,6 +1094,39 @@
   gap: 2px;
 }
 
+.mixapp-badge-remote {
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #fde68a;
+}
+
+.mixapp-sync-conflict-modal {
+  max-width: 480px;
+  width: min(480px, 100%);
+  height: auto;
+  max-height: min(80vh, 520px);
+}
+
+.mixapp-sync-conflict-body {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mixapp-sync-conflict-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--mix-text);
+}
+
+.mixapp-sync-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .mixapp-copy-modal {
   max-width: 1080px;
   width: min(1080px, 100%);

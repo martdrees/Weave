@@ -9,6 +9,9 @@ MixAppI18n.register("de", {
 
   // Toolbar
   "toolbar.unsaved": "Nicht gespeichert",
+  "toolbar.spotifyChanged": "Spotify geändert",
+  "toolbar.spotifyChangedTitle":
+    "Spotifys Kopie weicht von deinem letzten Sync ab — Weave-Änderungen wurden behalten",
   "toolbar.seed": "{count} Seed",
   "toolbar.seeds": "{count} Seeds",
   "toolbar.undo": "Rückgängig",
@@ -42,7 +45,7 @@ MixAppI18n.register("de", {
   "picker.select": "Playlist auswählen…",
   "picker.empty": "Keine Playlists",
   "picker.refresh": "Aktualisieren",
-  "picker.refreshTitle": "Playlist-Liste aktualisieren",
+  "picker.refreshTitle": "Playlist-Liste aktualisieren und offene Playlist prüfen",
   "picker.tracks": "{count} Titel",
 
   // Arranger
@@ -259,6 +262,18 @@ MixAppI18n.register("de", {
   "notify.playlistChangedDuringSave":
     "Playlist wurde beim Speichern geändert — lokaler Stand bleibt unverändert",
   "notify.playlistSaved": "Playlist gespeichert",
+  "notify.playlistUpdatedFromSpotify": "Playlist von Spotify aktualisiert",
+
+  "sync.conflictTitle": "Playlist auf Spotify geändert",
+  "sync.conflictBody":
+    "„{name}“ wurde auf Spotify geändert, während du ungespeicherte Änderungen in Weave hast. Von Spotify neu laden (Weave verwerfen), Weave behalten oder Spotify mit Weave überschreiben.",
+  "sync.unavailableTitle": "Playlist nicht verfügbar",
+  "sync.unavailableBody":
+    "„{name}“ ist auf Spotify nicht mehr verfügbar, aber du hast noch ungespeicherte Änderungen in Weave. Hier behalten oder als neue Playlist speichern.",
+  "sync.reloadSpotify": "Von Spotify laden",
+  "sync.keepWeave": "Weave behalten",
+  "sync.overwriteSpotify": "Spotify überschreiben",
+  "sync.saveAsNew": "Als neu speichern",
   "notify.saveFailed": "Speichern fehlgeschlagen",
   "notify.created": "„{name}“ erstellt",
   "notify.createFailed": "Erstellen fehlgeschlagen",

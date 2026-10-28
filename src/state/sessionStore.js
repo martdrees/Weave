@@ -4,7 +4,8 @@
  * (e.g. open another Spotify view, then return to Weave).
  *
  * Owns: selectedUri, playlist, tracks, dirty, undo, seedUris, bannedUris,
- *       searchFeatures, searchResults, resultsOpen, searchOpen, statsOpen.
+ *       searchFeatures, searchResults, resultsOpen, searchOpen, statsOpen,
+ *       syncedFingerprint, ignoredRemoteFingerprint.
  * Does NOT own: resultLimit, searchFilters (prefs) or columns
  * (MixAppColumnConfig). See docs/PERSISTENCE.md.
  */
@@ -12,7 +13,7 @@
 const MixAppSession = (() => {
   const KEY = "mixapp-session-v1";
   /** Schema version written on save; raised when stored shape changes. */
-  const SCHEMA_VERSION = 2;
+  const SCHEMA_VERSION = 3;
   const MAX_UNDO_SNAPSHOTS = 12;
 
   function storageGet() {
@@ -96,6 +97,18 @@ const MixAppSession = (() => {
       dirty = true;
     }
 
+    // v2 → v3: last-synced / ignored-remote fingerprints for external sync.
+    if (version < 3) {
+      if (typeof data.syncedFingerprint !== "string") {
+        data.syncedFingerprint = null;
+      }
+      if (typeof data.ignoredRemoteFingerprint !== "string") {
+        data.ignoredRemoteFingerprint = null;
+      }
+      version = 3;
+      dirty = true;
+    }
+
     data.v = version;
     return { data, dirty };
   }
@@ -133,6 +146,14 @@ const MixAppSession = (() => {
       playlist: session.playlist || null,
       tracks: Array.isArray(session.tracks) ? session.tracks : [],
       dirty: !!session.dirty,
+      syncedFingerprint:
+        typeof session.syncedFingerprint === "string"
+          ? session.syncedFingerprint
+          : null,
+      ignoredRemoteFingerprint:
+        typeof session.ignoredRemoteFingerprint === "string"
+          ? session.ignoredRemoteFingerprint
+          : null,
       seedUris: Array.isArray(session.seedUris) ? session.seedUris : [],
       bannedUris: Array.isArray(session.bannedUris) ? session.bannedUris : [],
       searchFeatures: session.searchFeatures || null,

@@ -9,6 +9,9 @@ MixAppI18n.register("es", {
 
   // Toolbar
   "toolbar.unsaved": "Sin guardar",
+  "toolbar.spotifyChanged": "Spotify cambió",
+  "toolbar.spotifyChangedTitle":
+    "La copia de Spotify difiere de tu último sync — se conservaron los cambios de Weave",
   "toolbar.seed": "{count} semilla",
   "toolbar.seeds": "{count} semillas",
   "toolbar.undo": "Deshacer",
@@ -41,7 +44,7 @@ MixAppI18n.register("es", {
   "picker.select": "Selecciona una playlist…",
   "picker.empty": "No hay playlists",
   "picker.refresh": "Actualizar",
-  "picker.refreshTitle": "Actualizar la lista de playlists",
+  "picker.refreshTitle": "Actualizar la lista y comprobar la playlist abierta",
   "picker.tracks": "{count} canciones",
 
   // Arranger
@@ -256,6 +259,18 @@ MixAppI18n.register("es", {
   "notify.playlistChangedDuringSave":
     "La playlist cambió durante el guardado — el estado local no se modificó",
   "notify.playlistSaved": "Playlist guardada",
+  "notify.playlistUpdatedFromSpotify": "Playlist actualizada desde Spotify",
+
+  "sync.conflictTitle": "Playlist cambiada en Spotify",
+  "sync.conflictBody":
+    "“{name}” cambió en Spotify mientras tienes cambios sin guardar en Weave. Recargar desde Spotify (descartar Weave), conservar Weave o sobrescribir Spotify con Weave.",
+  "sync.unavailableTitle": "Playlist no disponible",
+  "sync.unavailableBody":
+    "“{name}” ya no está disponible en Spotify, pero aún tienes cambios sin guardar en Weave. Conservarlos aquí o guardar como playlist nueva.",
+  "sync.reloadSpotify": "Recargar desde Spotify",
+  "sync.keepWeave": "Conservar Weave",
+  "sync.overwriteSpotify": "Sobrescribir Spotify",
+  "sync.saveAsNew": "Guardar como nueva",
   "notify.saveFailed": "No se pudo guardar",
   "notify.created": "Se creó “{name}”",
   "notify.createFailed": "No se pudo crear",

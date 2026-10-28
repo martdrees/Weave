@@ -146,6 +146,25 @@ const MixAppPlaylistOps = (() => {
       .catch(() => {});
   }
 
+  /**
+   * Stable identity for one playlist row (prefer Spotify item uid, else track uri).
+   * Used for remote-sync comparison — ignores enrich-only fields.
+   */
+  function trackOrderKey(track) {
+    if (!track) return "";
+    if (track.uid) return "u:" + String(track.uid);
+    if (track.uri) return "r:" + String(track.uri);
+    return "";
+  }
+
+  /** Fingerprint of membership + order for sync checks. */
+  function fingerprintTrackOrder(tracks) {
+    return (Array.isArray(tracks) ? tracks : [])
+      .map(trackOrderKey)
+      .filter(Boolean)
+      .join("\n");
+  }
+
   return {
     trackId,
     fingerprint,
@@ -157,5 +176,7 @@ const MixAppPlaylistOps = (() => {
     toPlaylistTrack,
     appendTracks,
     enrichAdded,
+    trackOrderKey,
+    fingerprintTrackOrder,
   };
 })();

@@ -46,6 +46,17 @@ function MixAppUsePlaylistSession(opts) {
   const [rowFlashUids, setRowFlashUids] = react.useState([]);
   const [listFlashKey, setListFlashKey] = react.useState(0);
   const flashTimerRef = react.useRef(null);
+  /** @type {[null|{ kind: string, remoteFingerprint: string|null }, Function]} */
+  const [syncConflict, setSyncConflict] = react.useState(null);
+  /** User chose Keep Weave while Spotify differed — show quiet badge. */
+  const [remoteIgnored, setRemoteIgnored] = react.useState(
+    () =>
+      !!(
+        saved?.dirty &&
+        typeof saved?.ignoredRemoteFingerprint === "string" &&
+        saved.ignoredRemoteFingerprint
+      )
+  );
 
   const loadGenRef = react.useRef(0);
   const selectedUriRef = react.useRef(selectedUri);
@@ -56,6 +67,35 @@ function MixAppUsePlaylistSession(opts) {
   const savingRef = react.useRef(false);
   const tracksRef = react.useRef(tracks);
   tracksRef.current = tracks;
+  const dirtyRef = react.useRef(dirty);
+  dirtyRef.current = dirty;
+  const playlistRef = react.useRef(playlist);
+  playlistRef.current = playlist;
+  const syncCheckInFlightRef = react.useRef(false);
+  const syncConflictRef = react.useRef(syncConflict);
+  syncConflictRef.current = syncConflict;
+  const lastSyncCheckAtRef = react.useRef(0);
+
+  const initialTracksFp = MixAppPlaylistOps.fingerprintTrackOrder(
+    Array.isArray(saved?.tracks) ? saved.tracks : tracks
+  );
+  const [syncedFingerprint, setSyncedFingerprint] = react.useState(() =>
+    typeof saved?.syncedFingerprint === "string" && saved.syncedFingerprint
+      ? saved.syncedFingerprint
+      : saved?.dirty
+        ? null
+        : initialTracksFp || null
+  );
+  const [ignoredRemoteFingerprint, setIgnoredRemoteFingerprint] = react.useState(
+    () =>
+      typeof saved?.ignoredRemoteFingerprint === "string"
+        ? saved.ignoredRemoteFingerprint
+        : null
+  );
+  const syncedFingerprintRef = react.useRef(syncedFingerprint);
+  syncedFingerprintRef.current = syncedFingerprint;
+  const ignoredRemoteFingerprintRef = react.useRef(ignoredRemoteFingerprint);
+  ignoredRemoteFingerprintRef.current = ignoredRemoteFingerprint;
 
   function sameTrackIdentityOrder(a, b) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
@@ -67,6 +107,19 @@ function MixAppUsePlaylistSession(opts) {
       if (t.uid && u.uid) return t.uid === u.uid;
       return !!(t.uri && u.uri && t.uri === u.uri);
     });
+  }
+
+  function setSyncedBaseline(trackList) {
+    const fp = MixAppPlaylistOps.fingerprintTrackOrder(trackList) || null;
+    syncedFingerprintRef.current = fp;
+    ignoredRemoteFingerprintRef.current = null;
+    setSyncedFingerprint(fp);
+    setIgnoredRemoteFingerprint(null);
+    setRemoteIgnored(false);
+  }
+
+  function clearSyncConflict() {
+    setSyncConflict(null);
   }
 
   function syncUndoFlags() {
@@ -88,10 +141,12 @@ function MixAppUsePlaylistSession(opts) {
     } finally {
       setListLoading(false);
     }
+    await checkRemoteSync({ reason: "refresh" });
   }
 
   react.useEffect(() => {
     refreshPlaylists();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
   // Session restore may have Camelot keys from audio-features; reload once so
@@ -105,6 +160,24 @@ function MixAppUsePlaylistSession(opts) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot after restore
   }, []);
 
+  const checkRemoteSyncRef = react.useRef(/** @type {null|Function} */ (null));
+
+  // Re-check Spotify when returning to the Weave view.
+  react.useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState && document.visibilityState !== "visible") {
+        return;
+      }
+      checkRemoteSyncRef.current?.({ reason: "focus" });
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
+
   async function loadPlaylist(uri, opts) {
     const force = !!(opts && opts.force);
     if (!uri) {
@@ -115,6 +188,10 @@ function MixAppUsePlaylistSession(opts) {
       tracksRef.current = [];
       setTracks([]);
       setDirty(false);
+      setSyncedBaseline([]);
+      syncedFingerprintRef.current = null;
+      setSyncedFingerprint(null);
+      clearSyncConflict();
       undoRef.current.clear();
       syncUndoFlags();
       MixAppSession.clear();
@@ -160,6 +237,8 @@ function MixAppUsePlaylistSession(opts) {
       setTracks(items);
       tracksRef.current = items;
       setDirty(false);
+      setSyncedBaseline(items);
+      clearSyncConflict();
       undoRef.current.clear();
       syncUndoFlags();
       setTracksLoading(false);
@@ -306,8 +385,8 @@ function MixAppUsePlaylistSession(opts) {
   }
 
   async function handleSave() {
-    if (!playlist?.uri || !dirty) return;
-    if (tracksLoadingRef.current || savingRef.current) return;
+    if (!playlist?.uri || !dirty) return false;
+    if (tracksLoadingRef.current || savingRef.current) return false;
     const uriAtStart = playlist.uri;
     const tracksAtStart = tracksRef.current.slice();
     savingRef.current = true;
@@ -315,23 +394,24 @@ function MixAppUsePlaylistSession(opts) {
     try {
       if (tracksLoadingRef.current) {
         MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
-        return;
+        return false;
       }
       if (selectedUriRef.current !== uriAtStart) {
         MixAppApi.notify(MixAppI18n.t("notify.playlistChangedCancel"), true);
-        return;
+        return false;
       }
       const savedTracks = await MixAppApi.saveOverwrite(uriAtStart, tracksAtStart);
       if (selectedUriRef.current !== uriAtStart) {
         MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
-        return;
+        return false;
       }
       // If something still mutated local state during save, do not clear dirty /
       // overwrite the editor with a stale snapshot.
       if (!sameTrackIdentityOrder(tracksRef.current, tracksAtStart)) {
         MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
-        return;
+        return false;
       }
+      let baselineTracks = tracksAtStart;
       if (Array.isArray(savedTracks) && savedTracks.length) {
         const byUri = new Map();
         for (const t of tracksAtStart) {
@@ -359,14 +439,19 @@ function MixAppUsePlaylistSession(opts) {
         });
         tracksRef.current = merged;
         setTracks(merged);
+        baselineTracks = merged;
       }
       setDirty(false);
+      setSyncedBaseline(baselineTracks);
+      clearSyncConflict();
       undoRef.current.clear();
       syncUndoFlags();
       MixAppApi.notify(MixAppI18n.t("notify.playlistSaved"));
+      return true;
     } catch (err) {
       console.error(err);
       MixAppApi.notify(err?.message || MixAppI18n.t("notify.saveFailed"), true);
+      return false;
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -453,6 +538,169 @@ function MixAppUsePlaylistSession(opts) {
     return true;
   }
 
+  /**
+   * Compare the open playlist to Spotify (membership + order).
+   * Runs on Weave focus / Refresh. Skips while loading, saving, or a dialog is open.
+   */
+  async function checkRemoteSync(opts) {
+    const reason = opts?.reason || "auto";
+    const uri = selectedUriRef.current;
+    if (!uri) return;
+    if (!playlistRef.current && !tracksRef.current.length) return;
+    if (tracksLoadingRef.current || savingRef.current) return;
+    if (syncCheckInFlightRef.current) return;
+    if (syncConflictRef.current) return;
+    // Focus/visibility can fire often — cooldown unless user hit Refresh.
+    const now = Date.now();
+    if (reason !== "refresh" && now - lastSyncCheckAtRef.current < 2000) return;
+
+    syncCheckInFlightRef.current = true;
+    lastSyncCheckAtRef.current = now;
+    try {
+      let remoteTracks;
+      try {
+        remoteTracks = await MixAppApi.getPlaylistTracks(uri);
+      } catch (err) {
+        if (selectedUriRef.current !== uri) return;
+        const unavailable =
+          err?.code === "PLAYLIST_UNAVAILABLE" ||
+          MixAppPlaylists?.isPlaylistUnavailableError?.(err);
+        if (!unavailable) {
+          console.warn("Weave: remote sync check failed", err);
+          return;
+        }
+        if (dirtyRef.current) {
+          setSyncConflict({
+            kind: "unavailable",
+            remoteFingerprint: null,
+          });
+        } else {
+          MixAppApi.notify(MixAppI18n.t("notify.playlistUnavailable"), true);
+          MixAppPlaylists?.markPlaylistUnavailable?.(uri);
+          setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
+          onClearPlaylist?.();
+          setSelectedUri(null);
+          setPlaylist(null);
+          tracksRef.current = [];
+          setTracks([]);
+          setDirty(false);
+          setSyncedFingerprint(null);
+          setIgnoredRemoteFingerprint(null);
+          syncedFingerprintRef.current = null;
+          ignoredRemoteFingerprintRef.current = null;
+          setRemoteIgnored(false);
+          undoRef.current.clear();
+          syncUndoFlags();
+        }
+        return;
+      }
+
+      if (selectedUriRef.current !== uri) return;
+
+      // Meta-only: update name without touching tracks.
+      try {
+        const listed = (playlists || []).find((p) => p.uri === uri);
+        let remoteMeta = listed
+          ? { name: listed.name, collaborative: listed.collaborative }
+          : null;
+        if (!remoteMeta) {
+          remoteMeta = await MixAppApi.getPlaylistMeta(uri);
+        }
+        if (remoteMeta?.name && playlistRef.current?.uri === uri) {
+          const cur = playlistRef.current;
+          if (
+            remoteMeta.name !== cur.name ||
+            !!remoteMeta.collaborative !== !!cur.collaborative
+          ) {
+            setPlaylist({
+              ...cur,
+              name: remoteMeta.name || cur.name,
+              collaborative:
+                remoteMeta.collaborative != null
+                  ? !!remoteMeta.collaborative
+                  : cur.collaborative,
+              isOwnedBySelf:
+                remoteMeta.isOwnedBySelf != null
+                  ? !!remoteMeta.isOwnedBySelf
+                  : cur.isOwnedBySelf,
+              totalLength:
+                remoteMeta.totalLength != null
+                  ? remoteMeta.totalLength
+                  : cur.totalLength,
+            });
+          }
+        }
+      } catch (_) {
+        /* meta is best-effort */
+      }
+
+      const remoteFp = MixAppPlaylistOps.fingerprintTrackOrder(remoteTracks);
+      const currentFp = MixAppPlaylistOps.fingerprintTrackOrder(tracksRef.current);
+      const baselineFp = syncedFingerprintRef.current;
+      const ignoredFp = ignoredRemoteFingerprintRef.current;
+
+      if (dirtyRef.current) {
+        // Spotify still matches last sync → local-only edits; leave alone.
+        if (baselineFp != null && remoteFp === baselineFp) return;
+        // No baseline (legacy session): if remote already equals editor, nothing to do.
+        if (baselineFp == null && remoteFp === currentFp) return;
+        // Already chose Keep for this remote revision.
+        if (ignoredFp != null && remoteFp === ignoredFp) return;
+
+        setSyncConflict({
+          kind: "dirty-remote",
+          remoteFingerprint: remoteFp,
+        });
+        return;
+      }
+
+      // Clean editor.
+      if (remoteFp === currentFp) {
+        setSyncedBaseline(tracksRef.current);
+        return;
+      }
+
+      MixAppApi.notify(MixAppI18n.t("notify.playlistUpdatedFromSpotify"));
+      await loadPlaylist(uri, { force: true });
+    } finally {
+      syncCheckInFlightRef.current = false;
+    }
+  }
+
+  async function resolveSyncReload() {
+    const uri = selectedUriRef.current;
+    clearSyncConflict();
+    ignoredRemoteFingerprintRef.current = null;
+    setRemoteIgnored(false);
+    if (!uri) return;
+    await loadPlaylist(uri, { force: true });
+  }
+
+  function resolveSyncKeep() {
+    const conflict = syncConflictRef.current;
+    if (conflict?.kind === "dirty-remote" && conflict.remoteFingerprint) {
+      ignoredRemoteFingerprintRef.current = conflict.remoteFingerprint;
+      setIgnoredRemoteFingerprint(conflict.remoteFingerprint);
+      setRemoteIgnored(true);
+    } else if (conflict?.kind === "unavailable") {
+      // Keep local editor; remote is gone — no fingerprint to ignore.
+      setRemoteIgnored(false);
+    }
+    clearSyncConflict();
+  }
+
+  async function resolveSyncOverwrite() {
+    const ok = await handleSave();
+    if (ok) clearSyncConflict();
+  }
+
+  async function resolveSyncSaveAsNew() {
+    clearSyncConflict();
+    await handleSaveAsNew();
+  }
+
+  checkRemoteSyncRef.current = checkRemoteSync;
+
   return {
     playlists,
     selectedUri,
@@ -468,8 +716,17 @@ function MixAppUsePlaylistSession(opts) {
     rowFlashUids,
     listFlashKey,
     undoRef,
+    syncConflict,
+    remoteIgnored,
+    syncedFingerprint,
+    ignoredRemoteFingerprint,
     refreshPlaylists,
     loadPlaylist,
+    checkRemoteSync,
+    resolveSyncReload,
+    resolveSyncKeep,
+    resolveSyncOverwrite,
+    resolveSyncSaveAsNew,
     commitTracks,
     flashRows,
     flashList,

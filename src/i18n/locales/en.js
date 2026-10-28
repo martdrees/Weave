@@ -9,6 +9,9 @@ MixAppI18n.register("en", {
 
   // Toolbar
   "toolbar.unsaved": "Unsaved",
+  "toolbar.spotifyChanged": "Spotify changed",
+  "toolbar.spotifyChangedTitle":
+    "Spotify’s copy differs from your last sync — Weave edits were kept",
   "toolbar.seed": "{count} seed",
   "toolbar.seeds": "{count} seeds",
   "toolbar.undo": "Undo",
@@ -39,7 +42,7 @@ MixAppI18n.register("en", {
   "picker.select": "Select playlist…",
   "picker.empty": "No playlists",
   "picker.refresh": "Refresh",
-  "picker.refreshTitle": "Refresh playlist list",
+  "picker.refreshTitle": "Refresh playlist list and re-check the open playlist",
   "picker.tracks": "{count} tracks",
 
   // Arranger
@@ -242,7 +245,19 @@ MixAppI18n.register("en", {
   "notify.playlistChangedDuringSave":
     "Playlist changed during save — local state left unchanged",
   "notify.playlistSaved": "Playlist saved",
+  "notify.playlistUpdatedFromSpotify": "Playlist updated from Spotify",
   "notify.saveFailed": "Save failed",
+
+  "sync.conflictTitle": "Playlist changed on Spotify",
+  "sync.conflictBody":
+    "“{name}” changed on Spotify while you have unsaved edits in Weave. Reload from Spotify (discard Weave edits), keep your Weave edits, or overwrite Spotify with Weave.",
+  "sync.unavailableTitle": "Playlist unavailable",
+  "sync.unavailableBody":
+    "“{name}” is no longer available on Spotify, but you still have unsaved edits in Weave. Keep them here, or save as a new playlist.",
+  "sync.reloadSpotify": "Reload from Spotify",
+  "sync.keepWeave": "Keep Weave edits",
+  "sync.overwriteSpotify": "Overwrite Spotify",
+  "sync.saveAsNew": "Save as new",
   "notify.created": "Created “{name}”",
   "notify.createFailed": "Create failed",
   "notify.alreadyInPlaylist": "Track already in playlist",

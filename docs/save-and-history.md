@@ -37,3 +37,4 @@ A short message confirms *Playlist saved*, or explains errors if the playlist ch
 
 - Prefer Undo before Save if you are exploring Flowify settings.
 - Session restore may bring back unsaved work after restart; still confirm before Save.
+- If Spotify changed the same playlist while Weave has unsaved edits, Weave asks whether to reload, keep Weave, or overwrite Spotify — see [Playlist picker](playlist-picker.md).

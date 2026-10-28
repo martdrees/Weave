@@ -60,6 +60,8 @@ function MixAppPage() {
       playlist: session.playlist,
       tracks: session.tracks,
       dirty: session.dirty,
+      syncedFingerprint: session.syncedFingerprint,
+      ignoredRemoteFingerprint: session.ignoredRemoteFingerprint,
       seedUris: search.seedUris,
       bannedUris: search.bannedUris,
       searchFeatures: search.searchFeatures,
@@ -74,6 +76,8 @@ function MixAppPage() {
       session.playlist,
       session.tracks,
       session.dirty,
+      session.syncedFingerprint,
+      session.ignoredRemoteFingerprint,
       search.seedUris,
       search.bannedUris,
       search.searchFeatures,
@@ -204,6 +208,7 @@ function MixAppPage() {
       playlist: session.playlist,
       tracks: session.tracks,
       dirty: session.dirty,
+      remoteIgnored: session.remoteIgnored,
       canUndo: session.canUndo,
       canRedo: session.canRedo,
       saving: session.saving,
@@ -341,6 +346,17 @@ function MixAppPage() {
     h(MixAppShortcutsHelp, {
       open: panels.shortcutsOpen,
       onClose: () => panels.closePanel("shortcuts"),
+    }),
+    h(MixAppSyncConflictModal, {
+      open: !!session.syncConflict,
+      kind: session.syncConflict?.kind || null,
+      playlistName: session.playlist?.name,
+      saving: session.saving,
+      onReload: session.resolveSyncReload,
+      onKeep: session.resolveSyncKeep,
+      onOverwrite: session.resolveSyncOverwrite,
+      onSaveAsNew: session.resolveSyncSaveAsNew,
+      onClose: session.resolveSyncKeep,
     })
   );
 }
