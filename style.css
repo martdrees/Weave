@@ -1094,6 +1094,42 @@
   gap: 2px;
 }
 
+.mixapp-add-track-album-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mixapp-add-track-album-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 1px solid var(--mix-border-faint);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mixapp-add-track-album-row:hover {
+  background: var(--mix-hover);
+}
+
+.mixapp-add-track-album-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--mix-hover);
+}
+
+.mixapp-add-track-album-cover-fallback {
+  background: var(--mix-hover-strong);
+}
+
 .mixapp-badge-remote {
   border-color: rgba(250, 204, 21, 0.45);
   color: #fde68a;

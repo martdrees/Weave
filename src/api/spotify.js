@@ -21,6 +21,8 @@ const MixAppApi = (() => {
     searchPlaylists: MixAppCatalogSearch.searchPlaylists,
     searchArtists: MixAppCatalogSearch.searchArtists,
     getArtistTopTracks: MixAppCatalogSearch.getArtistTopTracks,
+    getArtistAlbums: MixAppCatalogSearch.getArtistAlbums,
+    getAlbumTracks: MixAppCatalogSearch.getAlbumTracks,
   };
   return /** @type {MixAppApiFacade} */ (api);
 })();

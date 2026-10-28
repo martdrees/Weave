@@ -21,9 +21,10 @@ Use the **Songs | Artists** switch at the top of the dialog.
 
 1. Switch to **Artists**.
 2. Type an artist name — suggestions appear as you type (from 2 characters).
-3. Pick an artist to load their popular tracks (client GraphQL / artist radio; not the rate-limited Web API when possible).
-4. **Add** individual tracks, or **Add all new** to append every track not already in the playlist.
-5. Use **← Artists** to go back to suggestions.
+3. Pick an artist to load their **popular tracks**.
+4. **Add** individual tracks, or **Add all new**.
+5. Click **Load albums** to browse albums and singles, then open an album for its tracks.
+6. Use the back control to return: album → albums → popular → artist search.
 
 Tracks already in the playlist are marked so you do not add duplicates. On success a short message appears, and new rows flash in the table.
 

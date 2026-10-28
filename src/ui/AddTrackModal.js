@@ -1,7 +1,7 @@
 //@ts-check
 
 /**
- * Add Track — catalog Songs search, or Artists → top tracks drill-in.
+ * Add Track — catalog Songs search, or Artists → popular / albums drill-in.
  *
  * @param {{
  *   open: boolean,
@@ -34,6 +34,12 @@ function MixAppAddTrackModal(props) {
   const [selectedArtist, setSelectedArtist] = react.useState(
     /** @type {object|null} */ (null)
   );
+  /** @type {"popular"|"albums"|"album"} */
+  const [artistView, setArtistView] = react.useState("popular");
+  const [albums, setAlbums] = react.useState(/** @type {object[]} */ ([]));
+  const [selectedAlbum, setSelectedAlbum] = react.useState(
+    /** @type {object|null} */ (null)
+  );
   const [loading, setLoading] = react.useState(false);
   const [suggestLoading, setSuggestLoading] = react.useState(false);
   const [error, setError] = react.useState(/** @type {string|null} */ (null));
@@ -49,6 +55,9 @@ function MixAppAddTrackModal(props) {
     setResults([]);
     setArtistHits([]);
     setSelectedArtist(null);
+    setArtistView("popular");
+    setAlbums([]);
+    setSelectedAlbum(null);
     setError(null);
   }
 
@@ -131,6 +140,9 @@ function MixAppAddTrackModal(props) {
     setError(null);
     setSelectedArtist(null);
     setArtistHits([]);
+    setArtistView("popular");
+    setAlbums([]);
+    setSelectedAlbum(null);
     try {
       let list = await MixAppApi.searchTracks(q, { limit: 30 });
       if (gen !== genRef.current) return;
@@ -155,6 +167,9 @@ function MixAppAddTrackModal(props) {
     setSelectedArtist(artist);
     setArtistHits([]);
     setResults([]);
+    setAlbums([]);
+    setSelectedAlbum(null);
+    setArtistView("popular");
     setError(null);
     setLoading(true);
     setSuggestLoading(false);
@@ -177,13 +192,124 @@ function MixAppAddTrackModal(props) {
     }
   }
 
+  async function loadAlbums() {
+    if (!selectedArtist) return;
+    const gen = ++genRef.current;
+    setLoading(true);
+    setError(null);
+    setSelectedAlbum(null);
+    setResults([]);
+    setArtistView("albums");
+    try {
+      const list = await MixAppApi.getArtistAlbums(
+        selectedArtist.id || selectedArtist.uri,
+        { limit: 50 }
+      );
+      if (gen !== genRef.current) return;
+      setAlbums(list);
+      if (!list.length) setError(MixAppI18n.t("addTrack.noAlbums"));
+    } catch (err) {
+      if (gen !== genRef.current) return;
+      console.error(err);
+      setAlbums([]);
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+    } finally {
+      if (gen === genRef.current) setLoading(false);
+    }
+  }
+
+  async function openAlbum(album) {
+    if (!album?.uri && !album?.id) return;
+    const gen = ++genRef.current;
+    setSelectedAlbum(album);
+    setArtistView("album");
+    setResults([]);
+    setError(null);
+    setLoading(true);
+    try {
+      let list = await MixAppApi.getAlbumTracks(album.uri || album.id, {
+        limit: 80,
+      });
+      if (gen !== genRef.current) return;
+      list = await enrichList(list);
+      if (gen !== genRef.current) return;
+      setResults(list);
+      if (!list.length) setError(MixAppI18n.t("addTrack.noAlbumTracks"));
+    } catch (err) {
+      if (gen !== genRef.current) return;
+      console.error(err);
+      setResults([]);
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+    } finally {
+      if (gen === genRef.current) setLoading(false);
+    }
+  }
+
+  async function backToPopular() {
+    if (!selectedArtist) return;
+    const gen = ++genRef.current;
+    setSelectedAlbum(null);
+    setAlbums([]);
+    setArtistView("popular");
+    setResults([]);
+    setError(null);
+    setLoading(true);
+    try {
+      let list = await MixAppApi.getArtistTopTracks(
+        selectedArtist.id || selectedArtist.uri,
+        { limit: 30 }
+      );
+      if (gen !== genRef.current) return;
+      list = await enrichList(list);
+      if (gen !== genRef.current) return;
+      setResults(list);
+      if (!list.length) setError(MixAppI18n.t("addTrack.noTopTracks"));
+    } catch (err) {
+      if (gen !== genRef.current) return;
+      console.error(err);
+      setResults([]);
+      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+    } finally {
+      if (gen === genRef.current) setLoading(false);
+    }
+  }
+
+  function backToAlbums() {
+    genRef.current += 1;
+    setSelectedAlbum(null);
+    setResults([]);
+    setArtistView("albums");
+    setError(albums.length ? null : MixAppI18n.t("addTrack.noAlbums"));
+    setLoading(false);
+  }
+
   function backToArtistSearch() {
     genRef.current += 1;
     setSelectedArtist(null);
+    setSelectedAlbum(null);
+    setAlbums([]);
+    setArtistView("popular");
     setResults([]);
     setError(null);
     setLoading(false);
-    // Suggestions effect re-runs from current query.
+  }
+
+  function handleArtistBack() {
+    if (artistView === "album") {
+      backToAlbums();
+      return;
+    }
+    if (artistView === "albums") {
+      backToPopular();
+      return;
+    }
+    backToArtistSearch();
+  }
+
+  function artistBackLabel() {
+    if (artistView === "album") return MixAppI18n.t("addTrack.backToAlbums");
+    if (artistView === "albums") return MixAppI18n.t("addTrack.backToPopular");
+    return MixAppI18n.t("addTrack.backToArtists");
   }
 
   function addAllNew() {
@@ -218,21 +344,50 @@ function MixAppAddTrackModal(props) {
     return String(v);
   }
 
-  const showingTracks = mode === "songs" || !!selectedArtist;
-  const newCount = showingTracks
+  function albumSubtitle(album) {
+    const parts = [];
+    if (album?.year) parts.push(String(album.year));
+    if (album?.group === "single" || album?.group === "singles") {
+      parts.push(MixAppI18n.t("addTrack.albumGroupSingle"));
+    } else if (album?.group === "compilation" || album?.group === "compilations") {
+      parts.push(MixAppI18n.t("addTrack.albumGroupCompilation"));
+    }
+    if (album?.totalTracks != null) {
+      parts.push(
+        MixAppI18n.t("addTrack.albumTrackCount", { count: album.totalTracks })
+      );
+    }
+    return parts.join(" · ");
+  }
+
+  const showingTrackTable =
+    mode === "songs" ||
+    (selectedArtist && (artistView === "popular" || artistView === "album"));
+  const newCount = showingTrackTable
     ? (results || []).filter(
         (t) => t?.uri && !MixAppPlaylistOps.isInIndex(existingIndex, t)
       ).length
     : 0;
 
-  const meta = selectedArtist
-    ? MixAppI18n.t("addTrack.artistMeta", {
-        name: selectedArtist.name || "",
-        count: results.length,
-      })
-    : results.length
-      ? MixAppI18n.t("results.meta", { count: results.length })
-      : null;
+  let meta = null;
+  if (selectedArtist && artistView === "album" && selectedAlbum) {
+    meta = MixAppI18n.t("addTrack.albumMeta", {
+      album: selectedAlbum.name || "",
+      count: results.length,
+    });
+  } else if (selectedArtist && artistView === "albums") {
+    meta = MixAppI18n.t("addTrack.albumsMeta", {
+      name: selectedArtist.name || "",
+      count: albums.length,
+    });
+  } else if (selectedArtist) {
+    meta = MixAppI18n.t("addTrack.artistMeta", {
+      name: selectedArtist.name || "",
+      count: results.length,
+    });
+  } else if (results.length) {
+    meta = MixAppI18n.t("results.meta", { count: results.length });
+  }
 
   return h(
     MixAppModal,
@@ -290,9 +445,9 @@ function MixAppAddTrackModal(props) {
               {
                 type: "button",
                 className: "mixapp-btn mixapp-btn-ghost mixapp-add-track-back",
-                onClick: backToArtistSearch,
+                onClick: handleArtistBack,
               },
-              MixAppI18n.t("addTrack.backToArtists")
+              artistBackLabel()
             ),
             h(
               "div",
@@ -309,21 +464,56 @@ function MixAppAddTrackModal(props) {
                     "aria-hidden": "true",
                   }),
               h(
-                "span",
-                { className: "mixapp-add-track-artist-name" },
-                selectedArtist.name || ""
+                "div",
+                { className: "mixapp-add-track-artist-meta" },
+                h(
+                  "span",
+                  { className: "mixapp-add-track-artist-name" },
+                  selectedArtist.name || ""
+                ),
+                selectedAlbum
+                  ? h(
+                      "span",
+                      { className: "mixapp-add-track-artist-sub" },
+                      selectedAlbum.name || ""
+                    )
+                  : artistView === "albums"
+                    ? h(
+                        "span",
+                        { className: "mixapp-add-track-artist-sub" },
+                        MixAppI18n.t("addTrack.albumsHeading")
+                      )
+                    : h(
+                        "span",
+                        { className: "mixapp-add-track-artist-sub" },
+                        MixAppI18n.t("addTrack.popularHeading")
+                      )
               )
             ),
-            h(
-              "button",
-              {
-                type: "button",
-                className: "mixapp-btn mixapp-btn-primary",
-                disabled: loading || newCount === 0,
-                onClick: addAllNew,
-              },
-              MixAppI18n.t("addTrack.addAllNew")
-            )
+            artistView === "popular"
+              ? h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn",
+                    disabled: loading,
+                    onClick: loadAlbums,
+                  },
+                  MixAppI18n.t("addTrack.loadAlbums")
+                )
+              : null,
+            artistView === "popular" || artistView === "album"
+              ? h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mixapp-btn mixapp-btn-primary",
+                    disabled: loading || newCount === 0,
+                    onClick: addAllNew,
+                  },
+                  MixAppI18n.t("addTrack.addAllNew")
+                )
+              : null
           )
         : h(
             "form",
@@ -421,7 +611,9 @@ function MixAppAddTrackModal(props) {
                         ? h(
                             "div",
                             { className: "mixapp-add-track-artist-sub" },
-                            MixAppI18n.t("addTrack.followers", { count: followers })
+                            MixAppI18n.t("addTrack.followers", {
+                              count: followers,
+                            })
                           )
                         : null
                     )
@@ -430,30 +622,92 @@ function MixAppAddTrackModal(props) {
               )
             : null
         )
-      : h(
-          "div",
-          { className: "mixapp-search-results-body" },
-          h(MixAppTrackTable, {
-            tracks: results,
-            playingUri,
-            isPlaying,
-            onPlay,
-            onAddTrack,
-            disabledReason: (track) =>
-              MixAppPlaylistOps.isInIndex(existingIndex, track)
-                ? MixAppI18n.t("notify.alreadyInPlaylist")
-                : null,
-            rowClassName: (track) =>
-              MixAppPlaylistOps.isInIndex(existingIndex, track)
-                ? "is-in-playlist"
-                : "",
-            loading,
-            loadingLabel: MixAppI18n.t("picker.loading"),
-            emptyLabel:
-              mode === "artists"
-                ? MixAppI18n.t("addTrack.emptyArtist")
-                : MixAppI18n.t("addTrack.empty"),
-          })
-        )
+      : selectedArtist && artistView === "albums"
+        ? h(
+            "div",
+            { className: "mixapp-add-track-suggest" },
+            loading && !albums.length
+              ? h(
+                  "div",
+                  { className: "mixapp-add-track-suggest-status" },
+                  MixAppI18n.t("picker.loading")
+                )
+              : null,
+            albums.length
+              ? h(
+                  "div",
+                  {
+                    className: "mixapp-add-track-album-list",
+                    role: "listbox",
+                    "aria-label": MixAppI18n.t("addTrack.albumsHeading"),
+                  },
+                  albums.map((album, index) => {
+                    const sub = albumSubtitle(album);
+                    return h(
+                      "button",
+                      {
+                        type: "button",
+                        key: album.uri || album.id || index,
+                        role: "option",
+                        className: "mixapp-add-track-album-row",
+                        onClick: () => openAlbum(album),
+                      },
+                      album.imageUrl
+                        ? h("img", {
+                            className: "mixapp-add-track-album-cover",
+                            src: album.imageUrl,
+                            alt: "",
+                          })
+                        : h("div", {
+                            className:
+                              "mixapp-add-track-album-cover mixapp-add-track-album-cover-fallback",
+                            "aria-hidden": "true",
+                          }),
+                      h(
+                        "div",
+                        { className: "mixapp-add-track-artist-meta" },
+                        h(
+                          "div",
+                          { className: "mixapp-add-track-artist-name" },
+                          album.name || ""
+                        ),
+                        sub
+                          ? h(
+                              "div",
+                              { className: "mixapp-add-track-artist-sub" },
+                              sub
+                            )
+                          : null
+                      )
+                    );
+                  })
+                )
+              : null
+          )
+        : h(
+            "div",
+            { className: "mixapp-search-results-body" },
+            h(MixAppTrackTable, {
+              tracks: results,
+              playingUri,
+              isPlaying,
+              onPlay,
+              onAddTrack,
+              disabledReason: (track) =>
+                MixAppPlaylistOps.isInIndex(existingIndex, track)
+                  ? MixAppI18n.t("notify.alreadyInPlaylist")
+                  : null,
+              rowClassName: (track) =>
+                MixAppPlaylistOps.isInIndex(existingIndex, track)
+                  ? "is-in-playlist"
+                  : "",
+              loading,
+              loadingLabel: MixAppI18n.t("picker.loading"),
+              emptyLabel:
+                mode === "artists"
+                  ? MixAppI18n.t("addTrack.emptyArtist")
+                  : MixAppI18n.t("addTrack.empty"),
+            })
+          )
   );
 }

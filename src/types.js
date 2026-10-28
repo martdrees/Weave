@@ -91,6 +91,8 @@
  * @property {(query: string, opts?: object) => Promise<object[]>} searchPlaylists
  * @property {(query: string, opts?: object) => Promise<object[]>} searchArtists
  * @property {(artistIdOrUri: string, opts?: object) => Promise<MixAppTrackRow[]>} getArtistTopTracks
+ * @property {(artistIdOrUri: string, opts?: object) => Promise<object[]>} getArtistAlbums
+ * @property {(albumIdOrUri: string, opts?: object) => Promise<MixAppTrackRow[]>} getAlbumTracks
  */
 
 void 0;

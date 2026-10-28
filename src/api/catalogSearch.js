@@ -620,11 +620,369 @@ const MixAppCatalogSearch = (() => {
     }
   }
 
+  function albumUriFrom(idOrUri) {
+    const raw = String(idOrUri || "").trim();
+    if (!raw) return null;
+    if (raw.includes(":album:")) return raw;
+    return "spotify:album:" + raw;
+  }
+
+  function normalizeAlbum(raw, group) {
+    if (!raw) return null;
+    const uri = raw.uri || (raw.id ? "spotify:album:" + raw.id : null);
+    if (!uri || !String(uri).includes(":album:")) return null;
+    const id = raw.id || String(uri).split(":").pop();
+    const imageUrl =
+      pickImageUrl(raw.coverArt?.sources) ||
+      pickImageUrl(raw.images) ||
+      pickImageUrl(raw.visualIdentity?.image?.[0]?.sources) ||
+      null;
+    const year =
+      yearFromReleaseDate(
+        raw.date?.isoString || raw.date?.year || raw.release_date
+      ) ??
+      (raw.date?.year != null && Number.isFinite(Number(raw.date.year))
+        ? Number(raw.date.year)
+        : null);
+    const totalTracks =
+      raw.tracks?.totalCount ??
+      raw.tracks?.total ??
+      raw.totalTracks ??
+      raw.total_tracks ??
+      null;
+    return {
+      uri,
+      id,
+      name: raw.name || "Album",
+      imageUrl,
+      year: Number.isFinite(Number(year)) ? Number(year) : null,
+      totalTracks:
+        totalTracks != null && Number.isFinite(Number(totalTracks))
+          ? Number(totalTracks)
+          : null,
+      group: group || raw.album_type || raw.type || "album",
+    };
+  }
+
+  function yearFromReleaseDate(dateStr) {
+    if (dateStr == null || dateStr === "") return null;
+    const y = parseInt(String(dateStr).slice(0, 4), 10);
+    return Number.isFinite(y) ? y : null;
+  }
+
+  function collectDiscographyAlbums(res, group) {
+    const artist =
+      res?.data?.artistUnion ||
+      res?.data?.artist ||
+      res?.artistUnion ||
+      res?.artist ||
+      null;
+    const section =
+      artist?.discography?.[group] ||
+      artist?.discography?.albums ||
+      artist?.discography?.singles ||
+      null;
+    const items = section?.items || section?.releases || [];
+    if (!Array.isArray(items)) return [];
+    const out = [];
+    const seen = new Set();
+    for (const entry of items) {
+      // Discography rows often wrap releases.items[0]
+      const releases = entry?.releases?.items || entry?.releases || [];
+      const candidates = Array.isArray(releases) && releases.length
+        ? releases
+        : [entry?.data || entry?.release || entry];
+      for (const raw of candidates) {
+        const album = normalizeAlbum(raw, group);
+        if (!album?.uri || seen.has(album.uri)) continue;
+        seen.add(album.uri);
+        out.push(album);
+      }
+    }
+    return out;
+  }
+
+  async function getArtistAlbumsViaGraphQL(artistUri, want) {
+    const GQL = Spicetify?.GraphQL;
+    const defs = GQL?.Definitions;
+    if (!GQL?.Request || !defs) return [];
+
+    const locale = Spicetify?.Locale?.getLocale?.() || "en";
+    const attempts = [];
+    if (defs.queryArtistDiscographyAlbums) {
+      attempts.push([
+        defs.queryArtistDiscographyAlbums,
+        { uri: artistUri, offset: 0, limit: want, locale },
+        "albums",
+      ]);
+    }
+    if (defs.queryArtistDiscographySingles) {
+      attempts.push([
+        defs.queryArtistDiscographySingles,
+        { uri: artistUri, offset: 0, limit: Math.min(want, 30), locale },
+        "singles",
+      ]);
+    }
+    if (defs.queryArtistDiscographyAll) {
+      attempts.push([
+        defs.queryArtistDiscographyAll,
+        { uri: artistUri, offset: 0, limit: want, locale },
+        "albums",
+      ]);
+    }
+    if (defs.queryArtistDiscographyOverview) {
+      attempts.push([
+        defs.queryArtistDiscographyOverview,
+        { uri: artistUri, locale },
+        "albums",
+      ]);
+    }
+
+    const out = [];
+    const seen = new Set();
+    for (const [definition, variables, group] of attempts) {
+      try {
+        const res = await GQL.Request(definition, variables);
+        if (res?.errors?.length) {
+          console.warn("Weave: artist discography errors", res.errors);
+          continue;
+        }
+        for (const album of collectDiscographyAlbums(res, group)) {
+          if (seen.has(album.uri)) continue;
+          seen.add(album.uri);
+          out.push(album);
+          if (out.length >= want) return out;
+        }
+      } catch (err) {
+        console.warn("Weave: artist discography failed", err);
+      }
+    }
+    return out;
+  }
+
+  async function getArtistAlbumsViaWebApi(artistId, want) {
+    const out = [];
+    const seen = new Set();
+    let offset = 0;
+    while (out.length < want) {
+      const pageSize = Math.min(20, want - out.length);
+      const url =
+        "https://api.spotify.com/v1/artists/" +
+        encodeURIComponent(artistId) +
+        "/albums?include_groups=album,single&limit=" +
+        pageSize +
+        "&offset=" +
+        offset +
+        "&market=" +
+        encodeURIComponent(userMarket());
+      const res = await MixAppHttp.cosmosGet(url, {
+        retries: 2,
+        label: "artist albums",
+        notifyUser: false,
+      });
+      const items = res?.items || [];
+      if (!items.length) break;
+      for (const raw of items) {
+        const album = normalizeAlbum(raw, raw.album_type || "album");
+        if (!album?.uri || seen.has(album.uri)) continue;
+        seen.add(album.uri);
+        out.push(album);
+        if (out.length >= want) break;
+      }
+      offset += items.length;
+      if (!res?.next || items.length < pageSize) break;
+    }
+    return out;
+  }
+
+  /**
+   * Artist discography albums + singles (GraphQL preferred).
+   * @param {string} artistIdOrUri
+   * @param {object} [opts]
+   * @returns {Promise<object[]>}
+   */
+  async function getArtistAlbums(artistIdOrUri, opts = {}) {
+    const uri = artistUriFrom(artistIdOrUri);
+    const id = artistIdFrom(artistIdOrUri);
+    if (!uri || !id) return [];
+    const want = Math.min(80, Math.max(1, Number(opts.limit) || 40));
+
+    const fromGql = await getArtistAlbumsViaGraphQL(uri, want);
+    if (fromGql.length) return fromGql;
+
+    try {
+      return await getArtistAlbumsViaWebApi(id, want);
+    } catch (err) {
+      console.error("Weave: artist albums unavailable", err);
+      if (MixAppHttp?.isRateLimitError?.(err)) {
+        throw new Error(
+          "Artist albums rate-limited — wait a moment and try again"
+        );
+      }
+      throw new Error(
+        "Could not load artist albums. Try again in a moment."
+      );
+    }
+  }
+
+  function tracksFromAlbumGraphql(res) {
+    const album =
+      res?.data?.albumUnion ||
+      res?.data?.album ||
+      res?.albumUnion ||
+      res?.album ||
+      null;
+    const items =
+      album?.tracksV2?.items ||
+      album?.tracks?.items ||
+      album?.tracksV2 ||
+      [];
+    if (!Array.isArray(items)) return [];
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i];
+      const raw =
+        entry?.track ||
+        entry?.item?.data ||
+        entry?.itemV2?.data ||
+        entry?.data ||
+        entry?.item ||
+        entry;
+      if (!raw) continue;
+      // Album query tracks often omit album name — stamp from parent.
+      if (album?.name && !raw.albumOfTrack && !raw.album) {
+        raw.albumOfTrack = {
+          name: album.name,
+          uri: album.uri,
+          id: album.id,
+          date: album.date,
+        };
+      }
+      const track = normalizeGraphqlTrack(raw, out.length);
+      if (!track?.uri || seen.has(track.uri)) continue;
+      seen.add(track.uri);
+      out.push(track);
+    }
+    return out;
+  }
+
+  async function getAlbumTracksViaGraphQL(albumUri, want) {
+    const GQL = Spicetify?.GraphQL;
+    const defs = GQL?.Definitions;
+    if (!GQL?.Request || !defs) return [];
+
+    const locale = Spicetify?.Locale?.getLocale?.() || "en";
+    const attempts = [];
+    if (defs.queryAlbumTracks) {
+      attempts.push([
+        defs.queryAlbumTracks,
+        { uri: albumUri, offset: 0, limit: want, locale },
+      ]);
+    }
+    if (defs.getAlbum) {
+      attempts.push([
+        defs.getAlbum,
+        { uri: albumUri, locale, offset: 0, limit: want },
+      ]);
+    }
+    if (defs.getAlbumNameAndTracks) {
+      attempts.push([
+        defs.getAlbumNameAndTracks,
+        { uri: albumUri, offset: 0, limit: want },
+      ]);
+    }
+
+    for (const [definition, variables] of attempts) {
+      try {
+        const res = await GQL.Request(definition, variables);
+        if (res?.errors?.length) {
+          console.warn("Weave: album tracks errors", res.errors);
+          continue;
+        }
+        const tracks = tracksFromAlbumGraphql(res);
+        if (tracks.length) return tracks.slice(0, want);
+      } catch (err) {
+        console.warn("Weave: album tracks GraphQL failed", err);
+      }
+    }
+    return [];
+  }
+
+  async function getAlbumTracksViaWebApi(albumId, want) {
+    const url =
+      "https://api.spotify.com/v1/albums/" +
+      encodeURIComponent(albumId) +
+      "?market=" +
+      encodeURIComponent(userMarket());
+    const res = await MixAppHttp.cosmosGet(url, {
+      retries: 2,
+      label: "album tracks",
+      notifyUser: false,
+    });
+    const albumName = res?.name || "";
+    const albumUri = res?.uri || null;
+    const items = res?.tracks?.items || [];
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; i < items.length && out.length < want; i++) {
+      const raw = items[i];
+      if (!raw) continue;
+      // Thin track objects — attach album for display.
+      const track = normalizeCatalogTrack(
+        {
+          ...raw,
+          album: {
+            name: albumName,
+            uri: albumUri,
+            id: albumId,
+            release_date: res?.release_date,
+          },
+        },
+        i
+      );
+      if (!track?.uri || seen.has(track.uri)) continue;
+      seen.add(track.uri);
+      out.push(track);
+    }
+    return out;
+  }
+
+  /**
+   * Tracks on an album (GraphQL preferred).
+   * @param {string} albumIdOrUri
+   * @param {object} [opts]
+   * @returns {Promise<MixAppTrackRow[]>}
+   */
+  async function getAlbumTracks(albumIdOrUri, opts = {}) {
+    const uri = albumUriFrom(albumIdOrUri);
+    if (!uri) return [];
+    const id = uri.split(":").pop();
+    const want = Math.min(100, Math.max(1, Number(opts.limit) || 50));
+
+    const fromGql = await getAlbumTracksViaGraphQL(uri, want);
+    if (fromGql.length) return fromGql;
+
+    try {
+      return await getAlbumTracksViaWebApi(id, want);
+    } catch (err) {
+      console.error("Weave: album tracks unavailable", err);
+      if (MixAppHttp?.isRateLimitError?.(err)) {
+        throw new Error(
+          "Album tracks rate-limited — wait a moment and try again"
+        );
+      }
+      throw new Error("Could not load album tracks. Try again in a moment.");
+    }
+  }
+
   return {
     searchTracks,
     searchPlaylists,
     searchArtists,
     getArtistTopTracks,
+    getArtistAlbums,
+    getAlbumTracks,
     normalizeCatalogTrack,
     normalizeGraphqlTrack,
   };
