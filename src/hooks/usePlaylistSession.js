@@ -425,13 +425,74 @@ function MixAppUsePlaylistSession(opts) {
     }
   }
 
+  /**
+   * Persist optimistic single-row reorder; restore prior order on failure.
+   * @param {MixAppTrackRow[]} priorTracks
+   * @param {MixAppTrackRow} moved
+   * @param {number} toIndex final 0-based index after the move
+   */
+  async function persistMovedTrack(priorTracks, moved, toIndex) {
+    const uri = playlistRef.current?.uri;
+    if (!uri || !moved?.uri || !moved?.uid) return;
+    try {
+      await MixAppApi.moveTrack(
+        uri,
+        { uri: String(moved.uri), uid: String(moved.uid) },
+        { index: toIndex }
+      );
+      if (selectedUriRef.current !== uri) return;
+      setSyncedBaseline(tracksRef.current);
+    } catch (err) {
+      console.error(err);
+      if (selectedUriRef.current === uri) {
+        replaceTracksLocal(priorTracks);
+        MixAppApi.notify(err?.message || MixAppI18n.t("notify.reorderFailed"), true);
+      }
+    }
+  }
+
   function handleReorder(from, to) {
-    if (savingRef.current) return;
+    if (savingRef.current || tracksLoadingRef.current) return;
     if (from === to) return;
-    const next = tracksRef.current.slice();
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    commitTracks(next);
+    const list = tracksRef.current;
+    if (
+      !Number.isFinite(from) ||
+      !Number.isFinite(to) ||
+      from < 0 ||
+      to < 0 ||
+      from >= list.length ||
+      to >= list.length
+    ) {
+      return;
+    }
+    const moved = list[from];
+    if (!moved) return;
+
+    const prior = list.slice();
+    const next = list.slice();
+    next.splice(from, 1);
+    next.splice(to, 0, moved);
+
+    // Write-through only when clean: moveTrack resolves { index } against Spotify
+    // live order, so a dirty draft (Flowify, etc.) must stay on commitTracks.
+    // Non-writable playlists also use commitTracks (Save as new).
+    const useWriteThrough = canWriteThroughPlaylist() && !dirtyRef.current;
+    if (!useWriteThrough) {
+      commitTracks(next);
+      return;
+    }
+
+    if (
+      MixAppPlaylistOps.isProvisionalPlaylistUid(moved.uid) ||
+      pendingAddUidsRef.current.has(String(moved.uid))
+    ) {
+      MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeReorder"), true);
+      return;
+    }
+    if (!moved.uri || !moved.uid) return;
+
+    replaceTracksLocal(next);
+    void persistMovedTrack(prior, moved, to);
   }
 
   function handleRemoveTrack(index, track) {

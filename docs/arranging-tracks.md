@@ -28,7 +28,7 @@ Typical columns (you can show/hide more):
 
 ### Sort
 
-Click a column header to sort by that feature (e.g. BPM, Energy). Sorting changes display order in the editor — Save writes that order to Spotify.
+Click a column header to sort by that feature (e.g. BPM, Energy). Sorting changes **display** order in the editor only; it does not rewrite Spotify order by itself.
 
 ## Reorder
 
@@ -36,17 +36,17 @@ Click a column header to sort by that feature (e.g. BPM, Energy). Sorting change
 
 1. Grab the **six-dot handle** on the left of a row.
 2. Drag to the new position.
-3. Drop — the list updates and **Unsaved** appears if needed.
+3. Drop — the list updates and Spotify order updates **immediately** (no Save) when Unsaved is off. After Flowify (or other draft edits), drop stays local until Save — write-through would target Spotify’s live order, which no longer matches the draft.
 
 ### Move up / down
 
 ![Row actions (Time column and ↑ ↓ remove)](screenshots/row-actions.png)
 
-Use the **↑** / **↓** buttons on the right of a row, or select a row and use `Alt`+`↑`/`↓` (see [Keyboard shortcuts](keyboard-shortcuts.md)).
+Use the **↑** / **↓** buttons on the right of a row, or select a row and use `Alt`+`↑`/`↓` (see [Keyboard shortcuts](keyboard-shortcuts.md)). Same write-through as drag-drop.
 
 ### Remove
 
-Click the trash icon on a row (or Delete with a row selected) to remove that track. The change is written to Spotify **immediately** (no Save). Reorder still needs Save.
+Click the trash icon on a row (or Delete with a row selected) to remove that track. The change is written to Spotify **immediately** (no Save).
 
 ## Playback
 
@@ -55,6 +55,6 @@ Click the **play** icon on a track to play it in Spotify. Click again (or the pa
 ## Tips
 
 - After Flowify or large imports, the list may briefly flash and scroll to new rows.
-- All reorder/remove changes go through **Undo** / **Redo** until you Save.
+- **Flowify Apply** is still a local draft — use **Undo** / **Redo** and **Save** for that path. Immediate add/remove/reorder do not push undo.
 
 **Related:** [Seeds](seeds.md) · [Save and history](save-and-history.md)

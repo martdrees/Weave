@@ -10,7 +10,7 @@ How to use Weave inside the Spotify desktop client (with [Spicetify](https://spi
 | ----- | -------------- |
 | [Getting started](getting-started.md) | Open Weave, load a playlist, read the layout |
 | [Playlist picker](playlist-picker.md) | Choose and refresh playlists |
-| [Arranging tracks](arranging-tracks.md) | Drag-reorder, move, remove, play, sort, columns |
+| [Arranging tracks](arranging-tracks.md) | Drag-reorder / move / remove (write-through when clean), play, sort, columns |
 | [Seeds](seeds.md) | Mark seed tracks for recommendations and Generator |
 | [Recommendations](recommendations.md) | Find and add similar tracks (ranges, Camelot, filters) |
 | [Add Track](add-track.md) | Search Spotify and add a single track |
@@ -18,7 +18,7 @@ How to use Weave inside the Spotify desktop client (with [Spicetify](https://spi
 | [Flowify](flowify.md) | Auto-arrange by sets or curves |
 | [Generator](generator.md) | Generate a new playlist from seeds |
 | [Stats](stats.md) | Feature charts and playlist summary |
-| [Save and history](save-and-history.md) | Undo, redo, Save, Save as new |
+| [Save and history](save-and-history.md) | Undo/redo for drafts (e.g. Flowify); Save / Save as new; add/remove/reorder write-through when clean |
 | [Keyboard shortcuts](keyboard-shortcuts.md) | Full shortcut map |
 
 Install steps live in the [app README](../README.md).

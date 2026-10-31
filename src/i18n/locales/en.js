@@ -264,8 +264,10 @@ MixAppI18n.register("en", {
   "notify.saveFailed": "Save failed",
   "notify.addFailed": "Could not add track to Spotify",
   "notify.removeFailed": "Could not remove track from Spotify",
+  "notify.reorderFailed": "Could not reorder track on Spotify",
   "notify.cannotEditPlaylist": "You cannot edit this playlist",
   "notify.waitAddBeforeRemove": "Wait until the track finishes adding",
+  "notify.waitAddBeforeReorder": "Wait until the track finishes adding",
 
   "sync.conflictTitle": "Playlist changed on Spotify",
   "sync.conflictBody":
