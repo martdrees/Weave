@@ -57,7 +57,7 @@ Optional harmonic moves relative to seed keys, for example:
 1. After **Search**, a **Results** list appears.
 2. Preview with play if available.
 3. **Add** one track, or multi-select and **Add selected**.
-4. New rows flash and scroll into view in the arranger.
+4. New rows flash and scroll into view in the arranger; adds write to Spotify **immediately** (no Save for membership).
 
 If you get *No matches after filters*, loosen ranges or turn filters off.
 

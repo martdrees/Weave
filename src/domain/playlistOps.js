@@ -147,6 +147,58 @@ const MixAppPlaylistOps = (() => {
   }
 
   /**
+   * True when uid is Weave-synthetic / not a Spotify playlist-item uid.
+   * @param {string|null|undefined} uid
+   */
+  function isProvisionalPlaylistUid(uid) {
+    if (!uid) return true;
+    const s = String(uid);
+    if (s.startsWith("added:") || s.startsWith("rec:") || s.startsWith("web:")) {
+      return true;
+    }
+    // normalizeTrack / forAppend fallback: `${uri}:${index}`
+    if (/^spotify:(track|episode):[^:]+:\d+$/.test(s)) return true;
+    return false;
+  }
+
+  /**
+   * After addTracks reload: keep local order/enrichment; attach real Spotify uids.
+   * @param {MixAppTrackRow[]} localTracks
+   * @param {MixAppTrackRow[]} remoteTracks
+   * @returns {MixAppTrackRow[]}
+   */
+  function mergeTracksAfterRemoteAdd(localTracks, remoteTracks) {
+    const remote = Array.isArray(remoteTracks) ? remoteTracks : [];
+    const byUri = new Map();
+    for (const t of remote) {
+      if (!t?.uri) continue;
+      if (!byUri.has(t.uri)) byUri.set(t.uri, []);
+      byUri.get(t.uri).push(t);
+    }
+    const used = new Set();
+    return (Array.isArray(localTracks) ? localTracks : []).map((local) => {
+      if (!local) return local;
+      if (local.uid && !isProvisionalPlaylistUid(local.uid)) {
+        const hit = remote.find((r) => r && r.uid === local.uid && !used.has(r.uid));
+        if (hit) {
+          used.add(hit.uid);
+          return { ...local, uid: hit.uid };
+        }
+      }
+      const queue = byUri.get(local.uri);
+      if (queue && queue.length) {
+        while (queue.length) {
+          const hit = queue.shift();
+          if (!hit?.uid || used.has(hit.uid)) continue;
+          used.add(hit.uid);
+          return { ...local, uid: hit.uid };
+        }
+      }
+      return local;
+    });
+  }
+
+  /**
    * Stable identity for one playlist row (prefer Spotify item uid, else track uri).
    * Used for remote-sync comparison — ignores enrich-only fields.
    */
@@ -176,6 +228,8 @@ const MixAppPlaylistOps = (() => {
     toPlaylistTrack,
     appendTracks,
     enrichAdded,
+    isProvisionalPlaylistUid,
+    mergeTracksAfterRemoteAdd,
     trackOrderKey,
     fingerprintTrackOrder,
   };

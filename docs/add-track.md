@@ -26,10 +26,11 @@ Use the **Songs | Artists** switch at the top of the dialog.
 5. Click **Load albums** to browse albums and singles, then open an album for its tracks.
 6. Use the back control to return: album → albums → popular → artist search.
 
-Tracks already in the playlist are marked so you do not add duplicates. On success a short message appears, and new rows flash in the table.
+Tracks already in the playlist are marked so you do not add duplicates. On success a short message appears, new rows flash in the table, and the track is **saved to Spotify immediately** (no separate Save for the add).
 
 ## Tips
 
 - Prefer [Recommendations](recommendations.md) when you want many similar tracks with feature filters.
 - Prefer Add Track when you know the song or artist name.
 - Close the dialog with **Esc** or the close control.
+- Reorder still requires [Save](save-and-history.md); membership add/remove does not.

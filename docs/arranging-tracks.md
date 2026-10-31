@@ -46,7 +46,7 @@ Use the **↑** / **↓** buttons on the right of a row, or select a row and use
 
 ### Remove
 
-Click the trash icon on a row to remove that track from the working list (not from Spotify until you Save).
+Click the trash icon on a row (or Delete with a row selected) to remove that track. The change is written to Spotify **immediately** (no Save). Reorder still needs Save.
 
 ## Playback
 

@@ -1,6 +1,6 @@
 # Save and history
 
-Undo/redo local edits, then write the playlist back to Spotify.
+Undo/redo local edits (especially reorder / Flowify), then write those back to Spotify with Save. **Add** and **remove** already persist to Spotify immediately (no Save required for those alone).
 
 ![Toolbar actions including Save](screenshots/toolbar-actions.png)
 
@@ -8,14 +8,14 @@ Undo/redo local edits, then write the playlist back to Spotify.
 
 | Action | Shortcut | When |
 | ------ | -------- | ---- |
-| Undo | `Ctrl/⌘ Z` | Reverse the last local edit (reorder, add, remove, Flowify, …) |
+| Undo | `Ctrl/⌘ Z` | Reverse the last **local draft** edit (reorder, Flowify, …). Add/remove that already wrote to Spotify are not undone this way. |
 | Redo | `Ctrl/⌘ Shift Z` or `Ctrl/⌘ Y` | Re-apply after Undo |
 
 Buttons disable when there is nothing to undo/redo, or while a save is in progress.
 
 ## Unsaved badge
 
-After local changes, an **Unsaved** badge appears next to the playlist picker. It clears after a successful Save that matches Spotify.
+After **draft** changes (for example reorder), an **Unsaved** badge appears next to the playlist picker. It clears after a successful Save that matches Spotify. Add/remove alone do not show Unsaved — they already wrote through to Spotify.
 
 ## Save
 

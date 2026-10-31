@@ -65,6 +65,8 @@ function MixAppUsePlaylistSession(opts) {
   tracksLoadingRef.current = tracksLoading;
   /** Synchronous save lock — React `saving` state alone cannot block double Ctrl+S. */
   const savingRef = react.useRef(false);
+  /** Provisional uids with an in-flight addTracks write-through. */
+  const pendingAddUidsRef = react.useRef(new Set());
   const tracksRef = react.useRef(tracks);
   tracksRef.current = tracks;
   const dirtyRef = react.useRef(dirty);
@@ -343,6 +345,86 @@ function MixAppUsePlaylistSession(opts) {
     syncUndoFlags();
   }
 
+  /** Local list update without dirty / undo (write-through add/remove). */
+  function replaceTracksLocal(next) {
+    tracksRef.current = next;
+    setTracks(next);
+  }
+
+  function canWriteThroughPlaylist() {
+    const p = playlistRef.current;
+    if (!p?.uri) return false;
+    if (tracksLoadingRef.current || savingRef.current) return false;
+    return !!(p.isOwnedBySelf || p.collaborative || p.canEdit);
+  }
+
+  /**
+   * Persist optimistic adds via mutation port; merge real uids or revert.
+   * @param {MixAppTrackRow[]} priorTracks
+   * @param {MixAppTrackRow[]} added
+   */
+  async function persistAddedTracks(priorTracks, added) {
+    const uri = playlistRef.current?.uri;
+    if (!uri || !added?.length) return;
+    const uris = added.map((t) => t.uri).filter(Boolean);
+    const pendingUids = added
+      .map((t) => t.uid)
+      .filter(Boolean)
+      .map(String);
+    for (const id of pendingUids) pendingAddUidsRef.current.add(id);
+    try {
+      const remote = await MixAppApi.addTracks(uri, uris, { after: "end" });
+      if (selectedUriRef.current !== uri) return;
+      const merged = MixAppPlaylistOps.mergeTracksAfterRemoteAdd(
+        tracksRef.current,
+        remote
+      );
+      replaceTracksLocal(merged);
+      setSyncedBaseline(merged);
+      // Re-enrich after uid merge — early enrich may have keyed on provisional uids.
+      const uriSet = new Set(uris);
+      MixAppPlaylistOps.enrichAdded(
+        merged.filter((t) => t?.uri && uriSet.has(t.uri)),
+        setTracks
+      );
+    } catch (err) {
+      console.error(err);
+      if (selectedUriRef.current === uri) {
+        replaceTracksLocal(priorTracks);
+        MixAppApi.notify(err?.message || MixAppI18n.t("notify.addFailed"), true);
+      }
+    } finally {
+      for (const id of pendingUids) pendingAddUidsRef.current.delete(id);
+    }
+  }
+
+  /**
+   * Persist optimistic remove via mutation port; restore row on failure.
+   * @param {MixAppTrackRow[]} priorTracks
+   * @param {MixAppTrackRow} removed
+   * @param {number} index
+   */
+  async function persistRemovedTrack(priorTracks, removed, index) {
+    const uri = playlistRef.current?.uri;
+    if (!uri || !removed?.uri || !removed?.uid) return;
+    try {
+      await MixAppApi.removeTracks(uri, [
+        { uri: String(removed.uri), uid: String(removed.uid) },
+      ]);
+      if (selectedUriRef.current !== uri) return;
+      setSyncedBaseline(tracksRef.current);
+    } catch (err) {
+      console.error(err);
+      if (selectedUriRef.current === uri) {
+        const cur = tracksRef.current.slice();
+        const at = Math.max(0, Math.min(index, cur.length));
+        cur.splice(at, 0, removed);
+        replaceTracksLocal(cur);
+        MixAppApi.notify(err?.message || MixAppI18n.t("notify.removeFailed"), true);
+      }
+    }
+  }
+
   function handleReorder(from, to) {
     if (savingRef.current) return;
     if (from === to) return;
@@ -354,13 +436,35 @@ function MixAppUsePlaylistSession(opts) {
 
   function handleRemoveTrack(index, track) {
     if (savingRef.current) return null;
+    if (!canWriteThroughPlaylist()) {
+      if (playlistRef.current?.uri) {
+        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      }
+      return null;
+    }
     const list = tracksRef.current;
     if (index == null || index < 0 || index >= list.length) return null;
     const removed = track || list[index];
+    if (!removed) return null;
+
+    if (MixAppPlaylistOps.isProvisionalPlaylistUid(removed.uid)) {
+      if (pendingAddUidsRef.current.has(String(removed.uid))) {
+        MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeRemove"), true);
+        return null;
+      }
+      // Local-only provisional row (never on Spotify) — drop without API.
+      const nextLocal = list.slice();
+      nextLocal.splice(index, 1);
+      replaceTracksLocal(nextLocal);
+      return removed;
+    }
+
+    const prior = list.slice();
     const next = list.slice();
     next.splice(index, 1);
-    commitTracks(next);
-    return removed || null;
+    replaceTracksLocal(next);
+    void persistRemovedTrack(prior, removed, index);
+    return removed;
   }
 
   function handleUndo() {
@@ -484,26 +588,39 @@ function MixAppUsePlaylistSession(opts) {
   }
 
   function handleAddCatalogTrack(track) {
-    if (savingRef.current) return;
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, [track]);
+    if (!canWriteThroughPlaylist()) {
+      if (playlistRef.current?.uri) {
+        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      }
+      return;
+    }
+    const prior = tracksRef.current.slice();
+    const { next, added } = MixAppPlaylistOps.appendTracks(prior, [track]);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return;
     }
-    commitTracks(next);
+    replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
     MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
     MixAppPlaylistOps.enrichAdded(added, setTracks);
+    void persistAddedTracks(prior, added);
   }
 
   function handleAddCatalogTracks(batch) {
-    if (savingRef.current) return;
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, batch);
+    if (!canWriteThroughPlaylist()) {
+      if (playlistRef.current?.uri) {
+        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      }
+      return;
+    }
+    const prior = tracksRef.current.slice();
+    const { next, added } = MixAppPlaylistOps.appendTracks(prior, batch);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.noNewTracks"), true);
       return;
     }
-    commitTracks(next);
+    replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
     MixAppApi.notify(
       added.length === 1
@@ -511,20 +628,28 @@ function MixAppUsePlaylistSession(opts) {
         : MixAppI18n.t("notify.addedCount", { count: added.length })
     );
     MixAppPlaylistOps.enrichAdded(added, setTracks);
+    void persistAddedTracks(prior, added);
   }
 
-  /** Add a rec result track; returns true if added. */
+  /** Add a rec result track; returns true if added optimistically. */
   function handleAddRecommendedTrack(track) {
-    if (savingRef.current) return false;
-    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, [track]);
+    if (!canWriteThroughPlaylist()) {
+      if (playlistRef.current?.uri) {
+        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      }
+      return false;
+    }
+    const prior = tracksRef.current.slice();
+    const { next, added } = MixAppPlaylistOps.appendTracks(prior, [track]);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return false;
     }
-    commitTracks(next);
+    replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
     MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
     MixAppPlaylistOps.enrichAdded(added, setTracks);
+    void persistAddedTracks(prior, added);
     return true;
   }
 
