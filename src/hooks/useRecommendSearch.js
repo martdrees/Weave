@@ -274,7 +274,8 @@ function MixAppUseRecommendSearch(opts) {
     } catch (err) {
       if (gen !== searchGenRef.current) return;
       console.error(err);
-      const msg = err?.message ||
+      const msg =
+        err?.message ||
         err?.body?.error?.message ||
         MixAppI18n.t("notify.searchFailed");
       setSearchError(msg);

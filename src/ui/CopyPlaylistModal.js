@@ -332,7 +332,11 @@ function MixAppCopyPlaylistModal(props) {
                   className: "mixapp-spinner",
                   "aria-hidden": "true",
                 }),
-                h("p", { className: "mixapp-search-waiting-label" }, MixAppI18n.t("picker.loading"))
+                h(
+                  "p",
+                  { className: "mixapp-search-waiting-label" },
+                  MixAppI18n.t("picker.loading")
+                )
               )
             : !selectedUri
               ? h(
@@ -398,15 +402,13 @@ function MixAppCopyPlaylistModal(props) {
                             {
                               className:
                                 "mixapp-col-feat mixapp-col-key mixapp-find-key",
-                              title:
-                                keyLabel || MixAppI18n.t("common.unknown"),
+                              title: keyLabel || MixAppI18n.t("common.unknown"),
                             },
                             h(
                               "span",
                               {
                                 className:
-                                  "mixapp-key-circle" +
-                                  (keyLabel ? "" : " is-empty"),
+                                  "mixapp-key-circle" + (keyLabel ? "" : " is-empty"),
                                 style: keyBg ? { background: keyBg } : undefined,
                               },
                               keyLabel || "—"

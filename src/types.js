@@ -75,6 +75,16 @@
  */
 
 /**
+ * Position for MixAppPlaylists.moveTrack — exactly one field set.
+ * `after` / `before` are Spotify playlist-item uids (`after` may be `"end"`).
+ * `index` is the desired final 0-based index after the move.
+ * @typedef {object} MixAppMovePosition
+ * @property {string} [after]
+ * @property {string} [before]
+ * @property {number} [index]
+ */
+
+/**
  * MixAppApi façade surface (see api/spotify.js).
  * @typedef {object} MixAppApiFacade
  * @property {(message: string, isError?: boolean) => void} notify
@@ -86,6 +96,11 @@
  * @property {(uri: string) => Promise<MixAppTrackRow[]>} getPlaylistTracks
  * @property {(name: string, trackUris: string[]) => Promise<string>} createPlaylist
  * @property {(uri: string, tracks: MixAppTrackRow[]) => Promise<MixAppTrackRow[]>} saveOverwrite
+ * @property {(uri: string, trackUris: string[], opts?: { after?: string }) => Promise<MixAppTrackRow[]>} addTracks
+ * @property {(uri: string, items: { uri: string, uid: string }[]) => Promise<void>} removeTracks
+ * @property {(uri: string, item: { uri: string, uid: string }, position: MixAppMovePosition) => Promise<void>} moveTrack
+ * @property {(uri: string, tracks: MixAppTrackRow[]) => Promise<MixAppTrackRow[]>} applyBulk
+ * @property {(uri: string) => Promise<MixAppTrackRow[]>} reload
  * @property {() => Promise<string|null>} getCurrentUserId
  * @property {(query: string, opts?: object) => Promise<MixAppTrackRow[]>} searchTracks
  * @property {(query: string, opts?: object) => Promise<object[]>} searchPlaylists

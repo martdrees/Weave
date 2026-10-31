@@ -186,7 +186,8 @@ MixAppI18n.register("en", {
   "copy.allExist": "All tracks are already in your playlist",
 
   "flowify.title": "Flowify",
-  "flowify.blurb": "Auto-arrange the current playlist. Undo restores the previous order.",
+  "flowify.blurb":
+    "Auto-arrange the current playlist. Undo restores the previous order.",
   "flowify.sets": "Sets",
   "flowify.curves": "Curves",
   "flowify.setSize": "Set size",

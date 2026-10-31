@@ -31,9 +31,7 @@ const MixAppHttp = (() => {
       (typeof err?.error === "string" ? err.error : null) ||
       (status === 429 ? "Too Many Requests" : null);
     if (status != null) {
-      throw new Error(
-        `${context}: ${status} — ${message || "request failed"}`
-      );
+      throw new Error(`${context}: ${status} — ${message || "request failed"}`);
     }
     // Client-token cosmos often returns `{ error: {} }` on 429 with no status.
     if (!message) {
@@ -72,8 +70,10 @@ const MixAppHttp = (() => {
   }
 
   function isNonRetryableHttpError(err) {
-    return isNotFoundError(err) || isForbiddenError(err) || /\b401\b/.test(
-      String(err?.message || err || "")
+    return (
+      isNotFoundError(err) ||
+      isForbiddenError(err) ||
+      /\b401\b/.test(String(err?.message || err || ""))
     );
   }
 
@@ -154,9 +154,7 @@ const MixAppHttp = (() => {
 
         const retryAfter = parseRetryAfterMs(err);
         const delay =
-          retryAfter != null
-            ? retryAfter
-            : Math.min(20000, 800 * Math.pow(2, attempt));
+          retryAfter != null ? retryAfter : Math.min(20000, 800 * Math.pow(2, attempt));
         markRateLimited(delay);
 
         if (attempt === retries - 1) throw err;
@@ -239,9 +237,7 @@ const MixAppHttp = (() => {
       Spicetify?.User?.id ||
       null;
     const country =
-      session?.country ||
-      Spicetify?.Platform?.PlatformData?.country ||
-      null;
+      session?.country || Spicetify?.Platform?.PlatformData?.country || null;
     return {
       id: id ? String(id) : null,
       country: country ? String(country) : null,
@@ -253,8 +249,7 @@ const MixAppHttp = (() => {
    */
   async function getMeProfile() {
     if (meCache) {
-      const ttl =
-        meCache.source === "fallback" ? 60 * 1000 : ME_TTL_MS;
+      const ttl = meCache.source === "fallback" ? 60 * 1000 : ME_TTL_MS;
       if (Date.now() - meCache.at < ttl) return meCache;
     }
     if (meInflight) return meInflight;

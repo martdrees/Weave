@@ -35,8 +35,7 @@ MixAppI18n.register("it", {
   "toolbar.saveTitleOwnedOnly":
     "Puoi sovrascrivere solo le playlist di cui sei proprietario",
   "toolbar.saveAsNew": "Salva come nuova",
-  "toolbar.saveAsNewTitle":
-    "Crea una nuova playlist con l'elenco dei brani attuale",
+  "toolbar.saveAsNewTitle": "Crea una nuova playlist con l'elenco dei brani attuale",
 
   // Playlist picker
   "picker.playlist": "Playlist",
@@ -126,8 +125,7 @@ MixAppI18n.register("it", {
   "search.yearTo": "A",
   "search.year": "Anno",
   "search.avg": "Media",
-  "search.avgTitle":
-    "Usa il valore di riferimento: imposta min/max intorno alla media",
+  "search.avgTitle": "Usa il valore di riferimento: imposta min/max intorno alla media",
   "search.avgUnavailable":
     "Media non disponibile (servono seed o caratteristiche della playlist)",
   "search.minMax": "Min – max",
@@ -206,8 +204,7 @@ MixAppI18n.register("it", {
   "flowify.apply": "Applica ordinamento",
   "flowify.working": "Elaborazione…",
   "flowify.needPlaylist": "Carica prima una playlist con dei brani",
-  "flowify.needWeight":
-    "Imposta almeno un peso delle caratteristiche maggiore di 0",
+  "flowify.needWeight": "Imposta almeno un peso delle caratteristiche maggiore di 0",
   "flowify.doneCurves": "Playlist riordinata (curve)",
   "flowify.doneSets": "Playlist riordinata (set)",
   "flowify.failed": "Flowify non riuscito",
@@ -250,8 +247,7 @@ MixAppI18n.register("it", {
   "shortcuts.flowify": "Flowify",
   "shortcuts.generator": "Generatore",
   "shortcuts.toggleStats": "Mostra/nascondi statistiche",
-  "shortcuts.selectTrack":
-    "Seleziona brano nel riordino (prima clicca sull'elenco)",
+  "shortcuts.selectTrack": "Seleziona brano nel riordino (prima clicca sull'elenco)",
   "shortcuts.moveTrack": "Sposta il brano selezionato",
   "shortcuts.firstLast": "Primo / ultimo brano",
   "shortcuts.removeTrack": "Rimuovi il brano selezionato",
@@ -269,8 +265,7 @@ MixAppI18n.register("it", {
   "notify.rateLimitPartialCamelot":
     "Limite raggiunto — solo {count} brani in tonalità. Attendi qualche secondo e cerca di nuovo.",
   "notify.failedPlaylist": "Impossibile caricare la playlist",
-  "notify.cannotSaveLoading":
-    "Impossibile salvare mentre la playlist è in caricamento",
+  "notify.cannotSaveLoading": "Impossibile salvare mentre la playlist è in caricamento",
   "notify.playlistChangedCancel": "Playlist modificata — salvataggio annullato",
   "notify.playlistChangedDuringSave":
     "Playlist modificata durante il salvataggio — lo stato locale non è stato cambiato",

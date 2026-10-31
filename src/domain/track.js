@@ -314,9 +314,7 @@ const MixAppTrack = (() => {
     });
     // Any BPM on a Platform playlist row is Spotify's (V2 or formatListAttributes).
     const spotifyBpm =
-      raw?.bpm != null || track?.bpm != null || attrs?.bpm != null
-        ? bpm
-        : null;
+      raw?.bpm != null || track?.bpm != null || attrs?.bpm != null ? bpm : null;
     applyNativeAudioAttrs(row, nativeKey, spotifyBpm);
     if (row.bpm != null && spotifyBpm != null) row.bpmNative = true;
     return row;

@@ -480,27 +480,6 @@ const MixAppRecommend = (() => {
     }
   }
 
-  async function fetchRelatedArtistIds(artistId) {
-    if (paddingBlocked()) return [];
-    try {
-      const res = await cosmosGetRetry(
-        "https://api.spotify.com/v1/artists/" + artistId + "/related-artists",
-        "related-artists"
-      );
-      return (res?.artists || [])
-        .map((a) => a?.id)
-        .filter(Boolean)
-        .slice(0, 12);
-    } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) {
-        noteNetworkLimit();
-      } else {
-        console.warn("Weave: related-artists failed", artistId, err);
-      }
-      return [];
-    }
-  }
-
   /**
    * Fill missing Camelot labels via AudioAttributesV2 (Platform metadata —
    * not the rate-limited Web API). Needed before Mix in Key can count matches.
@@ -558,14 +537,10 @@ const MixAppRecommend = (() => {
 
     const wantCamelot = Array.isArray(camelotMoves) && camelotMoves.length > 0;
     const camelotGoal =
-      wantCamelot && matchTarget != null
-        ? Math.max(1, Number(matchTarget) || 1)
-        : null;
+      wantCamelot && matchTarget != null ? Math.max(1, Number(matchTarget) || 1) : null;
     // Camelot + hide-existing needs more radios — many in-key hits are already
     // in the playlist and get dropped after collection.
-    const maxRadios = wantCamelot
-      ? Math.max(MAX_RADIO_FETCHES, 24)
-      : MAX_RADIO_FETCHES;
+    const maxRadios = wantCamelot ? Math.max(MAX_RADIO_FETCHES, 24) : MAX_RADIO_FETCHES;
     const maxSteps = wantCamelot ? 60 : 40;
 
     function enqueue(kind, id) {
@@ -594,7 +569,10 @@ const MixAppRecommend = (() => {
     }
 
     function camelotMatchCount() {
-      if (!camelotGoal || typeof MixAppFeatures?.filterTracksByCamelotMoves !== "function") {
+      if (
+        !camelotGoal ||
+        typeof MixAppFeatures?.filterTracksByCamelotMoves !== "function"
+      ) {
         return usablePool().length;
       }
       return MixAppFeatures.filterTracksByCamelotMoves(
@@ -848,8 +826,7 @@ const MixAppRecommend = (() => {
     const camelotSeeds = Array.isArray(opts.camelotSeeds)
       ? opts.camelotSeeds
       : seedTracks;
-    const matchTarget =
-      opts.matchTarget != null ? Number(opts.matchTarget) : target;
+    const matchTarget = opts.matchTarget != null ? Number(opts.matchTarget) : target;
 
     // Over-fetch so post-filters can still leave up to `target` rows.
     // Camelot + hide-existing: collect plenty; early-stop counts only usable hits.

@@ -71,7 +71,7 @@ function MixAppAddTrackModal(props) {
       setSuggestLoading(false);
       setMode("songs");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only on close
+    // Reset only on close (intentional deps omission).
   }, [open]);
 
   // Debounced artist suggestions while typing (Artists mode, no drill-in yet).
@@ -560,9 +560,7 @@ function MixAppAddTrackModal(props) {
                 MixAppI18n.t("picker.loading")
               )
             : null,
-          !suggestLoading &&
-            String(query || "").trim().length < 2 &&
-            !artistHits.length
+          !suggestLoading && String(query || "").trim().length < 2 && !artistHits.length
             ? h(
                 "div",
                 { className: "mixapp-add-track-suggest-status" },
@@ -672,11 +670,7 @@ function MixAppAddTrackModal(props) {
                           album.name || ""
                         ),
                         sub
-                          ? h(
-                              "div",
-                              { className: "mixapp-add-track-artist-sub" },
-                              sub
-                            )
+                          ? h("div", { className: "mixapp-add-track-artist-sub" }, sub)
                           : null
                       )
                     );

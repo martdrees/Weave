@@ -178,14 +178,11 @@ function MixAppFeatureSliders(props) {
               }
             },
           }),
-          h(
-            "span",
-            {
-              className: "mixapp-feature-swatch",
-              style: { background: accent },
-              "aria-hidden": "true",
-            }
-          ),
+          h("span", {
+            className: "mixapp-feature-swatch",
+            style: { background: accent },
+            "aria-hidden": "true",
+          }),
           h("span", null, MixAppI18n.featureLabel(def))
         ),
         h(
@@ -211,9 +208,7 @@ function MixAppFeatureSliders(props) {
             "label",
             {
               className: "mixapp-feature-around-toggle",
-              title: hasAvg
-                ? t("search.avgTitle")
-                : t("search.avgUnavailable"),
+              title: hasAvg ? t("search.avgTitle") : t("search.avgUnavailable"),
             },
             h("input", {
               type: "checkbox",

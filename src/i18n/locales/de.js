@@ -35,8 +35,7 @@ MixAppI18n.register("de", {
   "toolbar.saveTitleOwnedOnly":
     "Du kannst nur Playlists überschreiben, die dir gehören",
   "toolbar.saveAsNew": "Als neue speichern",
-  "toolbar.saveAsNewTitle":
-    "Neue Playlist mit der aktuellen Titelliste erstellen",
+  "toolbar.saveAsNewTitle": "Neue Playlist mit der aktuellen Titelliste erstellen",
 
   // Playlist picker
   "picker.playlist": "Playlist",
@@ -50,8 +49,7 @@ MixAppI18n.register("de", {
 
   // Arranger
   "arranger.loading": "Playlist-Inhalt wird von Spotify abgerufen.",
-  "arranger.empty":
-    "Wähle eine Playlist aus, um die Titelreihenfolge zu bearbeiten.",
+  "arranger.empty": "Wähle eine Playlist aus, um die Titelreihenfolge zu bearbeiten.",
   "arranger.emptyHint": "Drücke ? für Tastenkürzel.",
   "arranger.aria": "Playlist-Titel",
   "arranger.columnsMenu": "Rechtsklick, um Spalten ein- oder auszublenden",
@@ -62,10 +60,8 @@ MixAppI18n.register("de", {
   "arranger.remove": "Aus Playlist entfernen",
   "arranger.seedMark": "Als Seed-Titel markieren",
   "arranger.seedUnmark": "Seed entfernen",
-  "arranger.rowSeed":
-    "Seed-Titel — Klicken zum Entfernen · ⋮⋮ ziehen zum Umsortieren",
-  "arranger.rowNormal":
-    "Klicken, um als Seed zu markieren · ⋮⋮ ziehen zum Umsortieren",
+  "arranger.rowSeed": "Seed-Titel — Klicken zum Entfernen · ⋮⋮ ziehen zum Umsortieren",
+  "arranger.rowNormal": "Klicken, um als Seed zu markieren · ⋮⋮ ziehen zum Umsortieren",
   "arranger.play": "{name} abspielen",
   "arranger.pause": "{name} pausieren",
   "arranger.trackFallback": "Titel",
@@ -127,8 +123,7 @@ MixAppI18n.register("de", {
   "search.yearTo": "Bis",
   "search.year": "Jahr",
   "search.avg": "Ø",
-  "search.avgTitle":
-    "Zielwert verwenden: Min./Max. um den Durchschnitt setzen",
+  "search.avgTitle": "Zielwert verwenden: Min./Max. um den Durchschnitt setzen",
   "search.avgUnavailable":
     "Durchschnitt nicht verfügbar (Seeds oder Playlist-Merkmale erforderlich)",
   "search.minMax": "Min. – Max.",
@@ -149,8 +144,7 @@ MixAppI18n.register("de", {
   "camelot.moodShift": "Stimmungswechsel",
   "camelot.moodShiftHint": "Diagonal (±1 + Buchstabenwechsel)",
   "camelot.harmonicShift": "Harmonischer Wechsel",
-  "camelot.harmonicShiftHint":
-    "Jaws (±5) · dramatischer harmonischer Sprung/Wechsel",
+  "camelot.harmonicShiftHint": "Jaws (±5) · dramatischer harmonischer Sprung/Wechsel",
 
   // Search results
   "results.title": "Ergebnisse",
@@ -264,15 +258,12 @@ MixAppI18n.register("de", {
     "Diese Playlist ist nicht mehr verfügbar (gelöscht oder auf privat gestellt)",
   "notify.rateLimit":
     "Spotify-Anfragelimit erreicht — warte einen Moment und versuche es erneut",
-  "notify.rateLimitBackoff":
-    "Spotify-Anfragelimit erreicht — Pause für {seconds} s…",
+  "notify.rateLimitBackoff": "Spotify-Anfragelimit erreicht — Pause für {seconds} s…",
   "notify.rateLimitPartialCamelot":
     "Anfragelimit — nur {count} passende Tonarten. Kurz warten und erneut suchen.",
   "notify.failedPlaylist": "Playlist konnte nicht geladen werden",
-  "notify.cannotSaveLoading":
-    "Speichern nicht möglich, während die Playlist lädt",
-  "notify.playlistChangedCancel":
-    "Playlist wurde geändert — Speichern abgebrochen",
+  "notify.cannotSaveLoading": "Speichern nicht möglich, während die Playlist lädt",
+  "notify.playlistChangedCancel": "Playlist wurde geändert — Speichern abgebrochen",
   "notify.playlistChangedDuringSave":
     "Playlist wurde beim Speichern geändert — lokaler Stand bleibt unverändert",
   "notify.playlistSaved": "Playlist gespeichert",
@@ -298,8 +289,7 @@ MixAppI18n.register("de", {
   "notify.selectSeeds": "Wähle zuerst Seed-Titel aus",
   "notify.noSeedFeatures": "Keine Audiomerkmale für diese Seeds",
   "notify.fittedSeeds": "Merkmalsbereiche an Seeds angepasst",
-  "notify.needSeedsOrPlaylist":
-    "Lade zuerst eine Playlist oder markiere Seed-Titel",
+  "notify.needSeedsOrPlaylist": "Lade zuerst eine Playlist oder markiere Seed-Titel",
   "notify.noMatches":
     "Keine Treffer nach Filtern — deaktiviere Filter oder Bereiche und versuche es erneut",
   "notify.searchFailed": "Suchanfrage fehlgeschlagen",

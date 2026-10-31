@@ -158,9 +158,7 @@ function MixAppSearchPanel(props) {
           onChange: onFeaturesChange,
           disabled: loading,
           seedTracks: (() => {
-            const seeds = (tracks || []).filter((t) =>
-              seedUris?.includes(t.uri)
-            );
+            const seeds = (tracks || []).filter((t) => seedUris?.includes(t.uri));
             // No seeds → playlist average (same soft-seed context as search).
             return seeds.length ? seeds : tracks || [];
           })(),

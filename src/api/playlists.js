@@ -6,8 +6,28 @@
 const MixAppPlaylists = (() => {
   /** URIs confirmed missing/private this session (load failed). */
   const unavailableUris = new Set();
-  /** Prevent interleaved differential sync on the same playlist. */
-  const syncInFlight = new Set();
+  /** Prevent interleaved writes (mutations + differential sync) on the same playlist. */
+  const writeInFlight = new Set();
+
+  /**
+   * Serialize playlist mutations / sync per URI.
+   * @template T
+   * @param {string} uri
+   * @param {() => Promise<T>} fn
+   * @returns {Promise<T>}
+   */
+  async function withPlaylistWriteLock(uri, fn) {
+    if (!uri) throw new Error("Missing playlist URI");
+    if (writeInFlight.has(uri)) {
+      throw new Error("A save is already in progress for this playlist");
+    }
+    writeInFlight.add(uri);
+    try {
+      return await fn();
+    } finally {
+      writeInFlight.delete(uri);
+    }
+  }
 
   function normalizeTrack(raw, index) {
     return MixAppTrack.fromPlaylistItem(raw, index);
@@ -186,9 +206,7 @@ const MixAppPlaylists = (() => {
         const t = item?.track || item?.item || item;
         const type = t?.type || item?.type;
         return (
-          !type ||
-          type === "track" ||
-          (t?.uri || item?.uri || "").includes(":track:")
+          !type || type === "track" || (t?.uri || item?.uri || "").includes(":track:")
         );
       })
       .map((item, i) => normalizeTrack(item, i));
@@ -287,15 +305,9 @@ const MixAppPlaylists = (() => {
 
   function mapGraphqlPlaylistItem(entry, index) {
     const data =
-      entry?.itemV2?.data ||
-      entry?.item?.data ||
-      entry?.data ||
-      entry?.track ||
-      null;
+      entry?.itemV2?.data || entry?.item?.data || entry?.data || entry?.track || null;
     if (!data) return null;
-    const typename = String(
-      data.__typename || entry?.itemV2?.__typename || ""
-    );
+    const typename = String(data.__typename || entry?.itemV2?.__typename || "");
     if (typename && /NotFound|Episode|Audiobook|Podcast/i.test(typename)) {
       return null;
     }
@@ -305,11 +317,7 @@ const MixAppPlaylists = (() => {
     const track = MixAppTrack.fromGraphqlTrack(data, index);
     if (!track) return null;
     if (entry?.uid) track.uid = String(entry.uid);
-    const added =
-      entry?.addedAt?.isoString ||
-      entry?.addedAt ||
-      data?.addedAt ||
-      null;
+    const added = entry?.addedAt?.isoString || entry?.addedAt || data?.addedAt || null;
     if (added) track.addedAt = added;
     return track;
   }
@@ -363,9 +371,7 @@ const MixAppPlaylists = (() => {
         });
       } catch (err) {
         console.warn("Weave: GraphQL playlist contents failed", err);
-        return tracks.length
-          ? { kind: "ok", tracks }
-          : { kind: "miss" };
+        return tracks.length ? { kind: "ok", tracks } : { kind: "miss" };
       }
 
       if (page === 0 && graphqlPlaylistLooksUnavailable(res)) {
@@ -380,9 +386,7 @@ const MixAppPlaylists = (() => {
       const content = root?.content || null;
       const items = content?.items;
       if (!Array.isArray(items)) {
-        return tracks.length
-          ? { kind: "ok", tracks }
-          : { kind: "unavailable" };
+        return tracks.length ? { kind: "ok", tracks } : { kind: "unavailable" };
       }
       if (total == null && content?.totalCount != null) {
         total = Number(content.totalCount);
@@ -442,10 +446,7 @@ const MixAppPlaylists = (() => {
     try {
       return await getPlaylistTracksViaWebApi(uri);
     } catch (err) {
-      if (
-        MixAppHttp.isNotFoundError(err) ||
-        MixAppHttp.isForbiddenError(err)
-      ) {
+      if (MixAppHttp.isNotFoundError(err) || MixAppHttp.isForbiddenError(err)) {
         throw playlistUnavailableError(uri);
       }
       throw err;
@@ -651,14 +652,10 @@ const MixAppPlaylists = (() => {
   /**
    * Differential save: remove / add / reorder only.
    * Keeps Spotify playlist-item uids so per-track mixing settings survive.
+   * Also used as applyBulk backend for Flowify / bulk commit.
    */
   async function syncPlaylistTracks(uri, desiredTracks) {
-    if (!uri) throw new Error("Missing playlist URI");
-    if (syncInFlight.has(uri)) {
-      throw new Error("A save is already in progress for this playlist");
-    }
-    syncInFlight.add(uri);
-    try {
+    return withPlaylistWriteLock(uri, async () => {
       const desired = (desiredTracks || []).filter((t) => t?.uri);
       let live = await getLivePlaylistItems(uri);
 
@@ -729,9 +726,146 @@ const MixAppPlaylists = (() => {
 
       // Return fresh tracks so callers can refresh uids for next save.
       return getPlaylistTracks(uri);
-    } finally {
-      syncInFlight.delete(uri);
+    });
+  }
+
+  /**
+   * Mutation port: add track URIs, then reload so callers get real item uids.
+   * Returns the full playlist track list (not only added rows).
+   * @param {string} playlistUri
+   * @param {string[]} trackUris
+   * @param {{ after?: string }} [opts]
+   * @returns {Promise<MixAppTrackRow[]>}
+   */
+  async function addTracks(playlistUri, trackUris, opts) {
+    return withPlaylistWriteLock(playlistUri, async () => {
+      const uris = (trackUris || []).filter(Boolean);
+      if (!uris.length) return getPlaylistTracks(playlistUri);
+      await playlistApiAdd(playlistUri, uris, opts || { after: "end" });
+      return getPlaylistTracks(playlistUri);
+    });
+  }
+
+  /**
+   * Mutation port: remove playlist items by uri + uid.
+   * @param {string} playlistUri
+   * @param {{ uri: string, uid: string }[]} items
+   * @returns {Promise<void>}
+   */
+  async function removeTracks(playlistUri, items) {
+    return withPlaylistWriteLock(playlistUri, async () => {
+      const list = (items || []).filter((it) => it?.uri && it?.uid);
+      if (!list.length) return;
+      await playlistApiRemove(
+        playlistUri,
+        list.map((it) => ({ uri: String(it.uri), uid: String(it.uid) }))
+      );
+    });
+  }
+
+  /**
+   * Build Platform move option variants — clients disagree on after/before shape
+   * (bare uid vs { uri, uid } vs "end").
+   * @param {{ after?: string, before?: string }} resolved
+   * @param {{ uri: string, uid: string }[]} live
+   * @returns {object[]}
+   */
+  function playlistMoveOptVariants(resolved, live) {
+    /** @type {object[]} */
+    const variants = [];
+    if (resolved.after === "end") {
+      variants.push({ after: "end" });
+      return variants;
     }
+    if (resolved.after) {
+      const uid = String(resolved.after);
+      const anchor = live.find((l) => String(l.uid) === uid);
+      variants.push({ after: uid });
+      if (anchor) {
+        variants.push({ after: { uri: anchor.uri, uid: anchor.uid } });
+      }
+    }
+    if (resolved.before) {
+      const uid = String(resolved.before);
+      const anchor = live.find((l) => String(l.uid) === uid);
+      variants.push({ before: uid });
+      if (anchor) {
+        variants.push({ before: { uri: anchor.uri, uid: anchor.uid } });
+      }
+    }
+    return variants;
+  }
+
+  /**
+   * Try Platform PlaylistAPI.move across item/opts shapes. Returns false if all fail.
+   * @param {string} playlistUri
+   * @param {{ uri: string, uid: string }} item
+   * @param {{ after?: string, before?: string }} resolved
+   * @param {{ uri: string, uid: string }[]} live
+   */
+  async function tryPlaylistApiMove(playlistUri, item, resolved, live) {
+    const PlaylistAPI = Spicetify?.Platform?.PlaylistAPI;
+    if (typeof PlaylistAPI?.move !== "function") return false;
+    const itemVariants = [[{ uri: item.uri, uid: item.uid }], [item.uid]];
+    const optVariants = playlistMoveOptVariants(resolved, live);
+    if (!optVariants.length) return false;
+    let lastErr = null;
+    for (const opts of optVariants) {
+      for (const moveItems of itemVariants) {
+        try {
+          await PlaylistAPI.move(playlistUri, moveItems, opts);
+          return true;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+    }
+    if (lastErr) {
+      console.warn("Weave: PlaylistAPI.move variants failed", lastErr);
+    }
+    return false;
+  }
+
+  /**
+   * Mutation port: move one row. Prefer Platform PlaylistAPI.move; Web API reorder fallback.
+   * Position: exactly one of `{ after }`, `{ before }`, or `{ index }` (final 0-based index).
+   * On Platform failure (including opt-shape mismatches), falls through to Web API reorder.
+   * @param {string} playlistUri
+   * @param {{ uri: string, uid: string }} item
+   * @param {{ after?: string, before?: string, index?: number }} position
+   * @returns {Promise<void>}
+   */
+  async function moveTrack(playlistUri, item, position) {
+    return withPlaylistWriteLock(playlistUri, async () => {
+      if (!item?.uri || !item?.uid) {
+        throw new Error("moveTrack requires item { uri, uid }");
+      }
+      const live = await getLivePlaylistItems(playlistUri);
+      const resolved = MixAppPlaylistMove.resolveMovePosition(
+        live,
+        String(item.uid),
+        position
+      );
+      if (resolved.from === resolved.to) return;
+
+      if (await tryPlaylistApiMove(playlistUri, item, resolved, live)) {
+        return;
+      }
+
+      const id = MixAppHttp.playlistIdFromUri(playlistUri);
+      if (!id) throw new Error("Invalid playlist URI");
+      await reorderItemByIndex(id, resolved.from, resolved.to, null);
+    });
+  }
+
+  /** Mutation port: bulk commit (Flowify apply) — wraps differential sync. */
+  async function applyBulk(playlistUri, desiredTracks) {
+    return syncPlaylistTracks(playlistUri, desiredTracks);
+  }
+
+  /** Mutation port: reload tracks from Spotify. */
+  async function reload(playlistUri) {
+    return getPlaylistTracks(playlistUri);
   }
 
   function playlistUriFromCreateResult(created) {
@@ -850,6 +984,11 @@ const MixAppPlaylists = (() => {
     createPlaylist,
     saveOverwrite,
     syncPlaylistTracks,
+    addTracks,
+    removeTracks,
+    moveTrack,
+    applyBulk,
+    reload,
     normalizeTrack,
     isPlaylistUnavailableError,
     markPlaylistUnavailable,

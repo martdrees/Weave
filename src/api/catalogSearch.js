@@ -73,9 +73,10 @@ const MixAppCatalogSearch = (() => {
       id,
       name: data.name || data.profile?.name || "Unknown",
       imageUrl,
-      followers: followers != null && Number.isFinite(Number(followers))
-        ? Number(followers)
-        : null,
+      followers:
+        followers != null && Number.isFinite(Number(followers))
+          ? Number(followers)
+          : null,
     };
   }
 
@@ -602,17 +603,11 @@ const MixAppCatalogSearch = (() => {
     if (fromRadio.length) return fromRadio;
 
     try {
-      return await getArtistTopTracksViaWebApi(
-        id,
-        opts.market || userMarket(),
-        want
-      );
+      return await getArtistTopTracksViaWebApi(id, opts.market || userMarket(), want);
     } catch (err) {
       console.error("Weave: artist tracks unavailable", err);
       if (MixAppHttp?.isRateLimitError?.(err)) {
-        throw new Error(
-          "Artist tracks rate-limited — wait a moment and try again"
-        );
+        throw new Error("Artist tracks rate-limited — wait a moment and try again");
       }
       throw new Error(
         "Could not load artist tracks (client search blocked). Try again in a moment."
@@ -638,9 +633,7 @@ const MixAppCatalogSearch = (() => {
       pickImageUrl(raw.visualIdentity?.image?.[0]?.sources) ||
       null;
     const year =
-      yearFromReleaseDate(
-        raw.date?.isoString || raw.date?.year || raw.release_date
-      ) ??
+      yearFromReleaseDate(raw.date?.isoString || raw.date?.year || raw.release_date) ??
       (raw.date?.year != null && Number.isFinite(Number(raw.date.year))
         ? Number(raw.date.year)
         : null);
@@ -689,9 +682,10 @@ const MixAppCatalogSearch = (() => {
     for (const entry of items) {
       // Discography rows often wrap releases.items[0]
       const releases = entry?.releases?.items || entry?.releases || [];
-      const candidates = Array.isArray(releases) && releases.length
-        ? releases
-        : [entry?.data || entry?.release || entry];
+      const candidates =
+        Array.isArray(releases) && releases.length
+          ? releases
+          : [entry?.data || entry?.release || entry];
       for (const raw of candidates) {
         const album = normalizeAlbum(raw, group);
         if (!album?.uri || seen.has(album.uri)) continue;
@@ -815,13 +809,9 @@ const MixAppCatalogSearch = (() => {
     } catch (err) {
       console.error("Weave: artist albums unavailable", err);
       if (MixAppHttp?.isRateLimitError?.(err)) {
-        throw new Error(
-          "Artist albums rate-limited — wait a moment and try again"
-        );
+        throw new Error("Artist albums rate-limited — wait a moment and try again");
       }
-      throw new Error(
-        "Could not load artist albums. Try again in a moment."
-      );
+      throw new Error("Could not load artist albums. Try again in a moment.");
     }
   }
 
@@ -833,10 +823,7 @@ const MixAppCatalogSearch = (() => {
       res?.album ||
       null;
     const items =
-      album?.tracksV2?.items ||
-      album?.tracks?.items ||
-      album?.tracksV2 ||
-      [];
+      album?.tracksV2?.items || album?.tracks?.items || album?.tracksV2 || [];
     if (!Array.isArray(items)) return [];
     const out = [];
     const seen = new Set();
@@ -881,10 +868,7 @@ const MixAppCatalogSearch = (() => {
       ]);
     }
     if (defs.getAlbum) {
-      attempts.push([
-        defs.getAlbum,
-        { uri: albumUri, locale, offset: 0, limit: want },
-      ]);
+      attempts.push([defs.getAlbum, { uri: albumUri, locale, offset: 0, limit: want }]);
     }
     if (defs.getAlbumNameAndTracks) {
       attempts.push([
@@ -968,9 +952,7 @@ const MixAppCatalogSearch = (() => {
     } catch (err) {
       console.error("Weave: album tracks unavailable", err);
       if (MixAppHttp?.isRateLimitError?.(err)) {
-        throw new Error(
-          "Album tracks rate-limited — wait a moment and try again"
-        );
+        throw new Error("Album tracks rate-limited — wait a moment and try again");
       }
       throw new Error("Could not load album tracks. Try again in a moment.");
     }

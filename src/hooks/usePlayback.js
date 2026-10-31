@@ -2,9 +2,10 @@
 /**
  * Spotify player sync + play/pause for arranger / result rows.
  *
- * Arranger play queues Weave’s current track list from the clicked row
- * (including unsaved adds/reorders) so Next continues like a playlist —
- * not radio, and not Spotify’s possibly stale remote playlist snapshot.
+ * Arranger play: start the clicked track, then queue the rest of Weave’s
+ * current list so Next continues in editor order (including unsaved adds).
+ * Uses public Player / addToQueue APIs — not private setQueue (breaks across
+ * Spotify versions: "Cannot read properties of undefined (reading 'options')").
  */
 
 function MixAppUsePlayback() {
@@ -33,8 +34,23 @@ function MixAppUsePlayback() {
   }, []);
 
   /**
-   * Replace the queue with `uris` (from the clicked track onward) and start.
-   * Uses Shuffle+-style setQueue when available; otherwise play + addToQueue.
+   * @param {string} uri
+   */
+  async function playOne(uri) {
+    if (Spicetify?.Player?.playUri) {
+      await Spicetify.Player.playUri(uri);
+      return;
+    }
+    const PlayerAPI = Spicetify?.Platform?.PlayerAPI;
+    if (PlayerAPI?.play) {
+      await PlayerAPI.play({ uri }, {}, {});
+      return;
+    }
+    throw new Error("No play API");
+  }
+
+  /**
+   * Play `uris[0]`, then queue the remainder (Weave order).
    * @param {string[]} uris
    * @param {string|null|undefined} contextUri
    */
@@ -42,51 +58,29 @@ function MixAppUsePlayback() {
     const list = (uris || []).filter(Boolean);
     if (!list.length) throw new Error("No tracks to play");
 
-    const PlayerAPI = Spicetify?.Platform?.PlayerAPI;
-    const queueHandle = PlayerAPI?._queue;
-    const setQueue = queueHandle?._client?.setQueue;
-
-    // Preferred: inject the full remaining list as context (reliable next-track).
-    if (typeof setQueue === "function") {
-      const queued = list.slice();
-      queued.push("spotify:delimiter");
-      const state = queueHandle._queue || {};
-      setQueue({
-        nextTracks: queued.map((uri) => ({
-          contextTrack: {
-            uri,
-            uid: "",
-            metadata: { is_queued: "false" },
-          },
-          removed: [],
-          blocked: [],
-          provider: "context",
-        })),
-        prevTracks: state.prevTracks || [],
-        queueRevision: state.queueRevision,
-      });
-
-      if (contextUri && typeof PlayerAPI.updateContext === "function") {
-        try {
-          const sessionId = PlayerAPI.getState?.()?.sessionId;
-          if (sessionId) {
-            PlayerAPI.updateContext(sessionId, {
-              uri: contextUri,
-              url: "context://" + contextUri,
-            });
-          }
-        } catch (_) {
-          /* context label is optional */
-        }
-      }
-
-      Spicetify.Player.next();
-      return;
-    }
-
-    // Fallback: play the first track, then silently queue the rest.
     const first = list[0];
-    const rest = list.slice(1).map((uri) => ({ uri }));
+    const rest = list.slice(1);
+    const PlayerAPI = Spicetify?.Platform?.PlayerAPI;
+
+    // Saved playlist context when possible (native next-track). If Spotify
+    // rejects it (e.g. unsaved track), fall through to explicit queue.
+    if (contextUri && Spicetify?.Player?.playUri) {
+      try {
+        await Spicetify.Player.playUri(contextUri, {}, { skipTo: { uri: first } });
+        const now =
+          Spicetify?.Player?.data?.item?.uri ||
+          Spicetify?.Player?.data?.track?.uri ||
+          null;
+        // Wrong track or empty → rebuild queue from Weave’s list.
+        if (now && now !== first) {
+          /* fall through */
+        } else {
+          return;
+        }
+      } catch (_) {
+        /* fall through */
+      }
+    }
 
     try {
       await PlayerAPI?.clearQueue?.();
@@ -94,19 +88,23 @@ function MixAppUsePlayback() {
       /* ignore */
     }
 
-    if (Spicetify?.Player?.playUri) {
-      await Spicetify.Player.playUri(first);
-    } else if (PlayerAPI?.play) {
-      await PlayerAPI.play({ uri: first }, {}, {});
-    } else {
-      throw new Error("No play API");
-    }
+    await playOne(first);
 
-    if (rest.length) {
-      if (typeof Spicetify.addToQueue === "function") {
-        await Spicetify.addToQueue(rest);
-      } else if (PlayerAPI?.addToQueue) {
-        await PlayerAPI.addToQueue(rest);
+    if (!rest.length) return;
+
+    const items = rest.map((uri) => ({ uri }));
+    const CHUNK = 80;
+    for (let i = 0; i < items.length; i += CHUNK) {
+      const chunk = items.slice(i, i + CHUNK);
+      try {
+        if (typeof Spicetify.addToQueue === "function") {
+          await Spicetify.addToQueue(chunk);
+        } else if (PlayerAPI?.addToQueue) {
+          await PlayerAPI.addToQueue(chunk);
+        }
+      } catch (err) {
+        console.warn("Weave: addToQueue failed", err);
+        break;
       }
     }
   }
@@ -150,7 +148,7 @@ function MixAppUsePlayback() {
         return;
       }
 
-      // Arranger: queue Weave’s list from this row (works with unsaved adds).
+      // Arranger: play this row, queue the rest in Weave order.
       if (tracks.length) {
         let start =
           typeof index === "number" && index >= 0
@@ -161,22 +159,19 @@ function MixAppUsePlayback() {
           const byUri = tracks.findIndex((t) => t?.uri === uri);
           if (byUri >= 0) start = byUri;
         }
-        const uris = tracks.slice(start).map((t) => t?.uri).filter(Boolean);
-        if (!uris.length) uris.push(uri);
-        await playUriList(uris, playlistUri);
+        const fromHere = tracks
+          .slice(start)
+          .map((t) => t?.uri)
+          .filter(Boolean);
+        if (!fromHere.length) fromHere.push(uri);
+        await playUriList(fromHere, playlistUri);
         setPlayingUri(uri);
         setIsPlaying(true);
         return;
       }
 
-      // Preview from search / add-track / etc.: single track only.
-      if (Spicetify?.Player?.playUri) {
-        await Spicetify.Player.playUri(uri);
-      } else if (Spicetify?.Platform?.PlayerAPI?.play) {
-        await Spicetify.Platform.PlayerAPI.play({ uri }, {}, {});
-      } else {
-        throw new Error("No play API");
-      }
+      // Preview from search / add-track / etc.
+      await playOne(uri);
       setPlayingUri(uri);
       setIsPlaying(true);
     } catch (err) {

@@ -223,11 +223,7 @@ const MixAppFeatures = (() => {
   function findMetadataExtensionsAPI() {
     const P = Spicetify?.Platform;
     if (!P || typeof P !== "object") return null;
-    for (const name of [
-      "MetadataExtensionsAPI",
-      "MetadataService",
-      "MetadataAPI",
-    ]) {
+    for (const name of ["MetadataExtensionsAPI", "MetadataService", "MetadataAPI"]) {
       const api = P[name];
       if (api && typeof api.fetch === "function") return api;
     }
@@ -255,10 +251,7 @@ const MixAppFeatures = (() => {
   function parseAudioAttributesV2(raw) {
     if (!raw || typeof raw !== "object") return null;
     const keyInfo = MixAppTrack.coerceSpotifyTrackKey(raw.key || raw.trackKey || raw);
-    const bpm =
-      raw.bpm != null
-        ? Math.round(Number(raw.bpm))
-        : null;
+    const bpm = raw.bpm != null ? Math.round(Number(raw.bpm)) : null;
     if (!keyInfo && (bpm == null || Number.isNaN(bpm))) return null;
     return {
       keyInfo,
@@ -274,9 +267,7 @@ const MixAppFeatures = (() => {
   async function fetchAudioAttributesV2Map(uris) {
     const out = new Map();
     const unique = [
-      ...new Set(
-        (uris || []).filter((u) => u && String(u).includes(":track:"))
-      ),
+      ...new Set((uris || []).filter((u) => u && String(u).includes(":track:"))),
     ];
     if (!unique.length) return out;
 
@@ -468,9 +459,7 @@ const MixAppFeatures = (() => {
       feat.trackKey ||
         feat.camelot_key ||
         feat.camelotKey ||
-        (feat.camelot || feat.standard_key || feat.standardKey
-          ? feat
-          : null)
+        (feat.camelot || feat.standard_key || feat.standardKey ? feat : null)
     );
     return {
       key: Number.isFinite(key) ? key : feat.key,
@@ -489,9 +478,7 @@ const MixAppFeatures = (() => {
       duration_ms: feat.duration_ms ?? feat.durationMs,
       nativeKey,
       bpmNative:
-        feat.bpm != null && feat.tempo == null
-          ? Math.round(Number(feat.bpm))
-          : null,
+        feat.bpm != null && feat.tempo == null ? Math.round(Number(feat.bpm)) : null,
     };
   }
 
@@ -507,18 +494,13 @@ const MixAppFeatures = (() => {
 
       try {
         const res = MixAppHttp?.cosmosGet
-          ? await MixAppHttp.cosmosGet(
-              SPCLIENT + "?ids=" + chunk.join(","),
-              {
-                retries: 2,
-                label: "audio-attributes",
-                notifyUser: false,
-                failFastOnCooldown: true,
-              }
-            )
-          : await Spicetify.CosmosAsync.get(
-              SPCLIENT + "?ids=" + chunk.join(",")
-            );
+          ? await MixAppHttp.cosmosGet(SPCLIENT + "?ids=" + chunk.join(","), {
+              retries: 2,
+              label: "audio-attributes",
+              notifyUser: false,
+              failFastOnCooldown: true,
+            })
+          : await Spicetify.CosmosAsync.get(SPCLIENT + "?ids=" + chunk.join(","));
         list = res?.audio_features || res?.audioFeatures || null;
       } catch (err) {
         console.warn("Weave: audio-attributes batch failed", err);
@@ -528,18 +510,13 @@ const MixAppFeatures = (() => {
       if (!list && !MixAppHttp?.isCoolingDown?.()) {
         try {
           const res = MixAppHttp?.cosmosGet
-            ? await MixAppHttp.cosmosGet(
-                WEB_FEATURES + "?ids=" + chunk.join(","),
-                {
-                  retries: 2,
-                  label: "audio-features",
-                  notifyUser: false,
-                  failFastOnCooldown: true,
-                }
-              )
-            : await Spicetify.CosmosAsync.get(
-                WEB_FEATURES + "?ids=" + chunk.join(",")
-              );
+            ? await MixAppHttp.cosmosGet(WEB_FEATURES + "?ids=" + chunk.join(","), {
+                retries: 2,
+                label: "audio-features",
+                notifyUser: false,
+                failFastOnCooldown: true,
+              })
+            : await Spicetify.CosmosAsync.get(WEB_FEATURES + "?ids=" + chunk.join(","));
           list = res?.audio_features || null;
         } catch (err) {
           console.warn("Weave: /v1/audio-features batch failed", err);
@@ -672,15 +649,10 @@ const MixAppFeatures = (() => {
         }
         if (!t.standardKey) {
           t.standardKey = standardFromPitchMode(t.keyIndex, t.keyMode);
-          t.standardMode =
-            normalizeMode(t.keyMode) === 0 ? "minor" : "major";
+          t.standardMode = normalizeMode(t.keyMode) === 0 ? "minor" : "major";
         }
       } else if (feat.nativeKey) {
-        MixAppTrack.applyNativeAudioAttrs(
-          t,
-          feat.nativeKey,
-          feat.bpmNative
-        );
+        MixAppTrack.applyNativeAudioAttrs(t, feat.nativeKey, feat.bpmNative);
         if (t.key) {
           const idx = indexModeFromCamelotLabel(t.key);
           if (idx) {
@@ -689,12 +661,8 @@ const MixAppFeatures = (() => {
           }
         }
         if (!t.standardKey) {
-          t.standardKey = standardFromPitchMode(
-            feat.key,
-            feat.mode
-          );
-          t.standardMode =
-            normalizeMode(feat.mode) === 0 ? "minor" : "major";
+          t.standardKey = standardFromPitchMode(feat.key, feat.mode);
+          t.standardMode = normalizeMode(feat.mode) === 0 ? "minor" : "major";
         }
       } else {
         t.keyIndex = feat.key;
@@ -719,8 +687,7 @@ const MixAppFeatures = (() => {
           }
         }
         if (!t.standardKey) {
-          t.standardKey =
-            standardFromPitchMode(t.keyIndex, t.keyMode) || t.standardKey;
+          t.standardKey = standardFromPitchMode(t.keyIndex, t.keyMode) || t.standardKey;
         }
         continue;
       }
@@ -728,8 +695,7 @@ const MixAppFeatures = (() => {
       t.key = formatKeyLabel(t.keyIndex, t.keyMode);
       if (!t.standardKey) {
         t.standardKey = standardFromPitchMode(t.keyIndex, t.keyMode);
-        t.standardMode =
-          normalizeMode(t.keyMode) === 0 ? "minor" : "major";
+        t.standardMode = normalizeMode(t.keyMode) === 0 ? "minor" : "major";
       }
     }
     return tracks;

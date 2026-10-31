@@ -96,11 +96,7 @@ function MixAppFlowifyModal(props) {
     h(
       "div",
       { className: "mixapp-flowify-body" },
-      h(
-        "p",
-        { className: "mixapp-recommend-meta" },
-        MixAppI18n.t("flowify.blurb")
-      ),
+      h("p", { className: "mixapp-recommend-meta" }, MixAppI18n.t("flowify.blurb")),
       h(
         "div",
         { className: "mixapp-copy-tabs" },

@@ -61,8 +61,7 @@ MixAppI18n.register("pt", {
   "arranger.seedUnmark": "Remover semente",
   "arranger.rowSeed":
     "Faixa semente — clique para desmarcar · arraste ⋮⋮ para reordenar",
-  "arranger.rowNormal":
-    "Clique para marcar como semente · arraste ⋮⋮ para reordenar",
+  "arranger.rowNormal": "Clique para marcar como semente · arraste ⋮⋮ para reordenar",
   "arranger.play": "Reproduzir {name}",
   "arranger.pause": "Pausar {name}",
   "arranger.trackFallback": "faixa",
@@ -145,8 +144,7 @@ MixAppI18n.register("pt", {
   "camelot.moodShift": "Mudança de clima",
   "camelot.moodShiftHint": "Diagonal (±1 + troca de letra)",
   "camelot.harmonicShift": "Mudança harmônica",
-  "camelot.harmonicShiftHint":
-    "Jaws (±5) · queda/mudança harmônica dramática",
+  "camelot.harmonicShiftHint": "Jaws (±5) · queda/mudança harmônica dramática",
 
   // Search results
   "results.title": "Resultados",
@@ -165,7 +163,8 @@ MixAppI18n.register("pt", {
   "addTrack.search": "Pesquisar",
   "addTrack.empty": "Pesquise no catálogo do Spotify e adicione faixas à playlist.",
   "addTrack.emptyArtist": "Escolha um artista para ver as faixas mais populares.",
-  "addTrack.artistSuggestHint": "Digite pelo menos 2 caracteres para encontrar artistas.",
+  "addTrack.artistSuggestHint":
+    "Digite pelo menos 2 caracteres para encontrar artistas.",
   "addTrack.noArtists": "Nenhum artista encontrado",
   "addTrack.noTopTracks": "Nenhuma faixa popular para este artista",
   "addTrack.backToArtists": "← Artistas",
@@ -247,8 +246,7 @@ MixAppI18n.register("pt", {
   "shortcuts.flowify": "Flowify",
   "shortcuts.generator": "Gerador",
   "shortcuts.toggleStats": "Mostrar/ocultar estatísticas",
-  "shortcuts.selectTrack":
-    "Selecionar faixa no organizador (clique na lista primeiro)",
+  "shortcuts.selectTrack": "Selecionar faixa no organizador (clique na lista primeiro)",
   "shortcuts.moveTrack": "Mover faixa selecionada",
   "shortcuts.firstLast": "Primeira / última faixa",
   "shortcuts.removeTrack": "Remover faixa selecionada",

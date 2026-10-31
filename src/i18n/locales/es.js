@@ -34,8 +34,7 @@ MixAppI18n.register("es", {
   "toolbar.saveTitle": "Sobrescribir la playlist con el orden actual",
   "toolbar.saveTitleOwnedOnly": "Solo puedes sobrescribir playlists que sean tuyas",
   "toolbar.saveAsNew": "Guardar como nueva",
-  "toolbar.saveAsNewTitle":
-    "Crear una playlist nueva con la lista de canciones actual",
+  "toolbar.saveAsNewTitle": "Crear una playlist nueva con la lista de canciones actual",
 
   // Playlist picker
   "picker.playlist": "Playlist",
@@ -62,8 +61,7 @@ MixAppI18n.register("es", {
   "arranger.seedUnmark": "Quitar semilla",
   "arranger.rowSeed":
     "Canción semilla — clic para desmarcar · arrastra ⋮⋮ para reordenar",
-  "arranger.rowNormal":
-    "Clic para marcar como semilla · arrastra ⋮⋮ para reordenar",
+  "arranger.rowNormal": "Clic para marcar como semilla · arrastra ⋮⋮ para reordenar",
   "arranger.play": "Reproducir {name}",
   "arranger.pause": "Pausar {name}",
   "arranger.trackFallback": "canción",
@@ -125,8 +123,7 @@ MixAppI18n.register("es", {
   "search.yearTo": "Hasta",
   "search.year": "Año",
   "search.avg": "Prom.",
-  "search.avgTitle":
-    "Usar valor objetivo: definir mín./máx. alrededor del promedio",
+  "search.avgTitle": "Usar valor objetivo: definir mín./máx. alrededor del promedio",
   "search.avgUnavailable":
     "Promedio no disponible (se necesitan semillas o características de la playlist)",
   "search.minMax": "Mín. – máx.",
@@ -147,8 +144,7 @@ MixAppI18n.register("es", {
   "camelot.moodShift": "Cambio de ánimo",
   "camelot.moodShiftHint": "Diagonal (±1 + cambio de letra)",
   "camelot.harmonicShift": "Cambio armónico",
-  "camelot.harmonicShiftHint":
-    "Jaws (±5) · caída o cambio armónico dramático",
+  "camelot.harmonicShiftHint": "Jaws (±5) · caída o cambio armónico dramático",
 
   // Search results
   "results.title": "Resultados",
@@ -167,7 +163,8 @@ MixAppI18n.register("es", {
   "addTrack.search": "Buscar",
   "addTrack.empty": "Busca en el catálogo de Spotify y agrega canciones a tu playlist.",
   "addTrack.emptyArtist": "Elige un artista para ver sus canciones más populares.",
-  "addTrack.artistSuggestHint": "Escribe al menos 2 caracteres para encontrar artistas.",
+  "addTrack.artistSuggestHint":
+    "Escribe al menos 2 caracteres para encontrar artistas.",
   "addTrack.noArtists": "No se encontraron artistas",
   "addTrack.noTopTracks": "No hay canciones populares para este artista",
   "addTrack.backToArtists": "← Artistas",
@@ -295,8 +292,7 @@ MixAppI18n.register("es", {
   "notify.selectSeeds": "Primero selecciona canciones semilla",
   "notify.noSeedFeatures": "No hay características de audio para esas semillas",
   "notify.fittedSeeds": "Rangos de características ajustados a las semillas",
-  "notify.needSeedsOrPlaylist":
-    "Primero carga una playlist o marca canciones semilla",
+  "notify.needSeedsOrPlaylist": "Primero carga una playlist o marca canciones semilla",
   "notify.noMatches":
     "No hay coincidencias con los filtros — prueba desactivar filtros o rangos",
   "notify.searchFailed": "Falló la solicitud de búsqueda",

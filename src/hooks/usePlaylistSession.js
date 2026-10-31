@@ -86,11 +86,10 @@ function MixAppUsePlaylistSession(opts) {
         ? null
         : initialTracksFp || null
   );
-  const [ignoredRemoteFingerprint, setIgnoredRemoteFingerprint] = react.useState(
-    () =>
-      typeof saved?.ignoredRemoteFingerprint === "string"
-        ? saved.ignoredRemoteFingerprint
-        : null
+  const [ignoredRemoteFingerprint, setIgnoredRemoteFingerprint] = react.useState(() =>
+    typeof saved?.ignoredRemoteFingerprint === "string"
+      ? saved.ignoredRemoteFingerprint
+      : null
   );
   const syncedFingerprintRef = react.useRef(syncedFingerprint);
   syncedFingerprintRef.current = syncedFingerprint;
@@ -146,7 +145,7 @@ function MixAppUsePlaylistSession(opts) {
 
   react.useEffect(() => {
     refreshPlaylists();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+    // Mount only (intentional deps omission).
   }, []);
 
   // Session restore may have Camelot keys from audio-features; reload once so
@@ -157,7 +156,7 @@ function MixAppUsePlaylistSession(opts) {
     if (dirty) return;
     if (tracks.some((t) => t && t.keyNative)) return;
     loadPlaylist(selectedUri, { force: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot after restore
+    // One-shot after restore (intentional deps omission).
   }, []);
 
   const checkRemoteSyncRef = react.useRef(/** @type {null|Function} */ (null));
@@ -486,10 +485,7 @@ function MixAppUsePlaylistSession(opts) {
 
   function handleAddCatalogTrack(track) {
     if (savingRef.current) return;
-    const { next, added } = MixAppPlaylistOps.appendTracks(
-      tracksRef.current,
-      [track]
-    );
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, [track]);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return;
@@ -502,10 +498,7 @@ function MixAppUsePlaylistSession(opts) {
 
   function handleAddCatalogTracks(batch) {
     if (savingRef.current) return;
-    const { next, added } = MixAppPlaylistOps.appendTracks(
-      tracksRef.current,
-      batch
-    );
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, batch);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.noNewTracks"), true);
       return;
@@ -523,10 +516,7 @@ function MixAppUsePlaylistSession(opts) {
   /** Add a rec result track; returns true if added. */
   function handleAddRecommendedTrack(track) {
     if (savingRef.current) return false;
-    const { next, added } = MixAppPlaylistOps.appendTracks(
-      tracksRef.current,
-      [track]
-    );
+    const { next, added } = MixAppPlaylistOps.appendTracks(tracksRef.current, [track]);
     if (!added.length) {
       MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
       return false;

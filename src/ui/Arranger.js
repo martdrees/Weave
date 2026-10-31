@@ -105,14 +105,24 @@ function MixAppArranger(props) {
   const featureCols = [
     { id: "BPM", label: MixAppI18n.t("col.bpm"), sortKey: "bpm" },
     { id: "KEY", label: MixAppI18n.t("col.key"), sortKey: "key" },
-    { id: "ENERGY", label: MixAppI18n.t("col.energy"), sortKey: "energy", metricId: "energy" },
+    {
+      id: "ENERGY",
+      label: MixAppI18n.t("col.energy"),
+      sortKey: "energy",
+      metricId: "energy",
+    },
     {
       id: "DANCEABILITY",
       label: MixAppI18n.t("col.dance"),
       sortKey: "danceability",
       metricId: "danceability",
     },
-    { id: "VALENCE", label: MixAppI18n.t("col.valence"), sortKey: "valence", metricId: "valence" },
+    {
+      id: "VALENCE",
+      label: MixAppI18n.t("col.valence"),
+      sortKey: "valence",
+      metricId: "valence",
+    },
     {
       id: "ACOUSTICNESS",
       label: MixAppI18n.t("col.acoustic"),
@@ -271,10 +281,9 @@ function MixAppArranger(props) {
       e.preventDefault();
       return;
     }
-    const row =
-      e.currentTarget?.classList?.contains?.("mixapp-track-row")
-        ? e.currentTarget
-        : e.currentTarget?.closest?.(".mixapp-track-row");
+    const row = e.currentTarget?.classList?.contains?.("mixapp-track-row")
+      ? e.currentTarget
+      : e.currentTarget?.closest?.(".mixapp-track-row");
     const hgt = row?.offsetHeight || 40;
     dragRef.current = { from: index, over: index, dropped: false };
     setDragIndex(index);
@@ -310,14 +319,13 @@ function MixAppArranger(props) {
         : fromRaw !== ""
           ? Number(fromRaw)
           : NaN;
-    const to =
-      dragRef.current.over != null ? dragRef.current.over : index;
+    const to = dragRef.current.over != null ? dragRef.current.over : index;
     dragRef.current.dropped = true;
     applyDragMove(from, to);
     clearDrag();
   }
 
-  function finishRowDragEnd(e) {
+  function finishRowDragEnd() {
     // Some Chromium builds skip drop when transforms / overlays interfere —
     // still commit using the last drag-over index.
     if (!dragRef.current.dropped && dragRef.current.from != null) {
@@ -448,11 +456,7 @@ function MixAppArranger(props) {
         "aria-hidden": "true",
       }),
       h("p", { className: "mixapp-empty-title" }, MixAppI18n.t("picker.loading")),
-      h(
-        "p",
-        { className: "mixapp-empty-hint" },
-        MixAppI18n.t("arranger.loading")
-      )
+      h("p", { className: "mixapp-empty-hint" }, MixAppI18n.t("arranger.loading"))
     );
   }
 
@@ -526,12 +530,17 @@ function MixAppArranger(props) {
   function headCells() {
     const cells = [];
     if (show("INDEX")) {
-      cells.push(cell("mixapp-col-num", headButton(MixAppI18n.t("col.index"), "index")));
+      cells.push(
+        cell("mixapp-col-num", headButton(MixAppI18n.t("col.index"), "index"))
+      );
     }
     if (show("TITLE_AND_ARTIST")) {
-      cells.push(cell("mixapp-col-title", headButton(MixAppI18n.t("col.track"), "name")));
+      cells.push(
+        cell("mixapp-col-title", headButton(MixAppI18n.t("col.track"), "name"))
+      );
     }
-    if (show("ADDED_AT")) cells.push(cell("mixapp-col-added", MixAppI18n.t("col.added")));
+    if (show("ADDED_AT"))
+      cells.push(cell("mixapp-col-added", MixAppI18n.t("col.added")));
     for (const col of featureCols) {
       if (show(col.id)) {
         cells.push(
@@ -575,8 +584,8 @@ function MixAppArranger(props) {
             onToggleSeed?.(track.uri);
           },
           title: isSeed
-              ? MixAppI18n.t("arranger.seedUnmark")
-              : MixAppI18n.t("arranger.seedMark"),
+            ? MixAppI18n.t("arranger.seedUnmark")
+            : MixAppI18n.t("arranger.seedMark"),
         },
         titleText
       ),
@@ -871,7 +880,7 @@ function MixAppArranger(props) {
                   onToggleSeed?.(track.uri);
                 },
                 onDragStart: (e) => beginRowDrag(e, index),
-                onDragEnd: (e) => finishRowDragEnd(e),
+                onDragEnd: () => finishRowDragEnd(),
                 onDragOver: (e) => onRowDragOver(e, index),
                 onDrop: (e) => finishRowDrop(e, index),
               },

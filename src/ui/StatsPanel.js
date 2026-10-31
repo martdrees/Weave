@@ -141,11 +141,7 @@ function MixAppStatsPanel(props) {
     ),
 
     !list.length
-      ? h(
-          "p",
-          { className: "mixapp-recommend-empty" },
-          MixAppI18n.t("stats.empty")
-        )
+      ? h("p", { className: "mixapp-recommend-empty" }, MixAppI18n.t("stats.empty"))
       : !chartMetrics.length
         ? h(
             "p",

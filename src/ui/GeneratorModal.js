@@ -137,8 +137,7 @@ function MixAppGeneratorModal(props) {
       setError("Generate tracks first");
       return;
     }
-    const title =
-      String(name || "").trim() || MixAppI18n.t("generator.defaultName");
+    const title = String(name || "").trim() || MixAppI18n.t("generator.defaultName");
     setBusy(true);
     setError(null);
     try {

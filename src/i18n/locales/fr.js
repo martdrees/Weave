@@ -26,14 +26,14 @@ MixAppI18n.register("fr", {
   "toolbar.flowify": "Flowify",
   "toolbar.flowifyTitle": "Réorganiser automatiquement la playlist (courbes / sets)",
   "toolbar.generator": "Générateur",
-  "toolbar.generatorTitle": "Générer une nouvelle playlist à partir de titres de départ",
+  "toolbar.generatorTitle":
+    "Générer une nouvelle playlist à partir de titres de départ",
   "toolbar.stats": "Statistiques",
   "toolbar.statsTitle": "Graphiques des caractéristiques et résumé",
   "toolbar.save": "Enregistrer",
   "toolbar.saving": "Enregistrement…",
   "toolbar.saveTitle": "Remplacer la playlist par l’ordre actuel",
-  "toolbar.saveTitleOwnedOnly":
-    "Vous ne pouvez remplacer que vos propres playlists",
+  "toolbar.saveTitleOwnedOnly": "Vous ne pouvez remplacer que vos propres playlists",
   "toolbar.saveAsNew": "Enregistrer sous",
   "toolbar.saveAsNewTitle":
     "Créer une nouvelle playlist avec la liste de titres actuelle",
@@ -50,8 +50,7 @@ MixAppI18n.register("fr", {
 
   // Arranger
   "arranger.loading": "Récupération du contenu de la playlist depuis Spotify.",
-  "arranger.empty":
-    "Sélectionnez une playlist pour modifier l’ordre de ses titres.",
+  "arranger.empty": "Sélectionnez une playlist pour modifier l’ordre de ses titres.",
   "arranger.emptyHint": "Appuyez sur ? pour afficher les raccourcis clavier.",
   "arranger.aria": "Titres de la playlist",
   "arranger.columnsMenu": "Clic droit pour afficher ou masquer des colonnes",
@@ -115,8 +114,7 @@ MixAppI18n.register("fr", {
   "search.resetRanges": "Réinitialiser les plages",
   "search.maxResults": "Nombre max. de résultats",
   "search.search": "Rechercher",
-  "search.seedsNeeded":
-    "Chargez une playlist ou marquez des titres de départ",
+  "search.seedsNeeded": "Chargez une playlist ou marquez des titres de départ",
   "search.featureRanges": "Plages de caractéristiques",
   "search.mixInKey": "Mixage en tonalité",
   "search.filters": "Filtres",
@@ -128,8 +126,7 @@ MixAppI18n.register("fr", {
   "search.yearTo": "À",
   "search.year": "Année",
   "search.avg": "Moy.",
-  "search.avgTitle":
-    "Utiliser la valeur cible : définir min/max autour de la moyenne",
+  "search.avgTitle": "Utiliser la valeur cible : définir min/max autour de la moyenne",
   "search.avgUnavailable":
     "Moyenne indisponible (titres de départ ou caractéristiques de la playlist requis)",
   "search.minMax": "Min – max",
@@ -150,8 +147,7 @@ MixAppI18n.register("fr", {
   "camelot.moodShift": "Changement d’ambiance",
   "camelot.moodShiftHint": "Diagonale (±1 + changement de lettre)",
   "camelot.harmonicShift": "Saut harmonique",
-  "camelot.harmonicShiftHint":
-    "Jaws (±5) · chute / saut harmonique spectaculaire",
+  "camelot.harmonicShiftHint": "Jaws (±5) · chute / saut harmonique spectaculaire",
 
   // Search results
   "results.title": "Résultats",
@@ -168,9 +164,11 @@ MixAppI18n.register("fr", {
   "addTrack.placeholder": "Rechercher des titres…",
   "addTrack.placeholderArtist": "Rechercher des artistes…",
   "addTrack.search": "Rechercher",
-  "addTrack.empty": "Recherchez dans le catalogue Spotify et ajoutez des titres à votre playlist.",
+  "addTrack.empty":
+    "Recherchez dans le catalogue Spotify et ajoutez des titres à votre playlist.",
   "addTrack.emptyArtist": "Choisissez un artiste pour parcourir ses titres populaires.",
-  "addTrack.artistSuggestHint": "Saisissez au moins 2 caractères pour trouver des artistes.",
+  "addTrack.artistSuggestHint":
+    "Saisissez au moins 2 caractères pour trouver des artistes.",
   "addTrack.noArtists": "Aucun artiste trouvé",
   "addTrack.noTopTracks": "Aucun titre populaire pour cet artiste",
   "addTrack.backToArtists": "← Artistes",
@@ -236,8 +234,7 @@ MixAppI18n.register("fr", {
   "stats.pickMetric": "Sélectionnez une mesure ci-dessus.",
   "stats.needTwo":
     "Au moins deux titres enrichis sont nécessaires pour calculer la variation entre titres.",
-  "stats.noValues":
-    "Aucune valeur de caractéristique pour ces titres pour le moment.",
+  "stats.noValues": "Aucune valeur de caractéristique pour ces titres pour le moment.",
   "stats.avg": "moy. {value}",
 
   // Shortcuts help
@@ -275,8 +272,7 @@ MixAppI18n.register("fr", {
   "notify.failedPlaylist": "Impossible de charger la playlist",
   "notify.cannotSaveLoading":
     "Impossible d’enregistrer pendant le chargement de la playlist",
-  "notify.playlistChangedCancel":
-    "La playlist a été modifiée — enregistrement annulé",
+  "notify.playlistChangedCancel": "La playlist a été modifiée — enregistrement annulé",
   "notify.playlistChangedDuringSave":
     "La playlist a été modifiée pendant l’enregistrement — état local inchangé",
   "notify.playlistSaved": "Playlist enregistrée",
@@ -300,8 +296,7 @@ MixAppI18n.register("fr", {
   "notify.noNewTracks": "Aucun nouveau titre à ajouter",
   "notify.addedCount": "{count} titres ajoutés",
   "notify.selectSeeds": "Sélectionnez d’abord des titres de départ",
-  "notify.noSeedFeatures":
-    "Aucune caractéristique audio pour ces titres de départ",
+  "notify.noSeedFeatures": "Aucune caractéristique audio pour ces titres de départ",
   "notify.fittedSeeds": "Plages de caractéristiques ajustées aux titres de départ",
   "notify.needSeedsOrPlaylist":
     "Chargez d’abord une playlist ou marquez des titres de départ",
