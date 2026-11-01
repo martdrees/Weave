@@ -1,40 +1,39 @@
-# Save and history
+# Save as new and live edits
 
-Undo/redo local **draft** edits (especially Flowify), then write those back to Spotify with Save. **Add**, **remove**, and single-row **reorder** already persist to Spotify immediately when the playlist is writable and not already dirty (no Save required for those alone).
+Weave is a **live view** of the open Spotify playlist. Add, remove, and single-row reorder write through to Spotify immediately. **Flowify** is preview-first: live-arrange locally, then **Apply to playlist** (one bulk write) or **Save as new** from the preview. There is no Unsaved badge and no overwrite Save.
 
-![Toolbar actions including Save](screenshots/toolbar-actions.png)
+![Toolbar actions including Save as new](screenshots/toolbar-actions.png)
 
-## Undo / Redo
+## Live edits (no Save)
 
-| Action | Shortcut | When |
-| ------ | -------- | ---- |
-| Undo | `Ctrl/⌘ Z` | Reverse the last **local draft** edit (Flowify, …). Add/remove/reorder that already wrote to Spotify are not undone this way. |
-| Redo | `Ctrl/⌘ Shift Z` or `Ctrl/⌘ Y` | Re-apply after Undo |
+| Action | Spotify |
+|--------|---------|
+| Add track (search / copy / recommendations) | Immediate |
+| Remove row | Immediate |
+| Drag / ↑↓ / Alt+↑↓ reorder | Immediate (when you can edit the playlist) |
+| Flowify **live preview** | Unchanged (local only) |
+| Flowify **Apply to playlist** | One bulk write to the open playlist |
+| Flowify **Save as new** | New playlist created; Weave loads the new playlist |
 
-Buttons disable when there is nothing to undo/redo, or while a save is in progress.
-
-## Unsaved badge
-
-After **draft** changes (for example Flowify Apply), an **Unsaved** badge appears next to the playlist picker. It clears after a successful Save that matches Spotify. Add/remove/single-row reorder alone do not show Unsaved — they already wrote through to Spotify when the playlist was clean. While Unsaved is on, further reorders stay in the draft (they do not write through) until you Save or Undo.
-
-## Save
-
-- **Save** (`Ctrl/⌘ S`) — overwrite the **current** playlist with the editor order and membership.
-- Enabled only when:
-  - There are unsaved changes, and
-  - You **own** the playlist (or it is collaborative in a way Weave treats as writable).
-- On playlists you do not own, Save stays disabled; use **Save as new** instead.
-
-A short message confirms *Playlist saved*, or explains errors if the playlist changed on Spotify during save / rate limits.
+Failed writes revert the row/order in Weave and show an error notify. Flowify keeps the modal open until Apply / Save as new finishes so a second commit cannot race.
 
 ## Save as new
 
-- **Save as new** (`Ctrl/⌘ Shift S`) — create a **new** playlist with the current track list (does not overwrite the original).
-- Works even when you cannot overwrite the source playlist.
+- **Toolbar / shortcut** (`Ctrl/⌘ Shift S`) — create a **new** playlist with the current track list (does not overwrite the open playlist), then open the new playlist.
+- **Flowify** — create from the **preview** order, then open the new playlist; the original playlist on Spotify is unchanged.
+- Works even when you cannot overwrite the source playlist (e.g. someone else’s list you rearranged for a copy).
 - Default naming often appends `(Weave)` to the source name.
+
+Overwrite Save (`Ctrl/⌘ S`) is removed.
+
+## Undo / redo
+
+Playlist undo/redo is removed. Closing Flowify without Apply discards the preview. After Apply, reverse changes in Weave or in Spotify’s native UI.
 
 ## Tips
 
-- Prefer Undo before Save if you are exploring Flowify settings.
-- Session restore may bring back unsaved work after restart; still confirm before Save.
-- If Spotify changed the same playlist while Weave has unsaved edits, Weave asks whether to reload, keep Weave, or overwrite Spotify — see [Playlist picker](playlist-picker.md).
+- Prefer Flowify live preview carefully before Apply — Apply writes to Spotify once.
+- Session restore remembers which playlist was open and refetches tracks from Spotify (it does not restore a divergent draft order).
+- If Spotify changes the playlist while Weave is open, Weave reloads on focus/refresh and notifies you — no conflict dialog.
+
+**Related:** [Arranging tracks](arranging-tracks.md) · [Playlist picker](playlist-picker.md) · [Flowify](flowify.md)

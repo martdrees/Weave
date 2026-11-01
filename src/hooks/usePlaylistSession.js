@@ -1,6 +1,7 @@
 //@ts-check
 /**
- * Playlist list/load/save + dirty/undo wiring.
+ * Playlist list/load + write-through edits (live view).
+ * Spotify is source of truth; local `tracks` is an optimistic mirror.
  *
  * @param {{
  *   saved: object|null,
@@ -14,89 +15,41 @@ function MixAppUsePlaylistSession(opts) {
   const onBeforePlaylistLoad = opts?.onBeforePlaylistLoad;
   const onClearPlaylist = opts?.onClearPlaylist;
 
-  const undoRef = react.useRef(null);
-  if (!undoRef.current) {
-    undoRef.current = MixAppCreateUndoStack(40);
-    if (saved?.undo) undoRef.current.importState(saved.undo);
-  }
-
   const [playlists, setPlaylists] = react.useState([]);
   const [selectedUri, setSelectedUri] = react.useState(
     () => saved?.selectedUri || null
   );
   const [playlist, setPlaylist] = react.useState(() => saved?.playlist || null);
-  const [tracks, setTracks] = react.useState(() => {
-    const list = Array.isArray(saved?.tracks)
-      ? saved.tracks.map((t) => ({ ...t }))
-      : [];
-    return MixAppFeatures.reformatTrackKeys(list);
-  });
+  /** Always start empty — refetch from Spotify (no restored draft order). */
+  const [tracks, setTracks] = react.useState([]);
   const [listLoading, setListLoading] = react.useState(true);
   const [tracksLoading, setTracksLoading] = react.useState(false);
-  const [dirty, setDirty] = react.useState(() => !!saved?.dirty);
   const [saving, setSaving] = react.useState(false);
-  const [canUndo, setCanUndo] = react.useState(
-    () => !!(saved?.undo?.past && saved.undo.past.length)
-  );
-  const [canRedo, setCanRedo] = react.useState(
-    () => !!(saved?.undo?.future && saved.undo.future.length)
-  );
   const [error, setError] = react.useState(null);
   /** Brief arranger motion (R5.4): row uids and/or whole-list flash key. */
   const [rowFlashUids, setRowFlashUids] = react.useState([]);
   const [listFlashKey, setListFlashKey] = react.useState(0);
   const flashTimerRef = react.useRef(null);
-  /** @type {[null|{ kind: string, remoteFingerprint: string|null }, Function]} */
-  const [syncConflict, setSyncConflict] = react.useState(null);
-  /** User chose Keep Weave while Spotify differed — show quiet badge. */
-  const [remoteIgnored, setRemoteIgnored] = react.useState(
-    () =>
-      !!(
-        saved?.dirty &&
-        typeof saved?.ignoredRemoteFingerprint === "string" &&
-        saved.ignoredRemoteFingerprint
-      )
-  );
 
   const loadGenRef = react.useRef(0);
   const selectedUriRef = react.useRef(selectedUri);
   selectedUriRef.current = selectedUri;
   const tracksLoadingRef = react.useRef(tracksLoading);
   tracksLoadingRef.current = tracksLoading;
-  /** Synchronous save lock — React `saving` state alone cannot block double Ctrl+S. */
+  /** Synchronous write lock — React `saving` alone cannot block double actions. */
   const savingRef = react.useRef(false);
+  /** Count of in-flight add/remove/move/bulk writes (focus reload skips while > 0). */
+  const writeInFlightRef = react.useRef(0);
   /** Provisional uids with an in-flight addTracks write-through. */
   const pendingAddUidsRef = react.useRef(new Set());
   const tracksRef = react.useRef(tracks);
   tracksRef.current = tracks;
-  const dirtyRef = react.useRef(dirty);
-  dirtyRef.current = dirty;
   const playlistRef = react.useRef(playlist);
   playlistRef.current = playlist;
   const syncCheckInFlightRef = react.useRef(false);
-  const syncConflictRef = react.useRef(syncConflict);
-  syncConflictRef.current = syncConflict;
   const lastSyncCheckAtRef = react.useRef(0);
-
-  const initialTracksFp = MixAppPlaylistOps.fingerprintTrackOrder(
-    Array.isArray(saved?.tracks) ? saved.tracks : tracks
-  );
-  const [syncedFingerprint, setSyncedFingerprint] = react.useState(() =>
-    typeof saved?.syncedFingerprint === "string" && saved.syncedFingerprint
-      ? saved.syncedFingerprint
-      : saved?.dirty
-        ? null
-        : initialTracksFp || null
-  );
-  const [ignoredRemoteFingerprint, setIgnoredRemoteFingerprint] = react.useState(() =>
-    typeof saved?.ignoredRemoteFingerprint === "string"
-      ? saved.ignoredRemoteFingerprint
-      : null
-  );
-  const syncedFingerprintRef = react.useRef(syncedFingerprint);
-  syncedFingerprintRef.current = syncedFingerprint;
-  const ignoredRemoteFingerprintRef = react.useRef(ignoredRemoteFingerprint);
-  ignoredRemoteFingerprintRef.current = ignoredRemoteFingerprint;
+  /** Last known Spotify order fingerprint for the open playlist. */
+  const lastRemoteFingerprintRef = react.useRef(/** @type {string|null} */ (null));
 
   function sameTrackIdentityOrder(a, b) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
@@ -110,22 +63,17 @@ function MixAppUsePlaylistSession(opts) {
     });
   }
 
-  function setSyncedBaseline(trackList) {
-    const fp = MixAppPlaylistOps.fingerprintTrackOrder(trackList) || null;
-    syncedFingerprintRef.current = fp;
-    ignoredRemoteFingerprintRef.current = null;
-    setSyncedFingerprint(fp);
-    setIgnoredRemoteFingerprint(null);
-    setRemoteIgnored(false);
+  function setLastRemoteFingerprint(trackList) {
+    lastRemoteFingerprintRef.current =
+      MixAppPlaylistOps.fingerprintTrackOrder(trackList) || null;
   }
 
-  function clearSyncConflict() {
-    setSyncConflict(null);
+  function beginWrite() {
+    writeInFlightRef.current += 1;
   }
 
-  function syncUndoFlags() {
-    setCanUndo(undoRef.current.canUndo());
-    setCanRedo(undoRef.current.canRedo());
+  function endWrite() {
+    writeInFlightRef.current = Math.max(0, writeInFlightRef.current - 1);
   }
 
   async function refreshPlaylists() {
@@ -150,13 +98,9 @@ function MixAppUsePlaylistSession(opts) {
     // Mount only (intentional deps omission).
   }, []);
 
-  // Session restore may have Camelot keys from audio-features; reload once so
-  // keys match Spotify’s playlist Key column (AudioAttributesV2).
-  // Skip when the restored session is dirty — a force reload would wipe unsaved order.
+  // Restore selected playlist by refetching Spotify (never trust cached tracks).
   react.useEffect(() => {
-    if (!selectedUri || !tracks.length) return;
-    if (dirty) return;
-    if (tracks.some((t) => t && t.keyNative)) return;
+    if (!selectedUri) return;
     loadPlaylist(selectedUri, { force: true });
     // One-shot after restore (intentional deps omission).
   }, []);
@@ -188,13 +132,7 @@ function MixAppUsePlaylistSession(opts) {
       setPlaylist(null);
       tracksRef.current = [];
       setTracks([]);
-      setDirty(false);
-      setSyncedBaseline([]);
-      syncedFingerprintRef.current = null;
-      setSyncedFingerprint(null);
-      clearSyncConflict();
-      undoRef.current.clear();
-      syncUndoFlags();
+      lastRemoteFingerprintRef.current = null;
       MixAppSession.clear();
       return;
     }
@@ -237,17 +175,13 @@ function MixAppUsePlaylistSession(opts) {
       setPlaylist(meta);
       setTracks(items);
       tracksRef.current = items;
-      setDirty(false);
-      setSyncedBaseline(items);
-      clearSyncConflict();
-      undoRef.current.clear();
-      syncUndoFlags();
+      setLastRemoteFingerprint(items);
       setTracksLoading(false);
       try {
         const enriched = await MixAppFeatures.enrichTracks(items.slice());
         if (loadGen !== loadGenRef.current) return;
         // Merge features into whatever the user currently has — never hard-replace
-        // after enrich, or mid-load reorders/adds are wiped while dirty stays true.
+        // after enrich, or mid-load reorders/adds are wiped.
         const byUid = new Map(
           (enriched || []).filter((t) => t?.uid).map((t) => [t.uid, t])
         );
@@ -334,18 +268,7 @@ function MixAppUsePlaylistSession(opts) {
     setListFlashKey((k) => k + 1);
   }
 
-  function commitTracks(next, { recordUndo } = { recordUndo: true }) {
-    if (savingRef.current) return;
-    if (recordUndo) {
-      undoRef.current.push(tracksRef.current);
-    }
-    tracksRef.current = next;
-    setTracks(next);
-    setDirty(true);
-    syncUndoFlags();
-  }
-
-  /** Local list update without dirty / undo (write-through add/remove). */
+  /** Local list update (optimistic mirror; no draft/dirty). */
   function replaceTracksLocal(next) {
     tracksRef.current = next;
     setTracks(next);
@@ -372,6 +295,7 @@ function MixAppUsePlaylistSession(opts) {
       .filter(Boolean)
       .map(String);
     for (const id of pendingUids) pendingAddUidsRef.current.add(id);
+    beginWrite();
     try {
       const remote = await MixAppApi.addTracks(uri, uris, { after: "end" });
       if (selectedUriRef.current !== uri) return;
@@ -380,8 +304,7 @@ function MixAppUsePlaylistSession(opts) {
         remote
       );
       replaceTracksLocal(merged);
-      setSyncedBaseline(merged);
-      // Re-enrich after uid merge — early enrich may have keyed on provisional uids.
+      setLastRemoteFingerprint(merged);
       const uriSet = new Set(uris);
       MixAppPlaylistOps.enrichAdded(
         merged.filter((t) => t?.uri && uriSet.has(t.uri)),
@@ -395,6 +318,7 @@ function MixAppUsePlaylistSession(opts) {
       }
     } finally {
       for (const id of pendingUids) pendingAddUidsRef.current.delete(id);
+      endWrite();
     }
   }
 
@@ -407,12 +331,13 @@ function MixAppUsePlaylistSession(opts) {
   async function persistRemovedTrack(priorTracks, removed, index) {
     const uri = playlistRef.current?.uri;
     if (!uri || !removed?.uri || !removed?.uid) return;
+    beginWrite();
     try {
       await MixAppApi.removeTracks(uri, [
         { uri: String(removed.uri), uid: String(removed.uid) },
       ]);
       if (selectedUriRef.current !== uri) return;
-      setSyncedBaseline(tracksRef.current);
+      setLastRemoteFingerprint(tracksRef.current);
     } catch (err) {
       console.error(err);
       if (selectedUriRef.current === uri) {
@@ -422,6 +347,8 @@ function MixAppUsePlaylistSession(opts) {
         replaceTracksLocal(cur);
         MixAppApi.notify(err?.message || MixAppI18n.t("notify.removeFailed"), true);
       }
+    } finally {
+      endWrite();
     }
   }
 
@@ -434,6 +361,7 @@ function MixAppUsePlaylistSession(opts) {
   async function persistMovedTrack(priorTracks, moved, toIndex) {
     const uri = playlistRef.current?.uri;
     if (!uri || !moved?.uri || !moved?.uid) return;
+    beginWrite();
     try {
       await MixAppApi.moveTrack(
         uri,
@@ -441,13 +369,15 @@ function MixAppUsePlaylistSession(opts) {
         { index: toIndex }
       );
       if (selectedUriRef.current !== uri) return;
-      setSyncedBaseline(tracksRef.current);
+      setLastRemoteFingerprint(tracksRef.current);
     } catch (err) {
       console.error(err);
       if (selectedUriRef.current === uri) {
         replaceTracksLocal(priorTracks);
         MixAppApi.notify(err?.message || MixAppI18n.t("notify.reorderFailed"), true);
       }
+    } finally {
+      endWrite();
     }
   }
 
@@ -473,12 +403,9 @@ function MixAppUsePlaylistSession(opts) {
     next.splice(from, 1);
     next.splice(to, 0, moved);
 
-    // Write-through only when clean: moveTrack resolves { index } against Spotify
-    // live order, so a dirty draft (Flowify, etc.) must stay on commitTracks.
-    // Non-writable playlists also use commitTracks (Save as new).
-    const useWriteThrough = canWriteThroughPlaylist() && !dirtyRef.current;
-    if (!useWriteThrough) {
-      commitTracks(next);
+    // Non-writable: local mirror only (Save as new can still copy order).
+    if (!canWriteThroughPlaylist()) {
+      replaceTracksLocal(next);
       return;
     }
 
@@ -513,7 +440,6 @@ function MixAppUsePlaylistSession(opts) {
         MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeRemove"), true);
         return null;
       }
-      // Local-only provisional row (never on Spotify) — drop without API.
       const nextLocal = list.slice();
       nextLocal.splice(index, 1);
       replaceTracksLocal(nextLocal);
@@ -528,31 +454,31 @@ function MixAppUsePlaylistSession(opts) {
     return removed;
   }
 
-  function handleUndo() {
-    if (savingRef.current) return;
-    const prev = undoRef.current.undo(tracksRef.current);
-    if (!prev) return;
-    tracksRef.current = prev;
-    setTracks(prev);
-    setDirty(true);
-    syncUndoFlags();
-  }
-
-  function handleRedo() {
-    if (savingRef.current) return;
-    const next = undoRef.current.redo(tracksRef.current);
-    if (!next) return;
-    tracksRef.current = next;
-    setTracks(next);
-    setDirty(true);
-    syncUndoFlags();
-  }
-
-  async function handleSave() {
-    if (!playlist?.uri || !dirty) return false;
+  /**
+   * Create a new playlist from current tracks or an explicit list (Flowify preview).
+   * @param {{ tracks?: MixAppTrackRow[], stayOnCurrent?: boolean }} [opts]
+   * @returns {Promise<boolean>}
+   */
+  async function handleSaveAsNew(opts) {
+    // Toolbar passes a click event; only treat plain option objects as opts.
+    const options =
+      opts &&
+      typeof opts === "object" &&
+      !opts.nativeEvent &&
+      (Array.isArray(opts.tracks) || typeof opts.stayOnCurrent === "boolean")
+        ? opts
+        : null;
+    const source =
+      Array.isArray(options?.tracks) && options.tracks.length
+        ? options.tracks
+        : tracksRef.current;
+    if (!source.length) return false;
     if (tracksLoadingRef.current || savingRef.current) return false;
-    const uriAtStart = playlist.uri;
-    const tracksAtStart = tracksRef.current.slice();
+    const stayOnCurrent = !!options?.stayOnCurrent;
+    const base = playlist?.name || MixAppI18n.t("playlist.defaultName");
+    const name = MixAppI18n.t("playlist.weaveSuffix", { name: base });
+    const uris = source.map((t) => t.uri).filter(Boolean);
+    if (!uris.length) return false;
     savingRef.current = true;
     setSaving(true);
     try {
@@ -560,30 +486,52 @@ function MixAppUsePlaylistSession(opts) {
         MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
         return false;
       }
-      if (selectedUriRef.current !== uriAtStart) {
-        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedCancel"), true);
-        return false;
-      }
-      const savedTracks = await MixAppApi.saveOverwrite(uriAtStart, tracksAtStart);
-      if (selectedUriRef.current !== uriAtStart) {
-        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
-        return false;
-      }
-      // If something still mutated local state during save, do not clear dirty /
-      // overwrite the editor with a stale snapshot.
-      if (!sameTrackIdentityOrder(tracksRef.current, tracksAtStart)) {
-        MixAppApi.notify(MixAppI18n.t("notify.playlistChangedDuringSave"), true);
-        return false;
-      }
-      let baselineTracks = tracksAtStart;
+      const uri = await MixAppApi.createPlaylist(name, uris);
+      MixAppApi.notify(MixAppI18n.t("notify.created", { name }));
+      await refreshPlaylists();
+      if (!stayOnCurrent) await loadPlaylist(uri);
+      return true;
+    } catch (err) {
+      console.error(err);
+      MixAppApi.notify(err?.message || MixAppI18n.t("notify.createFailed"), true);
+      return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Flowify Apply bridge: one applyBulk commit (no draft Save).
+   * @param {MixAppTrackRow[]} nextTracks
+   * @returns {Promise<boolean>}
+   */
+  async function handleApplyBulk(nextTracks) {
+    const uri = playlistRef.current?.uri;
+    if (!uri || !Array.isArray(nextTracks) || !nextTracks.length) return false;
+    if (!canWriteThroughPlaylist()) {
+      MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      return false;
+    }
+    if (savingRef.current) return false;
+    const prior = tracksRef.current.slice();
+    replaceTracksLocal(nextTracks);
+    flashList();
+    savingRef.current = true;
+    setSaving(true);
+    beginWrite();
+    try {
+      const savedTracks = await MixAppApi.applyBulk(uri, nextTracks);
+      if (selectedUriRef.current !== uri) return true;
+      let baseline = nextTracks;
       if (Array.isArray(savedTracks) && savedTracks.length) {
         const byUri = new Map();
-        for (const t of tracksAtStart) {
+        for (const t of nextTracks) {
           if (!t?.uri) continue;
           if (!byUri.has(t.uri)) byUri.set(t.uri, []);
           byUri.get(t.uri).push(t);
         }
-        const merged = savedTracks.map((t) => {
+        baseline = savedTracks.map((t) => {
           const queue = byUri.get(t.uri);
           const prev = queue && queue.length ? queue.shift() : null;
           if (!prev) return t;
@@ -601,48 +549,23 @@ function MixAppUsePlaylistSession(opts) {
             keyMode: prev.keyMode ?? t.keyMode,
           };
         });
-        tracksRef.current = merged;
-        setTracks(merged);
-        baselineTracks = merged;
+        replaceTracksLocal(baseline);
       }
-      setDirty(false);
-      setSyncedBaseline(baselineTracks);
-      clearSyncConflict();
-      undoRef.current.clear();
-      syncUndoFlags();
-      MixAppApi.notify(MixAppI18n.t("notify.playlistSaved"));
+      setLastRemoteFingerprint(baseline);
+      MixAppApi.notify(MixAppI18n.t("notify.flowifyApplied"));
       return true;
     } catch (err) {
       console.error(err);
-      MixAppApi.notify(err?.message || MixAppI18n.t("notify.saveFailed"), true);
+      if (selectedUriRef.current === uri) {
+        replaceTracksLocal(prior);
+        MixAppApi.notify(
+          err?.message || MixAppI18n.t("notify.flowifyApplyFailed"),
+          true
+        );
+      }
       return false;
     } finally {
-      savingRef.current = false;
-      setSaving(false);
-    }
-  }
-
-  async function handleSaveAsNew() {
-    if (!tracksRef.current.length) return;
-    if (tracksLoadingRef.current || savingRef.current) return;
-    const base = playlist?.name || MixAppI18n.t("playlist.defaultName");
-    const name = MixAppI18n.t("playlist.weaveSuffix", { name: base });
-    const uris = tracksRef.current.map((t) => t.uri);
-    savingRef.current = true;
-    setSaving(true);
-    try {
-      if (tracksLoadingRef.current) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
-        return;
-      }
-      const uri = await MixAppApi.createPlaylist(name, uris);
-      MixAppApi.notify(MixAppI18n.t("notify.created", { name }));
-      await refreshPlaylists();
-      await loadPlaylist(uri);
-    } catch (err) {
-      console.error(err);
-      MixAppApi.notify(err?.message || MixAppI18n.t("notify.createFailed"), true);
-    } finally {
+      endWrite();
       savingRef.current = false;
       setSaving(false);
     }
@@ -716,7 +639,7 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Compare the open playlist to Spotify (membership + order).
-   * Runs on Weave focus / Refresh. Skips while loading, saving, or a dialog is open.
+   * On drift: reload + toast. Skips while loading or writes in flight.
    */
   async function checkRemoteSync(opts) {
     const reason = opts?.reason || "auto";
@@ -724,9 +647,8 @@ function MixAppUsePlaylistSession(opts) {
     if (!uri) return;
     if (!playlistRef.current && !tracksRef.current.length) return;
     if (tracksLoadingRef.current || savingRef.current) return;
+    if (writeInFlightRef.current > 0) return;
     if (syncCheckInFlightRef.current) return;
-    if (syncConflictRef.current) return;
-    // Focus/visibility can fire often — cooldown unless user hit Refresh.
     const now = Date.now();
     if (reason !== "refresh" && now - lastSyncCheckAtRef.current < 2000) return;
 
@@ -745,35 +667,20 @@ function MixAppUsePlaylistSession(opts) {
           console.warn("Weave: remote sync check failed", err);
           return;
         }
-        if (dirtyRef.current) {
-          setSyncConflict({
-            kind: "unavailable",
-            remoteFingerprint: null,
-          });
-        } else {
-          MixAppApi.notify(MixAppI18n.t("notify.playlistUnavailable"), true);
-          MixAppPlaylists?.markPlaylistUnavailable?.(uri);
-          setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
-          onClearPlaylist?.();
-          setSelectedUri(null);
-          setPlaylist(null);
-          tracksRef.current = [];
-          setTracks([]);
-          setDirty(false);
-          setSyncedFingerprint(null);
-          setIgnoredRemoteFingerprint(null);
-          syncedFingerprintRef.current = null;
-          ignoredRemoteFingerprintRef.current = null;
-          setRemoteIgnored(false);
-          undoRef.current.clear();
-          syncUndoFlags();
-        }
+        MixAppApi.notify(MixAppI18n.t("notify.playlistUnavailable"), true);
+        MixAppPlaylists?.markPlaylistUnavailable?.(uri);
+        setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
+        onClearPlaylist?.();
+        setSelectedUri(null);
+        setPlaylist(null);
+        tracksRef.current = [];
+        setTracks([]);
+        lastRemoteFingerprintRef.current = null;
         return;
       }
 
       if (selectedUriRef.current !== uri) return;
 
-      // Meta-only: update name without touching tracks.
       try {
         const listed = (playlists || []).find((p) => p.uri === uri);
         let remoteMeta = listed
@@ -811,28 +718,12 @@ function MixAppUsePlaylistSession(opts) {
       }
 
       const remoteFp = MixAppPlaylistOps.fingerprintTrackOrder(remoteTracks);
+      const baselineFp = lastRemoteFingerprintRef.current;
       const currentFp = MixAppPlaylistOps.fingerprintTrackOrder(tracksRef.current);
-      const baselineFp = syncedFingerprintRef.current;
-      const ignoredFp = ignoredRemoteFingerprintRef.current;
 
-      if (dirtyRef.current) {
-        // Spotify still matches last sync → local-only edits; leave alone.
-        if (baselineFp != null && remoteFp === baselineFp) return;
-        // No baseline (legacy session): if remote already equals editor, nothing to do.
-        if (baselineFp == null && remoteFp === currentFp) return;
-        // Already chose Keep for this remote revision.
-        if (ignoredFp != null && remoteFp === ignoredFp) return;
-
-        setSyncConflict({
-          kind: "dirty-remote",
-          remoteFingerprint: remoteFp,
-        });
-        return;
-      }
-
-      // Clean editor.
-      if (remoteFp === currentFp) {
-        setSyncedBaseline(tracksRef.current);
+      if (baselineFp != null && remoteFp === baselineFp) return;
+      if (baselineFp == null && remoteFp === currentFp) {
+        setLastRemoteFingerprint(tracksRef.current);
         return;
       }
 
@@ -841,38 +732,6 @@ function MixAppUsePlaylistSession(opts) {
     } finally {
       syncCheckInFlightRef.current = false;
     }
-  }
-
-  async function resolveSyncReload() {
-    const uri = selectedUriRef.current;
-    clearSyncConflict();
-    ignoredRemoteFingerprintRef.current = null;
-    setRemoteIgnored(false);
-    if (!uri) return;
-    await loadPlaylist(uri, { force: true });
-  }
-
-  function resolveSyncKeep() {
-    const conflict = syncConflictRef.current;
-    if (conflict?.kind === "dirty-remote" && conflict.remoteFingerprint) {
-      ignoredRemoteFingerprintRef.current = conflict.remoteFingerprint;
-      setIgnoredRemoteFingerprint(conflict.remoteFingerprint);
-      setRemoteIgnored(true);
-    } else if (conflict?.kind === "unavailable") {
-      // Keep local editor; remote is gone — no fingerprint to ignore.
-      setRemoteIgnored(false);
-    }
-    clearSyncConflict();
-  }
-
-  async function resolveSyncOverwrite() {
-    const ok = await handleSave();
-    if (ok) clearSyncConflict();
-  }
-
-  async function resolveSyncSaveAsNew() {
-    clearSyncConflict();
-    await handleSaveAsNew();
   }
 
   checkRemoteSyncRef.current = checkRemoteSync;
@@ -884,34 +743,19 @@ function MixAppUsePlaylistSession(opts) {
     tracks,
     listLoading,
     tracksLoading,
-    dirty,
     saving,
-    canUndo,
-    canRedo,
     error,
     rowFlashUids,
     listFlashKey,
-    undoRef,
-    syncConflict,
-    remoteIgnored,
-    syncedFingerprint,
-    ignoredRemoteFingerprint,
     refreshPlaylists,
     loadPlaylist,
     checkRemoteSync,
-    resolveSyncReload,
-    resolveSyncKeep,
-    resolveSyncOverwrite,
-    resolveSyncSaveAsNew,
-    commitTracks,
     flashRows,
     flashList,
     handleReorder,
     handleRemoveTrack,
-    handleUndo,
-    handleRedo,
-    handleSave,
     handleSaveAsNew,
+    handleApplyBulk,
     handleAddCatalogTrack,
     handleAddCatalogTracks,
     handleAddRecommendedTrack,

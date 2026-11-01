@@ -4,16 +4,15 @@ Press **`?`** in Weave (when not typing in a field) to open the in-app shortcuts
 
 ![Toolbar area — shortcuts help is also available from the app chrome](screenshots/header-toolbar.png)
 
-Shortcuts are ignored while the focus is in an input, textarea, or select (**except** Save / Save as new with modifiers).
+Shortcuts are ignored while the focus is in an input, textarea, or select (**except** Save as new with modifiers).
 
 ## Editing
 
 | Shortcut | Action |
 | -------- | ------ |
-| `Ctrl/⌘ Z` | Undo |
-| `Ctrl/⌘ Shift Z` / `Ctrl/⌘ Y` | Redo |
-| `Ctrl/⌘ S` | Save playlist |
 | `Ctrl/⌘ Shift S` | Save as new |
+
+Overwrite Save and playlist undo/redo shortcuts are removed (live write-through).
 
 ## Panels and modals
 

@@ -58,10 +58,6 @@ function MixAppPage() {
     () => ({
       selectedUri: session.selectedUri,
       playlist: session.playlist,
-      tracks: session.tracks,
-      dirty: session.dirty,
-      syncedFingerprint: session.syncedFingerprint,
-      ignoredRemoteFingerprint: session.ignoredRemoteFingerprint,
       seedUris: search.seedUris,
       bannedUris: search.bannedUris,
       searchFeatures: search.searchFeatures,
@@ -69,15 +65,10 @@ function MixAppPage() {
       statsOpen: panels.statsOpen,
       resultsOpen: search.resultsOpen,
       searchResults: search.searchResults,
-      undo: session.undoRef.current.exportState(),
     }),
     [
       session.selectedUri,
       session.playlist,
-      session.tracks,
-      session.dirty,
-      session.syncedFingerprint,
-      session.ignoredRemoteFingerprint,
       search.seedUris,
       search.bannedUris,
       search.searchFeatures,
@@ -85,8 +76,6 @@ function MixAppPage() {
       panels.statsOpen,
       search.resultsOpen,
       search.searchResults,
-      session.canUndo,
-      session.canRedo,
     ]
   );
 
@@ -104,10 +93,7 @@ function MixAppPage() {
     saving: session.saving,
     playlist: session.playlist,
     tracks: session.tracks,
-    handleSave: session.handleSave,
     handleSaveAsNew: session.handleSaveAsNew,
-    handleUndo: session.handleUndo,
-    handleRedo: session.handleRedo,
     handleToggleSearch: search.handleToggleSearch,
     openPanel: panels.openPanel,
     togglePanel: panels.togglePanel,
@@ -213,10 +199,6 @@ function MixAppPage() {
     h(MixAppToolbar, {
       playlist: session.playlist,
       tracks: session.tracks,
-      dirty: session.dirty,
-      remoteIgnored: session.remoteIgnored,
-      canUndo: session.canUndo,
-      canRedo: session.canRedo,
       saving: session.saving,
       searchOpen: search.searchOpen,
       statsOpen: panels.statsOpen,
@@ -226,9 +208,6 @@ function MixAppPage() {
       listLoading: session.listLoading,
       onSelectPlaylist: session.loadPlaylist,
       onRefreshPlaylists: session.refreshPlaylists,
-      onUndo: session.handleUndo,
-      onRedo: session.handleRedo,
-      onSave: session.handleSave,
       onSaveAsNew: session.handleSaveAsNew,
       onToggleSearch: search.handleToggleSearch,
       onToggleStats: () => panels.togglePanel("stats"),
@@ -322,12 +301,17 @@ function MixAppPage() {
     h(MixAppFlowifyModal, {
       open: panels.flowifyOpen,
       tracks: session.tracks,
+      playingUri: playback.playingUri,
+      isPlaying: playback.isPlaying,
+      onPlay: handlePlay,
       onClose: () => panels.closePanel("flowify"),
-      onApply: (next) => {
-        if (Array.isArray(next) && next.length) {
-          session.commitTracks(next);
-          session.flashList();
-        }
+      onApply: async (next) => {
+        if (!Array.isArray(next) || !next.length) return false;
+        return session.handleApplyBulk(next);
+      },
+      onSaveAsNew: async (next) => {
+        if (!Array.isArray(next) || !next.length) return false;
+        return session.handleSaveAsNew({ tracks: next, stayOnCurrent: false });
       },
     }),
     h(MixAppGeneratorModal, {
@@ -352,17 +336,6 @@ function MixAppPage() {
     h(MixAppShortcutsHelp, {
       open: panels.shortcutsOpen,
       onClose: () => panels.closePanel("shortcuts"),
-    }),
-    h(MixAppSyncConflictModal, {
-      open: !!session.syncConflict,
-      kind: session.syncConflict?.kind || null,
-      playlistName: session.playlist?.name,
-      saving: session.saving,
-      onReload: session.resolveSyncReload,
-      onKeep: session.resolveSyncKeep,
-      onOverwrite: session.resolveSyncOverwrite,
-      onSaveAsNew: session.resolveSyncSaveAsNew,
-      onClose: session.resolveSyncKeep,
     })
   );
 }

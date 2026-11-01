@@ -8,14 +8,8 @@ MixAppI18n.register("de", {
   "app.shortcutsHint": "Tastenkürzel (?)",
 
   // Toolbar
-  "toolbar.unsaved": "Nicht gespeichert",
-  "toolbar.spotifyChanged": "Spotify geändert",
-  "toolbar.spotifyChangedTitle":
-    "Spotifys Kopie weicht von deinem letzten Sync ab — Weave-Änderungen wurden behalten",
   "toolbar.seed": "{count} Seed",
   "toolbar.seeds": "{count} Seeds",
-  "toolbar.undo": "Rückgängig",
-  "toolbar.redo": "Wiederholen",
   "toolbar.addTrack": "Titel hinzufügen",
   "toolbar.addTrackTitle": "Auf Spotify suchen und einen Titel hinzufügen",
   "toolbar.recommendations": "Empfehlungen",
@@ -29,11 +23,7 @@ MixAppI18n.register("de", {
   "toolbar.generatorTitle": "Neue Playlist aus Seeds generieren",
   "toolbar.stats": "Statistik",
   "toolbar.statsTitle": "Merkmalsdiagramme und Zusammenfassung",
-  "toolbar.save": "Speichern",
   "toolbar.saving": "Wird gespeichert…",
-  "toolbar.saveTitle": "Playlist mit der aktuellen Reihenfolge überschreiben",
-  "toolbar.saveTitleOwnedOnly":
-    "Du kannst nur Playlists überschreiben, die dir gehören",
   "toolbar.saveAsNew": "Als neue speichern",
   "toolbar.saveAsNewTitle": "Neue Playlist mit der aktuellen Titelliste erstellen",
 
@@ -191,7 +181,7 @@ MixAppI18n.register("de", {
 
   "flowify.title": "Flowify",
   "flowify.blurb":
-    "Ordnet die aktuelle Playlist automatisch an. Mit „Rückgängig“ stellst du die vorherige Reihenfolge wieder her.",
+    "Vorschau aktualisiert sich live bei Optionen. Anwenden schreibt einmal in die offene Playlist, oder Als neu speichern und die Kopie öffnen. Abbrechen verwirft die Vorschau.",
   "flowify.sets": "Sets",
   "flowify.curves": "Kurven",
   "flowify.setSize": "Set-Größe",
@@ -199,12 +189,18 @@ MixAppI18n.register("de", {
   "flowify.weights": "Merkmalsgewichtung",
   "flowify.invert": "Kurve dieses Merkmals umkehren",
   "flowify.inv": "Umk.",
-  "flowify.apply": "Anordnung anwenden",
+  "flowify.preview": "Vorschau",
+  "flowify.previewAction": "Vorschau",
+  "flowify.previewHint":
+    "Passe Gewichte oder Methode an, um die Vorschau zu aktualisieren. Spotify bleibt unverändert bis Anwenden oder Als neu speichern.",
+  "flowify.needPreview": "Warte, bis die Live-Vorschau fertig ist",
+  "flowify.apply": "Auf Playlist anwenden",
+  "flowify.applyTitle": "Diese Reihenfolge einmal in die offene Playlist schreiben",
+  "flowify.saveAsNewTitle":
+    "Neue Playlist aus dieser Vorschau erstellen und öffnen; die Original-Playlist bleibt unverändert",
   "flowify.working": "Wird bearbeitet…",
   "flowify.needPlaylist": "Lade zuerst eine Playlist mit Titeln",
   "flowify.needWeight": "Setze mindestens eine Merkmalsgewichtung über 0",
-  "flowify.doneCurves": "Playlist neu angeordnet (Kurven)",
-  "flowify.doneSets": "Playlist neu angeordnet (Sets)",
   "flowify.failed": "Flowify fehlgeschlagen",
 
   "generator.title": "Generator",
@@ -234,10 +230,7 @@ MixAppI18n.register("de", {
   // Shortcuts help
   "shortcuts.title": "Tastenkürzel",
   "shortcuts.note":
-    "Tastenkürzel werden bei der Eingabe in Textfeldern ignoriert (außer Speichern).",
-  "shortcuts.undo": "Rückgängig",
-  "shortcuts.redo": "Wiederholen",
-  "shortcuts.save": "Playlist speichern",
+    "Tastenkürzel werden bei der Eingabe in Textfeldern ignoriert (außer Als neue speichern).",
   "shortcuts.saveAsNew": "Als neue speichern",
   "shortcuts.toggleRecs": "Empfehlungen ein-/ausblenden",
   "shortcuts.addTrack": "Titel hinzufügen",
@@ -263,23 +256,9 @@ MixAppI18n.register("de", {
     "Anfragelimit — nur {count} passende Tonarten. Kurz warten und erneut suchen.",
   "notify.failedPlaylist": "Playlist konnte nicht geladen werden",
   "notify.cannotSaveLoading": "Speichern nicht möglich, während die Playlist lädt",
-  "notify.playlistChangedCancel": "Playlist wurde geändert — Speichern abgebrochen",
-  "notify.playlistChangedDuringSave":
-    "Playlist wurde beim Speichern geändert — lokaler Stand bleibt unverändert",
-  "notify.playlistSaved": "Playlist gespeichert",
   "notify.playlistUpdatedFromSpotify": "Playlist von Spotify aktualisiert",
-
-  "sync.conflictTitle": "Playlist auf Spotify geändert",
-  "sync.conflictBody":
-    "„{name}“ wurde auf Spotify geändert, während du ungespeicherte Änderungen in Weave hast. Von Spotify neu laden (Weave verwerfen), Weave behalten oder Spotify mit Weave überschreiben.",
-  "sync.unavailableTitle": "Playlist nicht verfügbar",
-  "sync.unavailableBody":
-    "„{name}“ ist auf Spotify nicht mehr verfügbar, aber du hast noch ungespeicherte Änderungen in Weave. Hier behalten oder als neue Playlist speichern.",
-  "sync.reloadSpotify": "Von Spotify laden",
-  "sync.keepWeave": "Weave behalten",
-  "sync.overwriteSpotify": "Spotify überschreiben",
-  "sync.saveAsNew": "Als neu speichern",
-  "notify.saveFailed": "Speichern fehlgeschlagen",
+  "notify.flowifyApplied": "Flowify auf Spotify angewendet",
+  "notify.flowifyApplyFailed": "Flowify konnte nicht auf Spotify angewendet werden",
   "notify.addFailed": "Titel konnte nicht zu Spotify hinzugefügt werden",
   "notify.removeFailed": "Titel konnte nicht von Spotify entfernt werden",
   "notify.reorderFailed": "Titel konnte auf Spotify nicht umgeordnet werden",

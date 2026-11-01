@@ -8,14 +8,8 @@ MixAppI18n.register("pt", {
   "app.shortcutsHint": "Atalhos de teclado (?)",
 
   // Toolbar
-  "toolbar.unsaved": "Não salvo",
-  "toolbar.spotifyChanged": "Spotify alterada",
-  "toolbar.spotifyChangedTitle":
-    "A cópia no Spotify difere do último sync — as edições do Weave foram mantidas",
   "toolbar.seed": "{count} semente",
   "toolbar.seeds": "{count} sementes",
-  "toolbar.undo": "Desfazer",
-  "toolbar.redo": "Refazer",
   "toolbar.addTrack": "Adicionar faixa",
   "toolbar.addTrackTitle": "Pesquisar no Spotify e adicionar uma faixa",
   "toolbar.recommendations": "Recomendações",
@@ -29,10 +23,7 @@ MixAppI18n.register("pt", {
   "toolbar.generatorTitle": "Gerar uma nova playlist a partir de sementes",
   "toolbar.stats": "Estatísticas",
   "toolbar.statsTitle": "Gráficos de características e resumo",
-  "toolbar.save": "Salvar",
   "toolbar.saving": "Salvando…",
-  "toolbar.saveTitle": "Substituir a playlist pela ordem atual",
-  "toolbar.saveTitleOwnedOnly": "Você só pode substituir playlists que são suas",
   "toolbar.saveAsNew": "Salvar como nova",
   "toolbar.saveAsNewTitle": "Criar uma nova playlist com a lista de faixas atual",
 
@@ -192,7 +183,7 @@ MixAppI18n.register("pt", {
 
   "flowify.title": "Flowify",
   "flowify.blurb":
-    "Organiza automaticamente a playlist atual. Desfazer restaura a ordem anterior.",
+    "A pré-visualização atualiza ao mudar opções. Aplicar grava uma vez na playlist aberta, ou Salvar como nova e abrir a cópia. Cancelar descarta a pré-visualização.",
   "flowify.sets": "Sets",
   "flowify.curves": "Curvas",
   "flowify.setSize": "Tamanho do set",
@@ -200,12 +191,18 @@ MixAppI18n.register("pt", {
   "flowify.weights": "Pesos das características",
   "flowify.invert": "Inverter a curva desta característica",
   "flowify.inv": "Inv.",
-  "flowify.apply": "Aplicar organização",
+  "flowify.preview": "Pré-visualização",
+  "flowify.previewAction": "Pré-visualizar",
+  "flowify.previewHint":
+    "Ajuste pesos ou método para atualizar esta pré-visualização. O Spotify só muda com Aplicar ou Salvar como nova.",
+  "flowify.needPreview": "Aguarde a pré-visualização ao vivo terminar",
+  "flowify.apply": "Aplicar à playlist",
+  "flowify.applyTitle": "Escrever esta ordem uma vez na playlist aberta",
+  "flowify.saveAsNewTitle":
+    "Criar uma playlist nova a partir desta pré-visualização e abri-la; a original permanece igual",
   "flowify.working": "Processando…",
   "flowify.needPlaylist": "Carregue primeiro uma playlist com faixas",
   "flowify.needWeight": "Defina pelo menos um peso de característica acima de 0",
-  "flowify.doneCurves": "Playlist reorganizada (curvas)",
-  "flowify.doneSets": "Playlist reorganizada (sets)",
   "flowify.failed": "Falha no Flowify",
 
   "generator.title": "Gerador",
@@ -235,10 +232,7 @@ MixAppI18n.register("pt", {
   // Shortcuts help
   "shortcuts.title": "Atalhos de teclado",
   "shortcuts.note":
-    "Os atalhos são ignorados ao digitar em campos de texto (exceto Salvar).",
-  "shortcuts.undo": "Desfazer",
-  "shortcuts.redo": "Refazer",
-  "shortcuts.save": "Salvar playlist",
+    "Os atalhos são ignorados ao digitar em campos de texto (exceto Salvar como nova).",
   "shortcuts.saveAsNew": "Salvar como nova",
   "shortcuts.toggleRecs": "Mostrar/ocultar recomendações",
   "shortcuts.addTrack": "Adicionar faixa",
@@ -265,23 +259,9 @@ MixAppI18n.register("pt", {
     "Limite de requisições — só {count} matches na tonalidade. Espere alguns segundos e pesquise de novo.",
   "notify.failedPlaylist": "Falha ao carregar a playlist",
   "notify.cannotSaveLoading": "Não é possível salvar enquanto a playlist carrega",
-  "notify.playlistChangedCancel": "A playlist foi alterada — salvamento cancelado",
-  "notify.playlistChangedDuringSave":
-    "A playlist foi alterada durante o salvamento — o estado local não foi modificado",
-  "notify.playlistSaved": "Playlist salva",
   "notify.playlistUpdatedFromSpotify": "Playlist atualizada do Spotify",
-
-  "sync.conflictTitle": "Playlist alterada no Spotify",
-  "sync.conflictBody":
-    "“{name}” mudou no Spotify enquanto você tem edições não salvas no Weave. Recarregar do Spotify (descartar Weave), manter o Weave ou sobrescrever o Spotify com o Weave.",
-  "sync.unavailableTitle": "Playlist indisponível",
-  "sync.unavailableBody":
-    "“{name}” não está mais disponível no Spotify, mas você ainda tem edições não salvas no Weave. Mantê-las aqui ou salvar como nova playlist.",
-  "sync.reloadSpotify": "Recarregar do Spotify",
-  "sync.keepWeave": "Manter Weave",
-  "sync.overwriteSpotify": "Sobrescrever Spotify",
-  "sync.saveAsNew": "Salvar como nova",
-  "notify.saveFailed": "Falha ao salvar",
+  "notify.flowifyApplied": "Flowify aplicado ao Spotify",
+  "notify.flowifyApplyFailed": "Não foi possível aplicar o Flowify ao Spotify",
   "notify.addFailed": "Não foi possível adicionar a faixa ao Spotify",
   "notify.removeFailed": "Não foi possível remover a faixa do Spotify",
   "notify.reorderFailed": "Não foi possível reordenar a faixa no Spotify",

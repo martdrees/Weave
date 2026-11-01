@@ -1,15 +1,10 @@
 //@ts-check
 
 function MixAppToolbar(props) {
-  const react = Spicetify.React;
   const t = MixAppI18n.t;
   const {
     playlist,
     tracks,
-    dirty,
-    remoteIgnored,
-    canUndo,
-    canRedo,
     saving,
     searchOpen,
     statsOpen,
@@ -19,9 +14,6 @@ function MixAppToolbar(props) {
     listLoading,
     onSelectPlaylist,
     onRefreshPlaylists,
-    onUndo,
-    onRedo,
-    onSave,
     onSaveAsNew,
     onToggleSearch,
     onToggleStats,
@@ -31,7 +23,6 @@ function MixAppToolbar(props) {
     onOpenGenerator,
   } = props;
 
-  const owned = !!(playlist?.isOwnedBySelf || playlist?.collaborative);
   const hasTracks = Array.isArray(tracks) && tracks.length > 0;
   const hasPlaylist = !!playlist;
 
@@ -50,17 +41,6 @@ function MixAppToolbar(props) {
         onSelect: onSelectPlaylist,
         onRefresh: onRefreshPlaylists,
       }),
-      dirty ? h("span", { className: "mixapp-badge" }, t("toolbar.unsaved")) : null,
-      remoteIgnored
-        ? h(
-            "span",
-            {
-              className: "mixapp-badge mixapp-badge-remote",
-              title: t("toolbar.spotifyChangedTitle"),
-            },
-            t("toolbar.spotifyChanged")
-          )
-        : null,
       seedCount > 0
         ? h(
             "span",
@@ -74,28 +54,6 @@ function MixAppToolbar(props) {
     h(
       "div",
       { className: "mixapp-toolbar-actions" },
-      h(
-        "button",
-        {
-          type: "button",
-          className: "mixapp-btn mixapp-btn-ghost",
-          onClick: onUndo,
-          disabled: !canUndo || saving,
-          title: t("toolbar.undo"),
-        },
-        t("toolbar.undo")
-      ),
-      h(
-        "button",
-        {
-          type: "button",
-          className: "mixapp-btn mixapp-btn-ghost",
-          onClick: onRedo,
-          disabled: !canRedo || saving,
-          title: t("toolbar.redo"),
-        },
-        t("toolbar.redo")
-      ),
       h(
         "button",
         {
@@ -166,23 +124,12 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn",
-          onClick: onSave,
-          disabled: !playlist || !dirty || saving || !owned,
-          title: owned ? t("toolbar.saveTitle") : t("toolbar.saveTitleOwnedOnly"),
-        },
-        saving ? t("toolbar.saving") : t("toolbar.save")
-      ),
-      h(
-        "button",
-        {
-          type: "button",
           className: "mixapp-btn mixapp-btn-primary",
           onClick: onSaveAsNew,
           disabled: !playlist || !hasTracks || saving,
           title: t("toolbar.saveAsNewTitle"),
         },
-        t("toolbar.saveAsNew")
+        saving ? t("toolbar.saving") : t("toolbar.saveAsNew")
       )
     )
   );

@@ -1,6 +1,6 @@
 # Flowify
 
-Auto-arrange the current playlist by audio-feature **sets** or **curves**. Undo restores the previous order.
+Live-preview a new playlist order by audio-feature **sets** or **curves**, then **Apply to playlist** (one bulk write) or **Save as new** (opens the new playlist). Cancel / close discards the preview; Spotify and the arranger stay unchanged until you commit.
 
 ![Toolbar — Flowify](screenshots/toolbar-actions.png)
 
@@ -35,13 +35,14 @@ Orders the playlist so features follow a shape over time.
 | Feature weights | Influence of each feature on the curve |
 | Inv | Invert that feature’s curve (anti-correlate) |
 
-Default weights emphasize **energy**, then **valence**, then **tempo**. At least one weight must be above 0.
+Default weights emphasize **energy**, then **valence**, then **tempo**. At least one weight must be above 0. The preview table updates live as you change options (Spotify unchanged).
 
-3. Click **Apply arrangement** (or **Reset** to defaults).
-4. The table reorders and may flash briefly. Use **Undo** if you dislike the result.
+3. Audition rows in the preview table if you like.
+4. **Apply to playlist** — one `applyBulk` write; the arranger matches Spotify. The modal stays open until the write finishes, then closes. **Save as new** — creates a playlist from the preview and **loads it**. **Cancel** / close — discard preview; no write.
 
 ## Tips
 
-- Flowify only changes local order until you [Save](save-and-history.md).
+- Apply and Save as new stay disabled until a live preview is ready.
 - Your last Flowify options are remembered in prefs.
 - Generator can optionally Flowify a preview after generate ([Generator](generator.md)).
+- See also [Save as new and live edits](save-and-history.md).

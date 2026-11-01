@@ -27,4 +27,4 @@ Rows labeled **In playlist** are already in your list and are skipped for “new
 
 - Only **new** tracks are added; duplicates are ignored.
 - Short messages report counts (e.g. *Added 12 tracks*) or *No new tracks to add*.
-- Import writes new tracks to Spotify **immediately** (no separate Save for the add). Reorder still needs [Save](save-and-history.md).
+- Import writes new tracks to Spotify **immediately** (no separate Save for the add).

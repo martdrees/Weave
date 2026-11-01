@@ -9,11 +9,11 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 
 ## Features
 
-- Load playlists; add / remove / drag-reorder write through to Spotify when clean; Flowify still uses undo/redo + save / save as new
+- Load playlists; add / remove / drag-reorder write through to Spotify; Flowify live-preview then Apply (one bulk write) or Save as new; Save as new from toolbar
 - Feature columns + stats (energy, dance, valence, BPM, key, …)
 - Recommendations from seeds / feature ranges (Song Radio + local filters)
 - Add Track, Copy from Playlist
-- Flowify (sets / curves) and Generator
+- Flowify (sets / curves, live preview table) and Generator
 - Session restore + durable UI prefs
 - Keyboard shortcuts (`?` in the app)
 

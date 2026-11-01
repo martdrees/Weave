@@ -7,10 +7,7 @@
  *   saving: boolean,
  *   playlist: object|null,
  *   tracks: object[],
- *   handleSave: () => void,
  *   handleSaveAsNew: () => void,
- *   handleUndo: () => void,
- *   handleRedo: () => void,
  *   handleToggleSearch: () => void,
  *   openPanel: (id: string) => void,
  *   togglePanel: (id: string) => void,
@@ -53,29 +50,19 @@ function MixAppUseAppShortcuts(handlers) {
 
       const key = String(e.key || "").toLowerCase();
 
-      if (key === "s" && !e.shiftKey) {
-        e.preventDefault();
-        if (!h.saving) h.handleSave();
-        return;
-      }
+      // Ctrl/⌘ S alone: no overwrite Save (Phase 3). Shift+S remains Save as new.
       if (key === "s" && e.shiftKey) {
         e.preventDefault();
         if (!h.saving) h.handleSaveAsNew();
         return;
       }
+      if (key === "s" && !e.shiftKey) {
+        e.preventDefault();
+        return;
+      }
 
       if (typing) return;
 
-      if (key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        if (!h.saving) h.handleUndo();
-        return;
-      }
-      if (key === "y" || (key === "z" && e.shiftKey)) {
-        e.preventDefault();
-        if (!h.saving) h.handleRedo();
-        return;
-      }
       if (key === "f" && !e.shiftKey) {
         e.preventDefault();
         h.handleToggleSearch();

@@ -3,18 +3,17 @@
  * Persist Weave working session across Custom App remounts
  * (e.g. open another Spotify view, then return to Weave).
  *
- * Owns: selectedUri, playlist, tracks, dirty, undo, seedUris, bannedUris,
- *       searchFeatures, searchResults, resultsOpen, searchOpen, statsOpen,
- *       syncedFingerprint, ignoredRemoteFingerprint.
- * Does NOT own: resultLimit, searchFilters (prefs) or columns
- * (MixAppColumnConfig). See docs/PERSISTENCE.md.
+ * Owns: selectedUri, playlist meta, seedUris, bannedUris, searchFeatures,
+ *       searchResults, resultsOpen, searchOpen, statsOpen.
+ * Does NOT own: tracks/dirty/undo (live view — refetch tracks),
+ *       resultLimit / searchFilters (prefs), or columns (MixAppColumnConfig).
+ * See docs/PERSISTENCE.md.
  */
 
 const MixAppSession = (() => {
   const KEY = "mixapp-session-v1";
   /** Schema version written on save; raised when stored shape changes. */
-  const SCHEMA_VERSION = 3;
-  const MAX_UNDO_SNAPSHOTS = 12;
+  const SCHEMA_VERSION = 4;
 
   function storageGet() {
     try {
@@ -70,10 +69,16 @@ const MixAppSession = (() => {
     }
   }
 
-  function trimUndo(list) {
-    const arr = Array.isArray(list) ? list : [];
-    if (arr.length <= MAX_UNDO_SNAPSHOTS) return arr;
-    return arr.slice(arr.length - MAX_UNDO_SNAPSHOTS);
+  /**
+   * Strip draft-era fields (tracks, dirty, undo, sync fingerprints).
+   * @param {object} data
+   */
+  function stripDraftFields(data) {
+    delete data.tracks;
+    delete data.dirty;
+    delete data.undo;
+    delete data.syncedFingerprint;
+    delete data.ignoredRemoteFingerprint;
   }
 
   /**
@@ -97,16 +102,29 @@ const MixAppSession = (() => {
       dirty = true;
     }
 
-    // v2 → v3: last-synced / ignored-remote fingerprints for external sync.
+    // v2 → v3: last-synced / ignored-remote fingerprints (legacy; removed in v4).
     if (version < 3) {
-      if (typeof data.syncedFingerprint !== "string") {
-        data.syncedFingerprint = null;
-      }
-      if (typeof data.ignoredRemoteFingerprint !== "string") {
-        data.ignoredRemoteFingerprint = null;
-      }
       version = 3;
       dirty = true;
+    }
+
+    // v3 → v4: live view — drop draft tracks/dirty/undo/fingerprints.
+    if (version < 4) {
+      stripDraftFields(data);
+      version = 4;
+      dirty = true;
+    } else {
+      // Idempotent cleanup if old fields linger.
+      if (
+        "tracks" in data ||
+        "dirty" in data ||
+        "undo" in data ||
+        "syncedFingerprint" in data ||
+        "ignoredRemoteFingerprint" in data
+      ) {
+        stripDraftFields(data);
+        dirty = true;
+      }
     }
 
     data.v = version;
@@ -125,10 +143,9 @@ const MixAppSession = (() => {
     if (!data || typeof data !== "object") return null;
 
     const { data: migrated, dirty } = migrate(data);
-    if (!migrated?.selectedUri || !Array.isArray(migrated.tracks)) return null;
+    if (!migrated?.selectedUri) return null;
 
     if (dirty) {
-      // Persist cleaned schema so migrate runs once.
       storageSet({ ...migrated, v: SCHEMA_VERSION, savedAt: Date.now() });
     }
     return migrated;
@@ -144,16 +161,6 @@ const MixAppSession = (() => {
       savedAt: Date.now(),
       selectedUri: session.selectedUri,
       playlist: session.playlist || null,
-      tracks: Array.isArray(session.tracks) ? session.tracks : [],
-      dirty: !!session.dirty,
-      syncedFingerprint:
-        typeof session.syncedFingerprint === "string"
-          ? session.syncedFingerprint
-          : null,
-      ignoredRemoteFingerprint:
-        typeof session.ignoredRemoteFingerprint === "string"
-          ? session.ignoredRemoteFingerprint
-          : null,
       seedUris: Array.isArray(session.seedUris) ? session.seedUris : [],
       bannedUris: Array.isArray(session.bannedUris) ? session.bannedUris : [],
       searchFeatures: session.searchFeatures || null,
@@ -161,16 +168,11 @@ const MixAppSession = (() => {
       statsOpen: !!session.statsOpen,
       resultsOpen: !!session.resultsOpen,
       searchResults: Array.isArray(session.searchResults) ? session.searchResults : [],
-      undo: {
-        past: trimUndo(session.undo?.past),
-        future: trimUndo(session.undo?.future),
-      },
     };
 
     if (storageSet(payload)) return true;
 
-    // Retry without undo / search results if quota is tight
-    payload.undo = { past: [], future: [] };
+    // Retry without search results if quota is tight
     payload.searchResults = [];
     payload.resultsOpen = false;
     return storageSet(payload);

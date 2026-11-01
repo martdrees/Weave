@@ -36,7 +36,7 @@ Click a column header to sort by that feature (e.g. BPM, Energy). Sorting change
 
 1. Grab the **six-dot handle** on the left of a row.
 2. Drag to the new position.
-3. Drop — the list updates and Spotify order updates **immediately** (no Save) when Unsaved is off. After Flowify (or other draft edits), drop stays local until Save — write-through would target Spotify’s live order, which no longer matches the draft.
+3. Drop — the list updates and Spotify order updates **immediately** (no Save) when you can edit the playlist.
 
 ### Move up / down
 
@@ -55,6 +55,6 @@ Click the **play** icon on a track to play it in Spotify. Click again (or the pa
 ## Tips
 
 - After Flowify or large imports, the list may briefly flash and scroll to new rows.
-- **Flowify Apply** is still a local draft — use **Undo** / **Redo** and **Save** for that path. Immediate add/remove/reorder do not push undo.
+- **Flowify** live-previews a new order in the modal; **Apply** writes once (bulk). Closing without Apply leaves Spotify unchanged ([Flowify](flowify.md)).
 
 **Related:** [Seeds](seeds.md) · [Save and history](save-and-history.md)

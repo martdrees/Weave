@@ -8,14 +8,8 @@ MixAppI18n.register("en", {
   "app.shortcutsHint": "Keyboard shortcuts (?)",
 
   // Toolbar
-  "toolbar.unsaved": "Unsaved",
-  "toolbar.spotifyChanged": "Spotify changed",
-  "toolbar.spotifyChangedTitle":
-    "Spotify’s copy differs from your last sync — Weave edits were kept",
   "toolbar.seed": "{count} seed",
   "toolbar.seeds": "{count} seeds",
-  "toolbar.undo": "Undo",
-  "toolbar.redo": "Redo",
   "toolbar.addTrack": "Add Track",
   "toolbar.addTrackTitle": "Search Spotify and add a track",
   "toolbar.recommendations": "Recommendations",
@@ -28,10 +22,7 @@ MixAppI18n.register("en", {
   "toolbar.generatorTitle": "Generate a new playlist from seeds",
   "toolbar.stats": "Stats",
   "toolbar.statsTitle": "Feature charts and summary",
-  "toolbar.save": "Save",
   "toolbar.saving": "Saving…",
-  "toolbar.saveTitle": "Overwrite playlist with current order",
-  "toolbar.saveTitleOwnedOnly": "You can only overwrite playlists you own",
   "toolbar.saveAsNew": "Save as new",
   "toolbar.saveAsNewTitle": "Create a new playlist with the current track list",
 
@@ -187,7 +178,7 @@ MixAppI18n.register("en", {
 
   "flowify.title": "Flowify",
   "flowify.blurb":
-    "Auto-arrange the current playlist. Undo restores the previous order.",
+    "Live preview updates as you change options. Apply writes to the open playlist once, or Save as new and open the copy. Cancel discards the preview.",
   "flowify.sets": "Sets",
   "flowify.curves": "Curves",
   "flowify.setSize": "Set size",
@@ -195,12 +186,18 @@ MixAppI18n.register("en", {
   "flowify.weights": "Feature weights",
   "flowify.invert": "Invert this feature’s curve",
   "flowify.inv": "Inv",
-  "flowify.apply": "Apply arrangement",
+  "flowify.preview": "Preview",
+  "flowify.previewAction": "Preview",
+  "flowify.previewHint":
+    "Adjust weights or method to refresh this preview. Spotify stays unchanged until Apply or Save as new.",
+  "flowify.needPreview": "Wait for the live preview to finish",
+  "flowify.apply": "Apply to playlist",
+  "flowify.applyTitle": "Write this order to the open playlist once",
+  "flowify.saveAsNewTitle":
+    "Create a new playlist from this preview and open it; the original playlist is unchanged",
   "flowify.working": "Working…",
   "flowify.needPlaylist": "Load a playlist with tracks first",
   "flowify.needWeight": "Set at least one feature weight above 0",
-  "flowify.doneCurves": "Playlist rearranged (curves)",
-  "flowify.doneSets": "Playlist rearranged (sets)",
   "flowify.failed": "Flowify failed",
 
   "generator.title": "Generator",
@@ -228,10 +225,8 @@ MixAppI18n.register("en", {
 
   // Shortcuts help
   "shortcuts.title": "Keyboard shortcuts",
-  "shortcuts.note": "Shortcuts are ignored while typing in inputs (except Save).",
-  "shortcuts.undo": "Undo",
-  "shortcuts.redo": "Redo",
-  "shortcuts.save": "Save playlist",
+  "shortcuts.note":
+    "Shortcuts are ignored while typing in inputs (except Save as new).",
   "shortcuts.saveAsNew": "Save as new",
   "shortcuts.toggleRecs": "Toggle recommendations",
   "shortcuts.addTrack": "Add track",
@@ -256,29 +251,15 @@ MixAppI18n.register("en", {
     "Rate limited — only {count} in-key matches. Wait a few seconds and search again.",
   "notify.failedPlaylist": "Failed to load playlist",
   "notify.cannotSaveLoading": "Cannot save while playlist is loading",
-  "notify.playlistChangedCancel": "Playlist changed — save cancelled",
-  "notify.playlistChangedDuringSave":
-    "Playlist changed during save — local state left unchanged",
-  "notify.playlistSaved": "Playlist saved",
   "notify.playlistUpdatedFromSpotify": "Playlist updated from Spotify",
-  "notify.saveFailed": "Save failed",
+  "notify.flowifyApplied": "Flowify applied to Spotify",
+  "notify.flowifyApplyFailed": "Could not apply Flowify to Spotify",
   "notify.addFailed": "Could not add track to Spotify",
   "notify.removeFailed": "Could not remove track from Spotify",
   "notify.reorderFailed": "Could not reorder track on Spotify",
   "notify.cannotEditPlaylist": "You cannot edit this playlist",
   "notify.waitAddBeforeRemove": "Wait until the track finishes adding",
   "notify.waitAddBeforeReorder": "Wait until the track finishes adding",
-
-  "sync.conflictTitle": "Playlist changed on Spotify",
-  "sync.conflictBody":
-    "“{name}” changed on Spotify while you have unsaved edits in Weave. Reload from Spotify (discard Weave edits), keep your Weave edits, or overwrite Spotify with Weave.",
-  "sync.unavailableTitle": "Playlist unavailable",
-  "sync.unavailableBody":
-    "“{name}” is no longer available on Spotify, but you still have unsaved edits in Weave. Keep them here, or save as a new playlist.",
-  "sync.reloadSpotify": "Reload from Spotify",
-  "sync.keepWeave": "Keep Weave edits",
-  "sync.overwriteSpotify": "Overwrite Spotify",
-  "sync.saveAsNew": "Save as new",
   "notify.created": "Created “{name}”",
   "notify.createFailed": "Create failed",
   "notify.alreadyInPlaylist": "Track already in playlist",

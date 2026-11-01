@@ -7,9 +7,6 @@ function MixAppShortcutsHelp(props) {
   const { open, onClose } = props;
 
   const rows = [
-    ["Ctrl/⌘ + Z", t("shortcuts.undo")],
-    ["Ctrl/⌘ + Shift + Z / Y", t("shortcuts.redo")],
-    ["Ctrl/⌘ + S", t("shortcuts.save")],
     ["Ctrl/⌘ + Shift + S", t("shortcuts.saveAsNew")],
     ["Ctrl/⌘ + F", t("shortcuts.toggleRecs")],
     ["Ctrl/⌘ + Shift + A", t("shortcuts.addTrack")],

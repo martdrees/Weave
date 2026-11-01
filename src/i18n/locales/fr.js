@@ -8,14 +8,8 @@ MixAppI18n.register("fr", {
   "app.shortcutsHint": "Raccourcis clavier (?)",
 
   // Toolbar
-  "toolbar.unsaved": "Non enregistré",
-  "toolbar.spotifyChanged": "Spotify a changé",
-  "toolbar.spotifyChangedTitle":
-    "La copie Spotify diffère de votre dernier sync — les modifications Weave ont été conservées",
   "toolbar.seed": "{count} titre de départ",
   "toolbar.seeds": "{count} titres de départ",
-  "toolbar.undo": "Annuler",
-  "toolbar.redo": "Rétablir",
   "toolbar.addTrack": "Ajouter un titre",
   "toolbar.addTrackTitle": "Rechercher sur Spotify et ajouter un titre",
   "toolbar.recommendations": "Recommandations",
@@ -30,10 +24,7 @@ MixAppI18n.register("fr", {
     "Générer une nouvelle playlist à partir de titres de départ",
   "toolbar.stats": "Statistiques",
   "toolbar.statsTitle": "Graphiques des caractéristiques et résumé",
-  "toolbar.save": "Enregistrer",
   "toolbar.saving": "Enregistrement…",
-  "toolbar.saveTitle": "Remplacer la playlist par l’ordre actuel",
-  "toolbar.saveTitleOwnedOnly": "Vous ne pouvez remplacer que vos propres playlists",
   "toolbar.saveAsNew": "Enregistrer sous",
   "toolbar.saveAsNewTitle":
     "Créer une nouvelle playlist avec la liste de titres actuelle",
@@ -196,7 +187,7 @@ MixAppI18n.register("fr", {
 
   "flowify.title": "Flowify",
   "flowify.blurb":
-    "Réorganise automatiquement la playlist actuelle. « Annuler » rétablit l’ordre précédent.",
+    "L’aperçu se met à jour quand vous changez les options. Appliquer écrit une fois dans la playlist ouverte, ou Enregistrer comme nouvelle et ouvrir la copie. Annuler ignore l’aperçu.",
   "flowify.sets": "Sets",
   "flowify.curves": "Courbes",
   "flowify.setSize": "Taille des sets",
@@ -204,13 +195,19 @@ MixAppI18n.register("fr", {
   "flowify.weights": "Pondération des caractéristiques",
   "flowify.invert": "Inverser la courbe de cette caractéristique",
   "flowify.inv": "Inv.",
-  "flowify.apply": "Appliquer l’arrangement",
+  "flowify.preview": "Aperçu",
+  "flowify.previewAction": "Aperçu",
+  "flowify.previewHint":
+    "Ajustez les poids ou la méthode pour rafraîchir cet aperçu. Spotify ne change qu’avec Appliquer ou Enregistrer comme nouvelle.",
+  "flowify.needPreview": "Attendez la fin de l’aperçu en direct",
+  "flowify.apply": "Appliquer à la playlist",
+  "flowify.applyTitle": "Écrire cet ordre une fois dans la playlist ouverte",
+  "flowify.saveAsNewTitle":
+    "Créer une nouvelle playlist à partir de cet aperçu et l’ouvrir ; l’originale reste inchangée",
   "flowify.working": "Traitement…",
   "flowify.needPlaylist": "Chargez d’abord une playlist contenant des titres",
   "flowify.needWeight":
     "Définissez au moins une pondération de caractéristique supérieure à 0",
-  "flowify.doneCurves": "Playlist réorganisée (courbes)",
-  "flowify.doneSets": "Playlist réorganisée (sets)",
   "flowify.failed": "Échec de Flowify",
 
   "generator.title": "Générateur",
@@ -240,10 +237,7 @@ MixAppI18n.register("fr", {
   // Shortcuts help
   "shortcuts.title": "Raccourcis clavier",
   "shortcuts.note":
-    "Les raccourcis sont ignorés pendant la saisie dans un champ (sauf Enregistrer).",
-  "shortcuts.undo": "Annuler",
-  "shortcuts.redo": "Rétablir",
-  "shortcuts.save": "Enregistrer la playlist",
+    "Les raccourcis sont ignorés pendant la saisie dans un champ (sauf Enregistrer sous).",
   "shortcuts.saveAsNew": "Enregistrer sous",
   "shortcuts.toggleRecs": "Afficher / masquer les recommandations",
   "shortcuts.addTrack": "Ajouter un titre",
@@ -272,23 +266,9 @@ MixAppI18n.register("fr", {
   "notify.failedPlaylist": "Impossible de charger la playlist",
   "notify.cannotSaveLoading":
     "Impossible d’enregistrer pendant le chargement de la playlist",
-  "notify.playlistChangedCancel": "La playlist a été modifiée — enregistrement annulé",
-  "notify.playlistChangedDuringSave":
-    "La playlist a été modifiée pendant l’enregistrement — état local inchangé",
-  "notify.playlistSaved": "Playlist enregistrée",
   "notify.playlistUpdatedFromSpotify": "Playlist mise à jour depuis Spotify",
-
-  "sync.conflictTitle": "Playlist modifiée sur Spotify",
-  "sync.conflictBody":
-    "« {name} » a changé sur Spotify alors que vous avez des modifications non enregistrées dans Weave. Recharger depuis Spotify (abandonner Weave), garder Weave, ou écraser Spotify avec Weave.",
-  "sync.unavailableTitle": "Playlist indisponible",
-  "sync.unavailableBody":
-    "« {name} » n’est plus disponible sur Spotify, mais vous avez encore des modifications non enregistrées dans Weave. Les garder ici, ou enregistrer comme nouvelle playlist.",
-  "sync.reloadSpotify": "Recharger depuis Spotify",
-  "sync.keepWeave": "Garder Weave",
-  "sync.overwriteSpotify": "Écraser Spotify",
-  "sync.saveAsNew": "Enregistrer sous",
-  "notify.saveFailed": "Échec de l’enregistrement",
+  "notify.flowifyApplied": "Flowify appliqué à Spotify",
+  "notify.flowifyApplyFailed": "Impossible d’appliquer Flowify à Spotify",
   "notify.addFailed": "Impossible d’ajouter le titre à Spotify",
   "notify.removeFailed": "Impossible de retirer le titre de Spotify",
   "notify.reorderFailed": "Impossible de réordonner le titre sur Spotify",
