@@ -54,6 +54,7 @@ MixAppI18n.register("es", {
     "Canción semilla — clic para desmarcar · arrastra ⋮⋮ para reordenar",
   "arranger.rowNormal": "Clic para marcar como semilla · arrastra ⋮⋮ para reordenar",
   "arranger.play": "Reproducir {name}",
+  "arranger.playPending": "Espera a que {name} termine de guardarse…",
   "arranger.pause": "Pausar {name}",
   "arranger.trackFallback": "canción",
   "common.unknown": "Desconocido",

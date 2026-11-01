@@ -14,6 +14,7 @@ function MixAppArranger(props) {
     onPlay,
     onToggleSeed,
     onRemove,
+    isPlayPending,
   } = props;
   const seedSet = new Set(seedUris || []);
   const flashSet = new Set(flashUids || []);
@@ -637,9 +638,12 @@ function MixAppArranger(props) {
     if (show("TITLE_AND_ARTIST")) {
       const active = !!(track.uri && track.uri === playingUri && isPlaying);
       const playName = track.name || MixAppI18n.t("arranger.trackFallback");
-      const playLabel = active
-        ? MixAppI18n.t("arranger.pause", { name: playName })
-        : MixAppI18n.t("arranger.play", { name: playName });
+      const pendingPlay = !!isPlayPending?.(track);
+      const playLabel = pendingPlay
+        ? MixAppI18n.t("arranger.playPending", { name: playName })
+        : active
+          ? MixAppI18n.t("arranger.pause", { name: playName })
+          : MixAppI18n.t("arranger.play", { name: playName });
       cells.push(
         cell(
           "mixapp-col-title",
@@ -651,8 +655,10 @@ function MixAppArranger(props) {
               {
                 type: "button",
                 className: "mixapp-play-btn" + (active ? " is-playing" : ""),
+                disabled: pendingPlay,
                 onClick: (e) => {
                   e.stopPropagation();
+                  if (pendingPlay) return;
                   onPlay?.(track, fullIndex);
                 },
                 title: playLabel,

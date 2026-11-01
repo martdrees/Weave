@@ -55,6 +55,7 @@ MixAppI18n.register("it", {
   "arranger.rowNormal":
     "Clicca per contrassegnare come seed · trascina ⋮⋮ per riordinare",
   "arranger.play": "Riproduci {name}",
+  "arranger.playPending": "Attendi che {name} finisca di salvarsi…",
   "arranger.pause": "Metti in pausa {name}",
   "arranger.trackFallback": "brano",
   "common.unknown": "Sconosciuto",

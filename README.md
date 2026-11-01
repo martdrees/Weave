@@ -10,6 +10,7 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 ## Features
 
 - Load playlists; add / remove / drag-reorder write through to Spotify; Flowify live-preview then Apply (one bulk write) or Save as new; Save as new from toolbar
+- Arranger play prefers Spotify playlist context (Next continues the list); queue fallback if needed
 - Feature columns + stats (energy, dance, valence, BPM, key, …)
 - Recommendations from seeds / feature ranges (Song Radio + local filters)
 - Add Track, Copy from Playlist

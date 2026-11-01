@@ -736,6 +736,39 @@ function MixAppUsePlaylistSession(opts) {
 
   checkRemoteSyncRef.current = checkRemoteSync;
 
+  /** Live mirror for playback (avoids stale React closures). */
+  function getTracks() {
+    return tracksRef.current;
+  }
+
+  /**
+   * True while a row still has a Weave-synthetic uid or an in-flight add.
+   * @param {MixAppTrackRow|null|undefined} track
+   */
+  function isTrackPlayPending(track) {
+    if (!track) return false;
+    if (MixAppPlaylistOps.isProvisionalPlaylistUid(track.uid)) return true;
+    return pendingAddUidsRef.current.has(String(track.uid));
+  }
+
+  /**
+   * Wait until add write-through attaches a real Spotify item uid (or timeout).
+   * @param {string} uri
+   * @param {number} [timeoutMs]
+   * @returns {Promise<MixAppTrackRow|null>}
+   */
+  async function waitForReadyTrack(uri, timeoutMs) {
+    if (!uri) return null;
+    const limit = typeof timeoutMs === "number" ? timeoutMs : 2000;
+    const started = Date.now();
+    while (Date.now() - started < limit) {
+      const row = tracksRef.current.find((t) => t?.uri === uri) || null;
+      if (row && !isTrackPlayPending(row)) return row;
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    return tracksRef.current.find((t) => t?.uri === uri) || null;
+  }
+
   return {
     playlists,
     selectedUri,
@@ -752,6 +785,9 @@ function MixAppUsePlaylistSession(opts) {
     checkRemoteSync,
     flashRows,
     flashList,
+    getTracks,
+    isTrackPlayPending,
+    waitForReadyTrack,
     handleReorder,
     handleRemoveTrack,
     handleSaveAsNew,

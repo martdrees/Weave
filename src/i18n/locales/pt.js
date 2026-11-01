@@ -54,6 +54,7 @@ MixAppI18n.register("pt", {
     "Faixa semente — clique para desmarcar · arraste ⋮⋮ para reordenar",
   "arranger.rowNormal": "Clique para marcar como semente · arraste ⋮⋮ para reordenar",
   "arranger.play": "Reproduzir {name}",
+  "arranger.playPending": "Aguarde {name} terminar de salvar…",
   "arranger.pause": "Pausar {name}",
   "arranger.trackFallback": "faixa",
   "common.unknown": "Desconhecido",

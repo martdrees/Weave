@@ -52,6 +52,7 @@ MixAppI18n.register("en", {
   "arranger.rowSeed": "Seed track — click to unmark · drag row to reorder",
   "arranger.rowNormal": "Click to mark as seed · drag row to reorder",
   "arranger.play": "Play {name}",
+  "arranger.playPending": "Wait for {name} to finish saving…",
   "arranger.pause": "Pause {name}",
   "arranger.trackFallback": "track",
   "common.unknown": "Unknown",

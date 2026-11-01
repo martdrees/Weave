@@ -2,10 +2,10 @@
 /**
  * Spotify player sync + play/pause for arranger / result rows.
  *
- * Arranger play: start the clicked track, then queue the rest of Weave’s
- * current list so Next continues in editor order (including unsaved adds).
- * Uses public Player / addToQueue APIs — not private setQueue (breaks across
- * Spotify versions: "Cannot read properties of undefined (reading 'options')").
+ * Arranger play prefers playlist context (`playUri(playlistUri, { skipTo })`)
+ * now that Weave’s mirror matches Spotify after write-through. On failure or
+ * provisional (just-added) rows, fall back to play-first + `addToQueue` in
+ * Weave order. Never uses private setQueue (breaks across Spotify versions).
  */
 
 function MixAppUsePlayback() {
@@ -33,6 +33,16 @@ function MixAppUsePlayback() {
     };
   }, []);
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function currentPlayerUri() {
+    return (
+      Spicetify?.Player?.data?.item?.uri || Spicetify?.Player?.data?.track?.uri || null
+    );
+  }
+
   /**
    * @param {string} uri
    */
@@ -50,6 +60,31 @@ function MixAppUsePlayback() {
   }
 
   /**
+   * Prefer playlist-context skipTo; return true when it appears to stick.
+   * @param {string} playlistUri
+   * @param {string} trackUri
+   */
+  async function tryPlaylistContextPlay(playlistUri, trackUri) {
+    if (!playlistUri || !trackUri || !Spicetify?.Player?.playUri) return false;
+    try {
+      await Spicetify.Player.playUri(playlistUri, {}, { skipTo: { uri: trackUri } });
+      await sleep(60);
+      const now = currentPlayerUri();
+      if (now && now !== trackUri) {
+        console.warn(
+          "Weave: playlist context play landed on a different track; falling back",
+          { expected: trackUri, now }
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn("Weave: playlist context play failed; falling back", err);
+      return false;
+    }
+  }
+
+  /**
    * Play `uris[0]`, then queue the remainder (Weave order).
    * @param {string[]} uris
    * @param {string|null|undefined} contextUri
@@ -62,24 +97,9 @@ function MixAppUsePlayback() {
     const rest = list.slice(1);
     const PlayerAPI = Spicetify?.Platform?.PlayerAPI;
 
-    // Saved playlist context when possible (native next-track). If Spotify
-    // rejects it (e.g. unsaved track), fall through to explicit queue.
-    if (contextUri && Spicetify?.Player?.playUri) {
-      try {
-        await Spicetify.Player.playUri(contextUri, {}, { skipTo: { uri: first } });
-        const now =
-          Spicetify?.Player?.data?.item?.uri ||
-          Spicetify?.Player?.data?.track?.uri ||
-          null;
-        // Wrong track or empty → rebuild queue from Weave’s list.
-        if (now && now !== first) {
-          /* fall through */
-        } else {
-          return;
-        }
-      } catch (_) {
-        /* fall through */
-      }
+    if (contextUri) {
+      const ok = await tryPlaylistContextPlay(contextUri, first);
+      if (ok) return;
     }
 
     try {
@@ -112,20 +132,22 @@ function MixAppUsePlayback() {
   /**
    * @param {object} track
    * @param {number} [index]
-   * @param {{ tracks?: object[], playlistUri?: string|null }} [ctx]
+   * @param {{
+   *   tracks?: object[],
+   *   playlistUri?: string|null,
+   *   waitForReadyTrack?: (uri: string, timeoutMs?: number) => Promise<object|null>,
+   *   getTracks?: () => object[],
+   * }} [ctx]
    */
   async function handlePlay(track, index, ctx) {
     try {
       const uri = track?.uri;
       if (!uri) return;
 
-      const playlistUri = ctx?.playlistUri || null;
-      const tracks = Array.isArray(ctx?.tracks) ? ctx.tracks : [];
+      let playlistUri = ctx?.playlistUri || null;
+      let tracks = Array.isArray(ctx?.tracks) ? ctx.tracks : [];
 
-      const currentUri =
-        Spicetify?.Player?.data?.item?.uri ||
-        Spicetify?.Player?.data?.track?.uri ||
-        playingUri;
+      const currentUri = currentPlayerUri() || playingUri;
       const currentlyPlaying = !!Spicetify?.Player?.isPlaying?.();
 
       if (currentUri === uri && currentlyPlaying) {
@@ -148,8 +170,32 @@ function MixAppUsePlayback() {
         return;
       }
 
-      // Arranger: play this row, queue the rest in Weave order.
+      // Arranger: prefer playlist context; wait out provisional adds when possible.
       if (tracks.length) {
+        let ready = track;
+        if (
+          playlistUri &&
+          typeof ctx?.waitForReadyTrack === "function" &&
+          MixAppPlaylistOps.isProvisionalPlaylistUid(track?.uid)
+        ) {
+          const settled = await ctx.waitForReadyTrack(uri, 2000);
+          if (settled) ready = settled;
+          // Refresh mirror after wait so queue order matches post-merge uids.
+          if (typeof ctx?.getTracks === "function") {
+            const fresh = ctx.getTracks();
+            if (Array.isArray(fresh) && fresh.length) tracks = fresh;
+          }
+        }
+
+        if (MixAppPlaylistOps.isProvisionalPlaylistUid(ready?.uid)) {
+          // Spotify context still lacks this row — queue from Weave order instead.
+          playlistUri = null;
+          console.warn(
+            "Weave: play fallback — track still provisional after wait",
+            uri
+          );
+        }
+
         let start =
           typeof index === "number" && index >= 0
             ? index

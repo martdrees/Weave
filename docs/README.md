@@ -10,7 +10,7 @@ How to use Weave inside the Spotify desktop client (with [Spicetify](https://spi
 | ----- | -------------- |
 | [Getting started](getting-started.md) | Open Weave, load a playlist, read the layout |
 | [Playlist picker](playlist-picker.md) | Choose and refresh playlists |
-| [Arranging tracks](arranging-tracks.md) | Drag-reorder / move / remove (write-through), play, sort, columns |
+| [Arranging tracks](arranging-tracks.md) | Drag-reorder / move / remove (write-through), playlist-context play, sort, columns |
 | [Seeds](seeds.md) | Mark seed tracks for recommendations and Generator |
 | [Recommendations](recommendations.md) | Find and add similar tracks (ranges, Camelot, filters) |
 | [Add Track](add-track.md) | Search Spotify and add a single track |

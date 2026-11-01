@@ -57,6 +57,7 @@ MixAppI18n.register("fr", {
   "arranger.rowNormal":
     "Cliquer pour marquer comme titre de départ · faire glisser ⋮⋮ pour réorganiser",
   "arranger.play": "Lire {name}",
+  "arranger.playPending": "Attendez que {name} finisse d’être enregistré…",
   "arranger.pause": "Mettre {name} en pause",
   "arranger.trackFallback": "titre",
   "common.unknown": "Inconnu",

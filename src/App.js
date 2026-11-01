@@ -115,11 +115,13 @@ function MixAppPage() {
     playback.handlePlay(track, index, {});
   }
 
-  /** Play from the arranger — load playlist context so Next continues the list. */
+  /** Play from the arranger — prefer playlist context so Next continues the list. */
   function handlePlaylistPlay(track, index) {
     playback.handlePlay(track, index, {
       tracks: session.tracks,
       playlistUri: session.playlist?.uri,
+      waitForReadyTrack: session.waitForReadyTrack,
+      getTracks: session.getTracks,
     });
   }
 
@@ -258,6 +260,7 @@ function MixAppPage() {
           seedUris: search.seedUris,
           flashUids: session.rowFlashUids,
           listFlashKey: session.listFlashKey,
+          isPlayPending: session.isTrackPlayPending,
           onReorder: session.handleReorder,
           onPlay: handlePlaylistPlay,
           onToggleSeed: search.handleToggleSeed,

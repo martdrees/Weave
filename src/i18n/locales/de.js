@@ -53,6 +53,7 @@ MixAppI18n.register("de", {
   "arranger.rowSeed": "Seed-Titel — Klicken zum Entfernen · ⋮⋮ ziehen zum Umsortieren",
   "arranger.rowNormal": "Klicken, um als Seed zu markieren · ⋮⋮ ziehen zum Umsortieren",
   "arranger.play": "{name} abspielen",
+  "arranger.playPending": "Warte, bis {name} gespeichert ist…",
   "arranger.pause": "{name} pausieren",
   "arranger.trackFallback": "Titel",
   "common.unknown": "Unbekannt",
