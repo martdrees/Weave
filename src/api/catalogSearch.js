@@ -128,15 +128,51 @@ const MixAppCatalogSearch = (() => {
     return out;
   }
 
+  function tracksFromSearchV2(searchV2, want) {
+    let entities = collectGraphqlItems(searchV2, [
+      "tracksV2",
+      "tracks",
+      "topResultsV2",
+      "topResults",
+    ]);
+    if (!entities.length) entities = collectGraphqlItems(searchV2, null);
+    const out = [];
+    const seen = new Set();
+    for (const data of entities) {
+      const track = normalizeGraphqlTrack(data, out.length);
+      if (!track?.uri || seen.has(track.uri)) continue;
+      seen.add(track.uri);
+      out.push(track);
+      if (out.length >= want) break;
+    }
+    return out;
+  }
+
   /**
    * Client Pathfinder search — Web API /v1/search is 403/404/429 for desktop tokens.
+   * Returns every successful searchV2 payload (caller picks the richest track set).
+   * Prefer searchDesktop first — searchModalResults is often top-hit sparse.
    */
-  async function graphqlSearchV2(query, limit) {
+  async function graphqlSearchV2All(query, limit) {
     const GQL = Spicetify?.GraphQL;
     const defs = GQL?.Definitions;
-    if (!GQL?.Request || !defs) return null;
+    if (!GQL?.Request || !defs) return [];
 
     const attempts = [];
+    if (defs.searchDesktop) {
+      attempts.push([
+        defs.searchDesktop,
+        {
+          searchTerm: query,
+          offset: 0,
+          limit,
+          numberOfTopResults: Math.min(limit, 20),
+          includeAudiobooks: false,
+          includeArtistHasConcertsField: false,
+          includePreReleases: true,
+        },
+      ]);
+    }
     if (defs.searchModalResults) {
       attempts.push([
         defs.searchModalResults,
@@ -166,21 +202,8 @@ const MixAppCatalogSearch = (() => {
         },
       ]);
     }
-    if (defs.searchDesktop) {
-      attempts.push([
-        defs.searchDesktop,
-        {
-          searchTerm: query,
-          offset: 0,
-          limit,
-          numberOfTopResults: Math.min(limit, 20),
-          includeAudiobooks: false,
-          includeArtistHasConcertsField: false,
-          includePreReleases: true,
-        },
-      ]);
-    }
 
+    const results = [];
     for (const [definition, variables] of attempts) {
       try {
         const res = await GQL.Request(definition, variables);
@@ -189,12 +212,18 @@ const MixAppCatalogSearch = (() => {
           continue;
         }
         const searchV2 = res?.data?.searchV2 || res?.searchV2;
-        if (searchV2) return searchV2;
+        if (searchV2) results.push(searchV2);
       } catch (err) {
         console.warn("Weave GraphQL search attempt failed", err);
       }
     }
-    return null;
+    return results;
+  }
+
+  /** @deprecated Prefer graphqlSearchV2All — kept for playlist/artist helpers. */
+  async function graphqlSearchV2(query, limit) {
+    const all = await graphqlSearchV2All(query, limit);
+    return all[0] || null;
   }
 
   /** Last resort — often 404/429 under client token. */
@@ -292,43 +321,36 @@ const MixAppCatalogSearch = (() => {
   }
 
   /**
-   * Catalog track search via client GraphQL (preferred) or Web API fallback.
+   * Catalog track search via client GraphQL only.
+   * Do **not** fall through to Web API /v1/search — desktop tokens 429 hard and
+   * poison the shared cool-down for playlist writes.
    */
   async function searchTracks(query, opts = {}) {
     const q = String(query || "").trim();
     if (!q) return [];
     const want = Math.min(50, Math.max(1, Number(opts.limit) || 20));
 
-    const searchV2 = await graphqlSearchV2(q, want);
-    if (searchV2) {
-      let entities = collectGraphqlItems(searchV2, [
-        "tracksV2",
-        "tracks",
-        "topResultsV2",
-        "topResults",
-      ]);
-      if (!entities.length) entities = collectGraphqlItems(searchV2, null);
-      const out = [];
-      const seen = new Set();
-      for (const data of entities) {
-        const track = normalizeGraphqlTrack(data, out.length);
-        if (!track?.uri || seen.has(track.uri)) continue;
-        seen.add(track.uri);
-        out.push(track);
-        if (out.length >= want) break;
+    const payloads = await graphqlSearchV2All(q, want);
+    if (!payloads.length) {
+      // GraphQL defs missing / all failed — last-resort Web API (expect 429).
+      try {
+        return await searchTracksWebApi(q, want);
+      } catch (err) {
+        console.error("Weave track search failed", err);
+        throw new Error(
+          "Catalog search unavailable (client search blocked). Try again in a moment."
+        );
       }
-      // GraphQL answered — do not fall through to rate-limited Web API.
-      return out;
     }
 
-    try {
-      return await searchTracksWebApi(q, want);
-    } catch (err) {
-      console.error("Weave track search failed", err);
-      throw new Error(
-        "Catalog search unavailable (client search blocked). Try again in a moment."
-      );
+    /** @type {MixAppTrackRow[]} */
+    let best = [];
+    for (const searchV2 of payloads) {
+      const tracks = tracksFromSearchV2(searchV2, want);
+      if (tracks.length > best.length) best = tracks;
+      if (best.length >= want) break;
     }
+    return best;
   }
 
   async function searchPlaylists(query, opts = {}) {

@@ -237,7 +237,7 @@ function MixAppFlowifyModal(props) {
               h(
                 "select",
                 {
-                  className: "mixapp-find-input",
+                  className: "mixapp-select mixapp-find-input",
                   value: options.curvePreset,
                   disabled: busy,
                   onChange: (e) => patch({ curvePreset: e.target.value }),

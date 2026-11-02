@@ -383,6 +383,11 @@ function MixAppUsePlaylistSession(opts) {
 
   function handleReorder(from, to) {
     if (savingRef.current || tracksLoadingRef.current) return;
+    // Serialize with in-flight add/move so Platform/Web reorder sees fresh live order.
+    if (writeInFlightRef.current > 0) {
+      MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeReorder"), true);
+      return;
+    }
     if (from === to) return;
     const list = tracksRef.current;
     if (
@@ -586,7 +591,7 @@ function MixAppUsePlaylistSession(opts) {
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
+    // No success toast — Spotify already notifies on playlist add.
     MixAppPlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
   }
@@ -606,11 +611,6 @@ function MixAppUsePlaylistSession(opts) {
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppApi.notify(
-      added.length === 1
-        ? MixAppI18n.t("notify.addedTrack", { name: added[0].name })
-        : MixAppI18n.t("notify.addedCount", { count: added.length })
-    );
     MixAppPlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
   }
@@ -631,7 +631,6 @@ function MixAppUsePlaylistSession(opts) {
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppApi.notify(MixAppI18n.t("notify.addedTrack", { name: added[0].name }));
     MixAppPlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
     return true;

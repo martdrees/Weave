@@ -265,7 +265,7 @@ MixAppI18n.register("de", {
   "notify.reorderFailed": "Titel konnte auf Spotify nicht umgeordnet werden",
   "notify.cannotEditPlaylist": "Du kannst diese Playlist nicht bearbeiten",
   "notify.waitAddBeforeRemove": "Warte, bis der Titel fertig hinzugefügt wurde",
-  "notify.waitAddBeforeReorder": "Warte, bis der Titel fertig hinzugefügt wurde",
+  "notify.waitAddBeforeReorder": "Warte, bis die Playlist fertig aktualisiert wurde",
   "notify.created": "„{name}“ erstellt",
   "notify.createFailed": "Erstellen fehlgeschlagen",
   "notify.alreadyInPlaylist": "Titel ist bereits in der Playlist",

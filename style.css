@@ -1449,6 +1449,13 @@
   font-size: 0.9rem;
 }
 
+/* Native <option> popup often inherits dark-on-dark from the closed control. */
+.mixapp-find-input option,
+.mixapp-select option {
+  background-color: var(--mix-main, #121212);
+  color: var(--mix-text, #fff);
+}
+
 .mixapp-find-input:focus {
   outline: none;
   border-color: var(--mix-accent);

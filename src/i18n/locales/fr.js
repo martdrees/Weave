@@ -275,7 +275,7 @@ MixAppI18n.register("fr", {
   "notify.reorderFailed": "Impossible de réordonner le titre sur Spotify",
   "notify.cannotEditPlaylist": "Vous ne pouvez pas modifier cette playlist",
   "notify.waitAddBeforeRemove": "Attendez la fin de l’ajout du titre",
-  "notify.waitAddBeforeReorder": "Attendez la fin de l’ajout du titre",
+  "notify.waitAddBeforeReorder": "Attendez la fin de la mise à jour de la playlist",
   "notify.created": "« {name} » créée",
   "notify.createFailed": "Échec de la création",
   "notify.alreadyInPlaylist": "Titre déjà présent dans la playlist",

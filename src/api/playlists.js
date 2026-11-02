@@ -814,7 +814,16 @@ const MixAppPlaylists = (() => {
       for (const moveItems of itemVariants) {
         try {
           await PlaylistAPI.move(playlistUri, moveItems, opts);
-          return true;
+          // Platform move often resolves without throwing even when it no-ops
+          // or lands wrong — verify before claiming success.
+          const fresh = await getLivePlaylistItems(playlistUri);
+          const at = fresh.findIndex((l) => String(l.uid) === String(item.uid));
+          if (at === resolved.to) return true;
+          console.warn("Weave: PlaylistAPI.move did not land at expected index", {
+            opts,
+            expected: resolved.to,
+            actual: at,
+          });
         } catch (err) {
           lastErr = err;
         }
@@ -854,7 +863,26 @@ const MixAppPlaylists = (() => {
 
       const id = MixAppHttp.playlistIdFromUri(playlistUri);
       if (!id) throw new Error("Invalid playlist URI");
-      await reorderItemByIndex(id, resolved.from, resolved.to, null);
+      // Re-read live indices — a failed/partial Platform move may have shifted
+      // order relative to the pre-move snapshot used for `resolved.from`.
+      const liveAfter = await getLivePlaylistItems(playlistUri);
+      const fromNow = liveAfter.findIndex((l) => String(l.uid) === String(item.uid));
+      if (fromNow < 0) {
+        throw new Error("moveTrack: item uid not found after Platform move attempt");
+      }
+      if (fromNow === resolved.to) return;
+      await reorderItemByIndex(id, fromNow, resolved.to, null);
+      const verified = await getLivePlaylistItems(playlistUri);
+      const at = verified.findIndex((l) => String(l.uid) === String(item.uid));
+      if (at !== resolved.to) {
+        throw new Error(
+          "moveTrack: reorder did not stick (expected index " +
+            resolved.to +
+            ", got " +
+            at +
+            ")"
+        );
+      }
     });
   }
 

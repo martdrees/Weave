@@ -50,7 +50,7 @@ Click the trash icon on a row (or Delete with a row selected) to remove that tra
 
 ## Playback
 
-Click the **play** icon on a track to play it in Spotify. Weave prefers **playlist context** (`playUri` with skip-to), so Next continues the open Spotify playlist in the same order as Weave after write-through. If context play fails (or a just-added row is still saving), Weave falls back to playing that track and queueing the following rows from the current list.
+Click the **play** icon on a track to play it in Spotify. Weave queues the **open list from that row onward** (playlist context via the desktop queue API) so Next continues in order — same behavior as before the autosave playback rewrite.
 
 Just-added rows disable play until the add write finishes and a real Spotify item uid is attached. Click again (or the pause affordance) on the playing row to pause.
 
