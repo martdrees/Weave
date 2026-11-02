@@ -2,6 +2,7 @@
   "name": "weave",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Weave — Spicetify Creator custom app (nameId: weave)",
   "scripts": {
     "build": "spicetify-creator --out=dist",

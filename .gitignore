@@ -3,3 +3,4 @@ dist/
 .spicetify/
 *.log
 .DS_Store
+.idea
