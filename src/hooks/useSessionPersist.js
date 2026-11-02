@@ -1,20 +1,20 @@
 //@ts-check
 /**
- * Debounced MixAppSession write + unmount flush.
+ * Debounced WeaveSession write + unmount flush.
  * @param {() => object} buildSnapshot
  * @param {any[]} deps — values that invalidate the snapshot
  */
-function MixAppUseSessionPersist(buildSnapshot, deps) {
+function WeaveUseSessionPersist(buildSnapshot, deps) {
   const react = Spicetify.React;
   const persistTimerRef = react.useRef(null);
   const sessionSnapRef = react.useRef(null);
 
   function writeSession(snapshot) {
     if (!snapshot?.selectedUri) {
-      MixAppSession.clear();
+      WeaveSession.clear();
       return;
     }
-    MixAppSession.save(snapshot);
+    WeaveSession.save(snapshot);
   }
 
   function persistSessionSoon() {

@@ -1,7 +1,7 @@
 //@ts-check
 /** User-facing notifications (Spicetify toast). */
 
-const MixAppNotify = (() => {
+const WeaveNotify = (() => {
   function notify(message, isError) {
     const text = String(message ?? "").trim();
     if (!text) return;

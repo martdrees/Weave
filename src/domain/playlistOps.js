@@ -4,14 +4,14 @@
  * URI / id / fingerprint identity shared by session, Add Track, and Copy.
  */
 
-const MixAppPlaylistOps = (() => {
+const WeavePlaylistOps = (() => {
   function trackId(track) {
     if (!track) return null;
-    return track.id || MixAppRecommend.trackIdFromUri?.(track.uri) || null;
+    return track.id || WeaveRecommend.trackIdFromUri?.(track.uri) || null;
   }
 
   function fingerprint(track) {
-    return MixAppRecommend.trackFingerprint?.(track) || null;
+    return WeaveRecommend.trackFingerprint?.(track) || null;
   }
 
   /** True when a and b are the same song (uri, id, or fingerprint). */
@@ -76,14 +76,14 @@ const MixAppPlaylistOps = (() => {
    * @param {number} [stamp]
    */
   function toPlaylistTrack(track, stamp) {
-    return MixAppTrack.forAppend(track, stamp);
+    return WeaveTrack.forAppend(track, stamp);
   }
 
   /**
    * Append incoming tracks that are not already present.
-   * @param {MixAppTrackRow[]} current
-   * @param {Array<Partial<MixAppTrackRow>|null|undefined>} incoming
-   * @returns {MixAppAppendResult & { skipped: MixAppTrackRow[] }}
+   * @param {WeaveTrackRow[]} current
+   * @param {Array<Partial<WeaveTrackRow>|null|undefined>} incoming
+   * @returns {WeaveAppendResult & { skipped: WeaveTrackRow[] }}
    */
   function appendTracks(current, incoming) {
     const working = Array.isArray(current) ? current.slice() : [];
@@ -120,7 +120,7 @@ const MixAppPlaylistOps = (() => {
   function enrichAdded(addedTracks, setTracks) {
     const list = Array.isArray(addedTracks) ? addedTracks : [];
     if (!list.length || typeof setTracks !== "function") return;
-    MixAppFeatures.enrichTracks(list.slice())
+    WeaveFeatures.enrichTracks(list.slice())
       .then(() => {
         const byUid = new Map(list.map((t) => [t.uid, t]));
         setTracks((prev) =>
@@ -163,9 +163,9 @@ const MixAppPlaylistOps = (() => {
 
   /**
    * After addTracks reload: keep local order/enrichment; attach real Spotify uids.
-   * @param {MixAppTrackRow[]} localTracks
-   * @param {MixAppTrackRow[]} remoteTracks
-   * @returns {MixAppTrackRow[]}
+   * @param {WeaveTrackRow[]} localTracks
+   * @param {WeaveTrackRow[]} remoteTracks
+   * @returns {WeaveTrackRow[]}
    */
   function mergeTracksAfterRemoteAdd(localTracks, remoteTracks) {
     const remote = Array.isArray(remoteTracks) ? remoteTracks : [];

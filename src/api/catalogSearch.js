@@ -3,13 +3,13 @@
  * Catalog search: client GraphQL preferred, Web API fallback.
  */
 
-const MixAppCatalogSearch = (() => {
+const WeaveCatalogSearch = (() => {
   function normalizeCatalogTrack(raw, index) {
-    return MixAppTrack.fromWebApiTrack(raw, index);
+    return WeaveTrack.fromWebApiTrack(raw, index);
   }
 
   function normalizeGraphqlTrack(data, index) {
-    return MixAppTrack.fromGraphqlTrack(data, index);
+    return WeaveTrack.fromGraphqlTrack(data, index);
   }
 
   function graphqlEntity(entry) {
@@ -378,7 +378,7 @@ const MixAppCatalogSearch = (() => {
       );
     }
 
-    /** @type {MixAppTrackRow[]} */
+    /** @type {WeaveTrackRow[]} */
     let best = [];
     for (const searchV2 of payloads) {
       const tracks = tracksFromSearchV2(searchV2, fetchLimit, {
@@ -512,7 +512,7 @@ const MixAppCatalogSearch = (() => {
         }
         // Some overview rows are thin wrappers with only uri/name.
         if (!track?.uri && raw?.uri && String(raw.uri).includes(":track:")) {
-          track = MixAppTrack.fromWebApiTrack(
+          track = WeaveTrack.fromWebApiTrack(
             {
               uri: raw.uri,
               id: raw.id || String(raw.uri).split(":").pop(),
@@ -569,7 +569,7 @@ const MixAppCatalogSearch = (() => {
    * Artist Song Radio playlist via inspiredby-mix (client endpoint — avoids Web API 429).
    */
   async function getArtistTracksViaRadio(artistId, want) {
-    if (!artistId || typeof MixAppPlaylists?.getPlaylistTracks !== "function") {
+    if (!artistId || typeof WeavePlaylists?.getPlaylistTracks !== "function") {
       return [];
     }
     const urls = [
@@ -583,7 +583,7 @@ const MixAppCatalogSearch = (() => {
     let playlistUri = null;
     for (const url of urls) {
       try {
-        const res = await MixAppHttp.cosmosGet(url, {
+        const res = await WeaveHttp.cosmosGet(url, {
           retries: 1,
           label: "artist-radio",
           notifyUser: false,
@@ -604,7 +604,7 @@ const MixAppCatalogSearch = (() => {
     }
     if (!playlistUri) return [];
     try {
-      const tracks = await MixAppPlaylists.getPlaylistTracks(playlistUri);
+      const tracks = await WeavePlaylists.getPlaylistTracks(playlistUri);
       return (tracks || []).slice(0, want);
     } catch (err) {
       console.warn("Weave: artist radio playlist load failed", err);
@@ -619,7 +619,7 @@ const MixAppCatalogSearch = (() => {
       encodeURIComponent(artistId) +
       "/top-tracks?market=" +
       encodeURIComponent(market || "US");
-    const res = await MixAppHttp.cosmosGet(url, {
+    const res = await WeaveHttp.cosmosGet(url, {
       retries: 2,
       label: "artist top-tracks",
       notifyUser: false,
@@ -642,7 +642,7 @@ const MixAppCatalogSearch = (() => {
    * Prefers client GraphQL + artist radio; Web API top-tracks is last resort (429-prone).
    * @param {string} artistIdOrUri
    * @param {object} [opts]
-   * @returns {Promise<MixAppTrackRow[]>}
+   * @returns {Promise<WeaveTrackRow[]>}
    */
   async function getArtistTopTracks(artistIdOrUri, opts = {}) {
     const uri = artistUriFrom(artistIdOrUri);
@@ -660,7 +660,7 @@ const MixAppCatalogSearch = (() => {
       return await getArtistTopTracksViaWebApi(id, opts.market || userMarket(), want);
     } catch (err) {
       console.error("Weave: artist tracks unavailable", err);
-      if (MixAppHttp?.isRateLimitError?.(err)) {
+      if (WeaveHttp?.isRateLimitError?.(err)) {
         throw new Error("Artist tracks rate-limited — wait a moment and try again");
       }
       throw new Error(
@@ -823,7 +823,7 @@ const MixAppCatalogSearch = (() => {
         offset +
         "&market=" +
         encodeURIComponent(userMarket());
-      const res = await MixAppHttp.cosmosGet(url, {
+      const res = await WeaveHttp.cosmosGet(url, {
         retries: 2,
         label: "artist albums",
         notifyUser: false,
@@ -862,7 +862,7 @@ const MixAppCatalogSearch = (() => {
       return await getArtistAlbumsViaWebApi(id, want);
     } catch (err) {
       console.error("Weave: artist albums unavailable", err);
-      if (MixAppHttp?.isRateLimitError?.(err)) {
+      if (WeaveHttp?.isRateLimitError?.(err)) {
         throw new Error("Artist albums rate-limited — wait a moment and try again");
       }
       throw new Error("Could not load artist albums. Try again in a moment.");
@@ -953,7 +953,7 @@ const MixAppCatalogSearch = (() => {
       encodeURIComponent(albumId) +
       "?market=" +
       encodeURIComponent(userMarket());
-    const res = await MixAppHttp.cosmosGet(url, {
+    const res = await WeaveHttp.cosmosGet(url, {
       retries: 2,
       label: "album tracks",
       notifyUser: false,
@@ -990,7 +990,7 @@ const MixAppCatalogSearch = (() => {
    * Tracks on an album (GraphQL preferred).
    * @param {string} albumIdOrUri
    * @param {object} [opts]
-   * @returns {Promise<MixAppTrackRow[]>}
+   * @returns {Promise<WeaveTrackRow[]>}
    */
   async function getAlbumTracks(albumIdOrUri, opts = {}) {
     const uri = albumUriFrom(albumIdOrUri);
@@ -1005,7 +1005,7 @@ const MixAppCatalogSearch = (() => {
       return await getAlbumTracksViaWebApi(id, want);
     } catch (err) {
       console.error("Weave: album tracks unavailable", err);
-      if (MixAppHttp?.isRateLimitError?.(err)) {
+      if (WeaveHttp?.isRateLimitError?.(err)) {
         throw new Error("Album tracks rate-limited — wait a moment and try again");
       }
       throw new Error("Could not load album tracks. Try again in a moment.");

@@ -21,7 +21,7 @@
  *   togglePanel: (id: string) => void,
  * }} handlers
  */
-function MixAppUseAppShortcuts(handlers) {
+function WeaveUseAppShortcuts(handlers) {
   const react = Spicetify.React;
   const handlersRef = react.useRef(handlers);
   handlersRef.current = handlers;

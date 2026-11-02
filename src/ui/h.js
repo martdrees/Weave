@@ -6,9 +6,9 @@
  *
  * @type {typeof Spicetify.React.createElement}
  */
-function MixAppH(type, props, ...children) {
+function WeaveH(type, props, ...children) {
   return Spicetify.React.createElement(type, props ?? null, ...children);
 }
 
-/** @type {typeof MixAppH} — global alias for UI modules */
-var h = MixAppH;
+/** @type {typeof WeaveH} — global alias for UI modules */
+var h = WeaveH;

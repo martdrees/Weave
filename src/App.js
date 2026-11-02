@@ -4,24 +4,24 @@
  * Use-cases live in src/hooks/*.
  */
 
-function MixAppPage() {
+function WeavePage() {
   const react = Spicetify.React;
-  MixAppI18n.init();
-  const t = MixAppI18n.t;
+  WeaveI18n.init();
+  const t = WeaveI18n.t;
 
   const savedSessionRef = react.useRef(null);
   if (savedSessionRef.current === null) {
-    savedSessionRef.current = MixAppSession.load() || false;
+    savedSessionRef.current = WeaveSession.load() || false;
   }
   const saved = savedSessionRef.current || null;
-  const prefs = MixAppUseInitialPrefs();
+  const prefs = WeaveUseInitialPrefs();
 
   const searchCtlRef = react.useRef({
     resetForPlaylistLoad() {},
     resetForPlaylistClear() {},
   });
 
-  const session = MixAppUsePlaylistSession({
+  const session = WeaveUsePlaylistSession({
     saved,
     onBeforePlaylistLoad() {
       searchCtlRef.current.resetForPlaylistLoad();
@@ -31,7 +31,7 @@ function MixAppPage() {
     },
   });
 
-  const search = MixAppUseRecommendSearch({
+  const search = WeaveUseRecommendSearch({
     saved,
     prefs,
     tracks: session.tracks,
@@ -41,20 +41,20 @@ function MixAppPage() {
     resetForPlaylistClear: search.resetForPlaylistClear,
   };
 
-  const playback = MixAppUsePlayback();
+  const playback = WeaveUsePlayback();
 
-  const panels = MixAppUsePanelRegistry({
+  const panels = WeaveUsePanelRegistry({
     initialStatsOpen: !!saved?.statsOpen || !!prefs?.preferStatsOpen,
   });
 
-  MixAppUsePersistedPrefsSync({
+  WeaveUsePersistedPrefsSync({
     resultLimit: search.resultLimit,
     searchFilters: search.searchFilters,
     searchOpen: search.searchOpen,
     statsOpen: panels.statsOpen,
   });
 
-  MixAppUseSessionPersist(
+  WeaveUseSessionPersist(
     () => ({
       selectedUri: session.selectedUri,
       playlist: session.playlist,
@@ -88,7 +88,7 @@ function MixAppPage() {
     });
   }
 
-  MixAppUseAppShortcuts({
+  WeaveUseAppShortcuts({
     closeTopOverlay,
     saving: session.saving,
     playlist: session.playlist,
@@ -127,20 +127,20 @@ function MixAppPage() {
 
   return h(
     "div",
-    { className: "mixapp-root" },
+    { className: "weave-root" },
     h(
       "header",
-      { className: "mixapp-header" },
+      { className: "weave-header" },
       h(
         "div",
-        { className: "mixapp-header-row" },
+        { className: "weave-header-row" },
         h(
           "div",
-          { className: "mixapp-title-group" },
+          { className: "weave-title-group" },
           h(
             "svg",
             {
-              className: "mixapp-logo",
+              className: "weave-logo",
               viewBox: "0 0 64 64",
               width: 36,
               height: 36,
@@ -166,17 +166,17 @@ function MixAppPage() {
           ),
           h(
             "h1",
-            { className: "mixapp-title" },
+            { className: "weave-title" },
             t("app.name"),
-            h("span", { className: "mixapp-title-sep", "aria-hidden": "true" }, "|"),
-            h("span", { className: "mixapp-subtitle" }, t("app.subtitle"))
+            h("span", { className: "weave-title-sep", "aria-hidden": "true" }, "|"),
+            h("span", { className: "weave-subtitle" }, t("app.subtitle"))
           )
         ),
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-icon-btn mixapp-icon-btn-compact",
+            className: "weave-icon-btn weave-icon-btn-compact",
             onClick: () => panels.openPanel("shortcuts"),
             title: t("app.shortcutsHint"),
             "aria-label": t("app.shortcuts"),
@@ -198,7 +198,7 @@ function MixAppPage() {
         )
       )
     ),
-    h(MixAppToolbar, {
+    h(WeaveToolbar, {
       playlist: session.playlist,
       tracks: session.tracks,
       saving: session.saving,
@@ -218,12 +218,12 @@ function MixAppPage() {
       onOpenFlowify: () => panels.openPanel("flowify"),
       onOpenGenerator: () => panels.openPanel("generator"),
     }),
-    h(MixAppStatsPanel, {
+    h(WeaveStatsPanel, {
       open: panels.statsOpen,
       tracks: session.tracks,
       onClose: () => panels.closePanel("stats"),
     }),
-    h(MixAppSearchPanel, {
+    h(WeaveSearchPanel, {
       open: search.searchOpen,
       seedUris: search.seedUris,
       tracks: session.tracks,
@@ -242,17 +242,17 @@ function MixAppPage() {
       onResultLimitChange: search.setResultLimit,
       onFitToSeeds: search.handleFitToSeeds,
       onResetFeatures: () =>
-        search.setSearchFeatures(MixAppRecommend.defaultFeatureState()),
+        search.setSearchFeatures(WeaveRecommend.defaultFeatureState()),
       onSearch: search.handleSearch,
     }),
-    session.error ? h("div", { className: "mixapp-error" }, session.error) : null,
+    session.error ? h("div", { className: "weave-error" }, session.error) : null,
     h(
       "div",
-      { className: "mixapp-main" },
+      { className: "weave-main" },
       h(
         "div",
-        { className: "mixapp-main-arranger" },
-        h(MixAppArranger, {
+        { className: "weave-main-arranger" },
+        h(WeaveArranger, {
           tracks: session.tracks,
           loading: session.tracksLoading,
           playingUri: playback.playingUri,
@@ -268,7 +268,7 @@ function MixAppPage() {
         })
       )
     ),
-    h(MixAppSearchResults, {
+    h(WeaveSearchResults, {
       open: search.resultsOpen,
       results: search.searchResults,
       loading: search.searchLoading,
@@ -279,7 +279,7 @@ function MixAppPage() {
       onHideTrack: search.handleHideResult,
       onPlay: handlePlay,
     }),
-    h(MixAppAddTrackModal, {
+    h(WeaveAddTrackModal, {
       open: panels.addTrackOpen,
       playlistTracks: session.tracks,
       playingUri: playback.playingUri,
@@ -289,7 +289,7 @@ function MixAppPage() {
       onAddTracks: session.handleAddCatalogTracks,
       onPlay: handlePlay,
     }),
-    h(MixAppCopyPlaylistModal, {
+    h(WeaveCopyPlaylistModal, {
       open: panels.copyPlaylistOpen,
       libraryPlaylists: session.playlists,
       currentPlaylistUri: session.selectedUri,
@@ -301,7 +301,7 @@ function MixAppPage() {
       onAddTracks: session.handleAddCatalogTracks,
       onPlay: handlePlay,
     }),
-    h(MixAppFlowifyModal, {
+    h(WeaveFlowifyModal, {
       open: panels.flowifyOpen,
       tracks: session.tracks,
       playingUri: playback.playingUri,
@@ -317,7 +317,7 @@ function MixAppPage() {
         return session.handleSaveAsNew({ tracks: next, stayOnCurrent: false });
       },
     }),
-    h(MixAppGeneratorModal, {
+    h(WeaveGeneratorModal, {
       open: panels.generatorOpen,
       playlist: session.playlist,
       tracks: session.tracks,
@@ -336,7 +336,7 @@ function MixAppPage() {
         }
       },
     }),
-    h(MixAppShortcutsHelp, {
+    h(WeaveShortcutsHelp, {
       open: panels.shortcutsOpen,
       onClose: () => panels.closePanel("shortcuts"),
     })

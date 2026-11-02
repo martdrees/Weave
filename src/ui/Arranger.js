@@ -1,6 +1,6 @@
 //@ts-check
 
-function MixAppArranger(props) {
+function WeaveArranger(props) {
   const react = Spicetify.React;
   const {
     tracks,
@@ -25,7 +25,7 @@ function MixAppArranger(props) {
   const [activeIndex, setActiveIndex] = react.useState(null);
   const [followId, setFollowId] = react.useState(null);
   const [visibility, setVisibility] = react.useState(() =>
-    MixAppColumnConfig.getVisibility()
+    WeaveColumnConfig.getVisibility()
   );
   const [menu, setMenu] = react.useState(null);
   const [sort, setSort] = react.useState({ key: null, dir: null });
@@ -35,8 +35,8 @@ function MixAppArranger(props) {
   const dragRef = react.useRef({ from: null, over: null, dropped: false });
 
   react.useEffect(() => {
-    setVisibility(MixAppColumnConfig.getVisibility());
-    return MixAppColumnConfig.subscribe((next) => setVisibility({ ...next }));
+    setVisibility(WeaveColumnConfig.getVisibility());
+    return WeaveColumnConfig.subscribe((next) => setVisibility({ ...next }));
   }, []);
 
   // R5.4 — whole-list pulse after Flowify (etc.)
@@ -50,7 +50,7 @@ function MixAppArranger(props) {
   // Scroll first newly added row into view.
   react.useEffect(() => {
     if (!flashUids?.length) return;
-    const el = document.querySelector(".mixapp-track-row.is-flash");
+    const el = document.querySelector(".weave-track-row.is-flash");
     el?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   }, [flashUids]);
 
@@ -100,57 +100,57 @@ function MixAppArranger(props) {
     }
   }
 
-  const show = (id) => MixAppColumnConfig.isVisible(visibility, id);
-  const toggleable = MixAppColumnConfig.COLUMNS.filter((c) => !c.always);
+  const show = (id) => WeaveColumnConfig.isVisible(visibility, id);
+  const toggleable = WeaveColumnConfig.COLUMNS.filter((c) => !c.always);
 
   const featureCols = [
-    { id: "BPM", label: MixAppI18n.t("col.bpm"), sortKey: "bpm" },
-    { id: "KEY", label: MixAppI18n.t("col.key"), sortKey: "key" },
+    { id: "BPM", label: WeaveI18n.t("col.bpm"), sortKey: "bpm" },
+    { id: "KEY", label: WeaveI18n.t("col.key"), sortKey: "key" },
     {
       id: "ENERGY",
-      label: MixAppI18n.t("col.energy"),
+      label: WeaveI18n.t("col.energy"),
       sortKey: "energy",
       metricId: "energy",
     },
     {
       id: "DANCEABILITY",
-      label: MixAppI18n.t("col.dance"),
+      label: WeaveI18n.t("col.dance"),
       sortKey: "danceability",
       metricId: "danceability",
     },
     {
       id: "VALENCE",
-      label: MixAppI18n.t("col.valence"),
+      label: WeaveI18n.t("col.valence"),
       sortKey: "valence",
       metricId: "valence",
     },
     {
       id: "ACOUSTICNESS",
-      label: MixAppI18n.t("col.acoustic"),
+      label: WeaveI18n.t("col.acoustic"),
       sortKey: "acousticness",
       metricId: "acousticness",
     },
     {
       id: "INSTRUMENTALNESS",
-      label: MixAppI18n.t("col.instr"),
+      label: WeaveI18n.t("col.instr"),
       sortKey: "instrumentalness",
       metricId: "instrumentalness",
     },
     {
       id: "SPEECHINESS",
-      label: MixAppI18n.t("col.speech"),
+      label: WeaveI18n.t("col.speech"),
       sortKey: "speechiness",
       metricId: "speechiness",
     },
     {
       id: "LIVENESS",
-      label: MixAppI18n.t("col.live"),
+      label: WeaveI18n.t("col.live"),
       sortKey: "liveness",
       metricId: "liveness",
     },
     {
       id: "LOUDNESS",
-      label: MixAppI18n.t("col.loud"),
+      label: WeaveI18n.t("col.loud"),
       sortKey: "loudness",
       metricId: "loudness",
     },
@@ -184,7 +184,7 @@ function MixAppArranger(props) {
 
   const displayTracks =
     sort.key && sort.dir
-      ? MixAppFeatures.sortTracks(tracks, sort.key, sort.dir)
+      ? WeaveFeatures.sortTracks(tracks, sort.key, sort.dir)
       : tracks || [];
 
   // After reorder (esp. while sorted), re-select the same track by uid/uri.
@@ -207,7 +207,7 @@ function MixAppArranger(props) {
 
   react.useEffect(() => {
     if (activeIndex == null) return;
-    const el = document.getElementById("mixapp-arranger-row-" + activeIndex);
+    const el = document.getElementById("weave-arranger-row-" + activeIndex);
     el?.scrollIntoView?.({ block: "nearest" });
   }, [activeIndex]);
 
@@ -216,8 +216,8 @@ function MixAppArranger(props) {
     if (!show(col.id)) continue;
     const metricId = col.metricId || (col.id === "BPM" ? "tempo" : null);
     if (!metricId) continue;
-    const metric = MixAppFeatures.METRICS.find((m) => m.id === metricId);
-    if (metric) metricRanges[metricId] = MixAppFeatures.rangeForMetric(tracks, metric);
+    const metric = WeaveFeatures.METRICS.find((m) => m.id === metricId);
+    if (metric) metricRanges[metricId] = WeaveFeatures.rangeForMetric(tracks, metric);
   }
 
   function indexInFull(track) {
@@ -276,15 +276,15 @@ function MixAppArranger(props) {
     // Don't start a row drag from interactive controls.
     if (
       e.target?.closest?.(
-        "button, a, input, .mixapp-play-btn, .mixapp-icon-btn, .mixapp-col-sort, .mixapp-col-actions"
+        "button, a, input, .weave-play-btn, .weave-icon-btn, .weave-col-sort, .weave-col-actions"
       )
     ) {
       e.preventDefault();
       return;
     }
-    const row = e.currentTarget?.classList?.contains?.("mixapp-track-row")
+    const row = e.currentTarget?.classList?.contains?.("weave-track-row")
       ? e.currentTarget
-      : e.currentTarget?.closest?.(".mixapp-track-row");
+      : e.currentTarget?.closest?.(".weave-track-row");
     const hgt = row?.offsetHeight || 40;
     dragRef.current = { from: index, over: index, dropped: false };
     setDragIndex(index);
@@ -417,7 +417,7 @@ function MixAppArranger(props) {
   }
 
   function handleToggleColumn(columnId) {
-    const next = MixAppColumnConfig.toggle(columnId);
+    const next = WeaveColumnConfig.toggle(columnId);
     setVisibility({ ...next });
   }
 
@@ -437,12 +437,12 @@ function MixAppArranger(props) {
       "button",
       {
         type: "button",
-        className: "mixapp-col-sort" + (active ? " is-active" : ""),
+        className: "weave-col-sort" + (active ? " is-active" : ""),
         onClick: (e) => {
           e.stopPropagation();
           cycleSort(sortKey);
         },
-        title: MixAppI18n.t("arranger.sortBy", { label }),
+        title: WeaveI18n.t("arranger.sortBy", { label }),
       },
       label + arrow
     );
@@ -451,22 +451,22 @@ function MixAppArranger(props) {
   if (loading) {
     return h(
       "div",
-      { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
+      { className: "weave-arranger weave-arranger-empty weave-empty-state" },
       h("div", {
-        className: "mixapp-spinner",
+        className: "weave-spinner",
         "aria-hidden": "true",
       }),
-      h("p", { className: "mixapp-empty-title" }, MixAppI18n.t("picker.loading")),
-      h("p", { className: "mixapp-empty-hint" }, MixAppI18n.t("arranger.loading"))
+      h("p", { className: "weave-empty-title" }, WeaveI18n.t("picker.loading")),
+      h("p", { className: "weave-empty-hint" }, WeaveI18n.t("arranger.loading"))
     );
   }
 
   if (!tracks?.length) {
     return h(
       "div",
-      { className: "mixapp-arranger mixapp-arranger-empty mixapp-empty-state" },
-      h("p", { className: "mixapp-empty-title" }, MixAppI18n.t("arranger.empty")),
-      h("p", { className: "mixapp-empty-hint" }, MixAppI18n.t("arranger.emptyHint"))
+      { className: "weave-arranger weave-arranger-empty weave-empty-state" },
+      h("p", { className: "weave-empty-title" }, WeaveI18n.t("arranger.empty")),
+      h("p", { className: "weave-empty-hint" }, WeaveI18n.t("arranger.emptyHint"))
     );
   }
 
@@ -476,19 +476,19 @@ function MixAppArranger(props) {
 
   function featureCell(track, col) {
     if (col.id === "KEY") {
-      const label = MixAppFeatures.formatDisplayKey(track);
-      const bg = MixAppFeatures.camelotBackground(
+      const label = WeaveFeatures.formatDisplayKey(track);
+      const bg = WeaveFeatures.camelotBackground(
         track.keyIndex,
         track.keyMode,
         track.key,
         track.keyColor
       );
       return cell(
-        "mixapp-col-feat mixapp-col-key",
+        "weave-col-feat weave-col-key",
         h(
           "span",
           {
-            className: "mixapp-key-circle" + (label ? "" : " is-empty"),
+            className: "weave-key-circle" + (label ? "" : " is-empty"),
             style: bg ? { background: bg } : undefined,
             title: label || undefined,
           },
@@ -499,28 +499,28 @@ function MixAppArranger(props) {
     if (col.id === "BPM") {
       const text = track.bpm != null && track.bpm !== "" ? String(track.bpm) : "—";
       return cell(
-        "mixapp-col-feat mixapp-col-bpm",
+        "weave-col-feat weave-col-bpm",
         h(
           "span",
           {
-            className: "mixapp-feat-pill",
-            style: { background: MixAppFeatures.featureTint("tempo") },
+            className: "weave-feat-pill",
+            style: { background: WeaveFeatures.featureTint("tempo") },
           },
           text
         )
       );
     }
     const metricId = col.metricId;
-    const metric = MixAppFeatures.METRICS.find((m) => m.id === metricId);
-    const v = MixAppFeatures.metricValue(track, metric);
-    const text = MixAppFeatures.formatMetric(metric, v);
-    const bg = MixAppFeatures.featureTint(metricId || col.id);
+    const metric = WeaveFeatures.METRICS.find((m) => m.id === metricId);
+    const v = WeaveFeatures.metricValue(track, metric);
+    const text = WeaveFeatures.formatMetric(metric, v);
+    const bg = WeaveFeatures.featureTint(metricId || col.id);
     return cell(
-      "mixapp-col-feat mixapp-col-" + (metricId || col.id.toLowerCase()),
+      "weave-col-feat weave-col-" + (metricId || col.id.toLowerCase()),
       h(
         "span",
         {
-          className: "mixapp-feat-pill",
+          className: "weave-feat-pill",
           style: { background: bg },
         },
         text
@@ -531,31 +531,23 @@ function MixAppArranger(props) {
   function headCells() {
     const cells = [];
     if (show("INDEX")) {
-      cells.push(
-        cell("mixapp-col-num", headButton(MixAppI18n.t("col.index"), "index"))
-      );
+      cells.push(cell("weave-col-num", headButton(WeaveI18n.t("col.index"), "index")));
     }
     if (show("TITLE_AND_ARTIST")) {
-      cells.push(
-        cell("mixapp-col-title", headButton(MixAppI18n.t("col.track"), "name"))
-      );
+      cells.push(cell("weave-col-title", headButton(WeaveI18n.t("col.track"), "name")));
     }
-    if (show("ADDED_AT"))
-      cells.push(cell("mixapp-col-added", MixAppI18n.t("col.added")));
+    if (show("ADDED_AT")) cells.push(cell("weave-col-added", WeaveI18n.t("col.added")));
     for (const col of featureCols) {
       if (show(col.id)) {
         cells.push(
-          cell(
-            "mixapp-col-feat mixapp-col-feat-head",
-            headButton(col.label, col.sortKey)
-          )
+          cell("weave-col-feat weave-col-feat-head", headButton(col.label, col.sortKey))
         );
       }
     }
     if (show("DURATION")) {
-      cells.push(cell("mixapp-col-dur", headButton(MixAppI18n.t("col.time"), "index")));
+      cells.push(cell("weave-col-dur", headButton(WeaveI18n.t("col.time"), "index")));
     }
-    if (show("ACTIONS")) cells.push(cell("mixapp-col-actions", ""));
+    if (show("ACTIONS")) cells.push(cell("weave-col-actions", ""));
     return cells;
   }
 
@@ -564,18 +556,18 @@ function MixAppArranger(props) {
     const subParts = [];
     if (track.artists) subParts.push(track.artists);
     if (show("ALBUM") && track.album) subParts.push(track.album);
-    const duration = MixAppApi.formatDuration(track.durationMs);
+    const duration = WeaveApi.formatDuration(track.durationMs);
     const titleText =
-      (track.name || MixAppI18n.t("common.unknown")) +
+      (track.name || WeaveI18n.t("common.unknown")) +
       (duration && duration !== "—" ? " (" + duration + ")" : "");
     return h(
       "div",
-      { className: "mixapp-track-meta" },
+      { className: "weave-track-meta" },
       h(
         "button",
         {
           type: "button",
-          className: "mixapp-track-meta-title" + (isSeed ? " is-seed" : ""),
+          className: "weave-track-meta-title" + (isSeed ? " is-seed" : ""),
           onClick: (e) => {
             e.stopPropagation();
             const di = displayTracks.findIndex(
@@ -585,15 +577,15 @@ function MixAppArranger(props) {
             onToggleSeed?.(track.uri);
           },
           title: isSeed
-            ? MixAppI18n.t("arranger.seedUnmark")
-            : MixAppI18n.t("arranger.seedMark"),
+            ? WeaveI18n.t("arranger.seedUnmark")
+            : WeaveI18n.t("arranger.seedMark"),
         },
         titleText
       ),
       subParts.length
         ? h(
             "div",
-            { className: "mixapp-track-meta-sub", title: subParts.join(" · ") },
+            { className: "weave-track-meta-sub", title: subParts.join(" · ") },
             subParts.join(" · ")
           )
         : null
@@ -603,7 +595,7 @@ function MixAppArranger(props) {
   function startTimeLabel(track) {
     const fullIndex = indexInFull(track);
     const startMs = fullIndex >= 0 ? (startOffsetsMs[fullIndex] ?? 0) : 0;
-    return MixAppApi.formatDuration(startMs);
+    return WeaveApi.formatDuration(startMs);
   }
 
   function rowCells(track, index) {
@@ -612,23 +604,23 @@ function MixAppArranger(props) {
     if (show("INDEX")) {
       cells.push(
         cell(
-          "mixapp-col-num",
+          "weave-col-num",
           h(
             "div",
-            { className: "mixapp-index-cell" },
+            { className: "weave-index-cell" },
             h(
               "span",
               {
-                className: "mixapp-drag-handle",
-                title: MixAppI18n.t("arranger.drag"),
-                "aria-label": MixAppI18n.t("arranger.drag"),
+                className: "weave-drag-handle",
+                title: WeaveI18n.t("arranger.drag"),
+                "aria-label": WeaveI18n.t("arranger.drag"),
                 onClick: (e) => e.stopPropagation(),
               },
               dragGripIcon
             ),
             h(
               "span",
-              { className: "mixapp-index-num" },
+              { className: "weave-index-num" },
               fullIndex >= 0 ? fullIndex + 1 : index + 1
             )
           )
@@ -637,24 +629,24 @@ function MixAppArranger(props) {
     }
     if (show("TITLE_AND_ARTIST")) {
       const active = !!(track.uri && track.uri === playingUri && isPlaying);
-      const playName = track.name || MixAppI18n.t("arranger.trackFallback");
+      const playName = track.name || WeaveI18n.t("arranger.trackFallback");
       const pendingPlay = !!isPlayPending?.(track);
       const playLabel = pendingPlay
-        ? MixAppI18n.t("arranger.playPending", { name: playName })
+        ? WeaveI18n.t("arranger.playPending", { name: playName })
         : active
-          ? MixAppI18n.t("arranger.pause", { name: playName })
-          : MixAppI18n.t("arranger.play", { name: playName });
+          ? WeaveI18n.t("arranger.pause", { name: playName })
+          : WeaveI18n.t("arranger.play", { name: playName });
       cells.push(
         cell(
-          "mixapp-col-title",
+          "weave-col-title",
           h(
             "div",
-            { className: "mixapp-title-cell" },
+            { className: "weave-title-cell" },
             h(
               "button",
               {
                 type: "button",
-                className: "mixapp-play-btn" + (active ? " is-playing" : ""),
+                className: "weave-play-btn" + (active ? " is-playing" : ""),
                 disabled: pendingPlay,
                 onClick: (e) => {
                   e.stopPropagation();
@@ -691,7 +683,7 @@ function MixAppArranger(props) {
     }
     if (show("ADDED_AT")) {
       cells.push(
-        cell("mixapp-col-added", MixAppColumnConfig.formatAddedAt(track.addedAt))
+        cell("weave-col-added", WeaveColumnConfig.formatAddedAt(track.addedAt))
       );
     }
     for (const col of featureCols) {
@@ -700,24 +692,24 @@ function MixAppArranger(props) {
     if (show("DURATION")) {
       const isCurrent = !!(track.uri && track.uri === playingUri);
       cells.push(
-        cell("mixapp-col-dur" + (isCurrent ? " is-current" : ""), startTimeLabel(track))
+        cell("weave-col-dur" + (isCurrent ? " is-current" : ""), startTimeLabel(track))
       );
     }
     if (show("ACTIONS")) {
       cells.push(
-        cell("mixapp-col-actions", [
+        cell("weave-col-actions", [
           h(
             "button",
             {
               key: "up",
               type: "button",
-              className: "mixapp-icon-btn",
+              className: "weave-icon-btn",
               disabled: index === 0,
               onClick: (e) => {
                 e.stopPropagation();
                 moveDisplay(index, index - 1);
               },
-              title: MixAppI18n.t("arranger.moveUp"),
+              title: WeaveI18n.t("arranger.moveUp"),
             },
             "↑"
           ),
@@ -726,13 +718,13 @@ function MixAppArranger(props) {
             {
               key: "down",
               type: "button",
-              className: "mixapp-icon-btn",
+              className: "weave-icon-btn",
               disabled: index >= displayTracks.length - 1,
               onClick: (e) => {
                 e.stopPropagation();
                 moveDisplay(index, index + 1);
               },
-              title: MixAppI18n.t("arranger.moveDown"),
+              title: WeaveI18n.t("arranger.moveDown"),
             },
             "↓"
           ),
@@ -741,13 +733,13 @@ function MixAppArranger(props) {
             {
               key: "remove",
               type: "button",
-              className: "mixapp-icon-btn mixapp-icon-btn-danger",
+              className: "weave-icon-btn weave-icon-btn-danger",
               onClick: (e) => {
                 e.stopPropagation();
                 removeDisplay(index);
               },
-              title: MixAppI18n.t("arranger.remove"),
-              "aria-label": MixAppI18n.t("arranger.remove"),
+              title: WeaveI18n.t("arranger.remove"),
+              "aria-label": WeaveI18n.t("arranger.remove"),
             },
             h(
               "svg",
@@ -775,17 +767,17 @@ function MixAppArranger(props) {
         "div",
         {
           ref: menuRef,
-          className: "mixapp-column-menu",
+          className: "weave-column-menu",
           style: { left: menu.x + "px", top: menu.y + "px" },
           role: "menu",
         },
-        h("div", { className: "mixapp-column-menu-title" }, "Columns"),
+        h("div", { className: "weave-column-menu-title" }, "Columns"),
         toggleable.map((col) =>
           h(
             "label",
             {
               key: col.id,
-              className: "mixapp-column-menu-item",
+              className: "weave-column-menu-item",
               role: "menuitemcheckbox",
               "aria-checked": show(col.id),
               onMouseDown: (e) => e.stopPropagation(),
@@ -814,52 +806,48 @@ function MixAppArranger(props) {
       : columnMenu;
 
   const activeDescendant =
-    activeIndex != null ? "mixapp-arranger-row-" + activeIndex : undefined;
+    activeIndex != null ? "weave-arranger-row-" + activeIndex : undefined;
 
   return h(
     "div",
-    { className: "mixapp-arranger-wrap" },
+    { className: "weave-arranger-wrap" },
     h(
       "div",
       {
         ref: listRef,
         className:
-          "mixapp-arranger" +
+          "weave-arranger" +
           (listFlashOn ? " is-flash" : "") +
           (dragIndex != null ? " is-reordering" : ""),
         role: "listbox",
         tabIndex: 0,
-        "aria-label": MixAppI18n.t("arranger.aria"),
+        "aria-label": WeaveI18n.t("arranger.aria"),
         "aria-activedescendant": activeDescendant,
         onKeyDown: handleListKeyDown,
       },
       h(
         "div",
         {
-          className: "mixapp-arranger-head",
+          className: "weave-arranger-head",
           style: { gridTemplateColumns: gridTemplate },
           onContextMenu: openColumnMenu,
-          title: MixAppI18n.t("arranger.columnsMenu"),
+          title: WeaveI18n.t("arranger.columnsMenu"),
           role: "presentation",
         },
         ...headCells()
       ),
       !displayTracks.length
-        ? h(
-            "div",
-            { className: "mixapp-arranger-empty" },
-            MixAppI18n.t("arranger.empty")
-          )
+        ? h("div", { className: "weave-arranger-empty" }, WeaveI18n.t("arranger.empty"))
         : displayTracks.map((track, index) =>
             h(
               "div",
               {
                 key: (track.uid || track.uri) + "-" + index,
-                id: "mixapp-arranger-row-" + index,
+                id: "weave-arranger-row-" + index,
                 role: "option",
                 "aria-selected": activeIndex === index,
                 className:
-                  "mixapp-track-row" +
+                  "weave-track-row" +
                   (dragIndex === index ? " is-dragging" : "") +
                   (dragOverIndex === index && dragIndex !== index
                     ? " is-drag-over"
@@ -872,12 +860,12 @@ function MixAppArranger(props) {
                 style: { gridTemplateColumns: gridTemplate },
                 draggable: true,
                 title: seedSet.has(track.uri)
-                  ? MixAppI18n.t("arranger.rowSeed")
-                  : MixAppI18n.t("arranger.rowNormal"),
+                  ? WeaveI18n.t("arranger.rowSeed")
+                  : WeaveI18n.t("arranger.rowNormal"),
                 onClick: (e) => {
                   if (
                     e.target?.closest?.(
-                      "button, a, input, .mixapp-play-btn, .mixapp-icon-btn, .mixapp-drag-handle, .mixapp-col-sort, .mixapp-col-actions"
+                      "button, a, input, .weave-play-btn, .weave-icon-btn, .weave-drag-handle, .weave-col-sort, .weave-col-actions"
                     )
                   ) {
                     return;

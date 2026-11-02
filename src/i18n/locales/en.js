@@ -1,6 +1,6 @@
 //@ts-check
 /** English (fallback) — Weave UI strings. */
-MixAppI18n.register("en", {
+WeaveI18n.register("en", {
   // App chrome
   "app.name": "Weave",
   "app.subtitle": "Playlist weaving for Spotify",

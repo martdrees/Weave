@@ -1,7 +1,7 @@
 //@ts-check
 
 /** Search results as a large modal with a playlist-style track table. */
-function MixAppSearchResults(props) {
+function WeaveSearchResults(props) {
   const react = Spicetify.React;
   const {
     open,
@@ -16,7 +16,7 @@ function MixAppSearchResults(props) {
   } = props;
 
   return h(
-    MixAppModal,
+    WeaveModal,
     {
       open,
       title: "Results",
@@ -27,8 +27,8 @@ function MixAppSearchResults(props) {
     },
     h(
       "div",
-      { className: "mixapp-search-results-body" },
-      h(MixAppTrackTable, {
+      { className: "weave-search-results-body" },
+      h(WeaveTrackTable, {
         tracks: results,
         playingUri,
         isPlaying,

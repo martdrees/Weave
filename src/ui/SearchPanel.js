@@ -1,7 +1,7 @@
 //@ts-check
 
 /** Full-width search / filter bar (between toolbar and playlist table). */
-function MixAppSearchPanel(props) {
+function WeaveSearchPanel(props) {
   const react = Spicetify.React;
   const {
     open,
@@ -38,9 +38,9 @@ function MixAppSearchPanel(props) {
     jaws: ["camelot.harmonicShift", "camelot.harmonicShiftHint"],
   };
   const moveLabel = (move) =>
-    CAMELOT_KEYS[move.id] ? MixAppI18n.t(CAMELOT_KEYS[move.id][0]) : move.label;
+    CAMELOT_KEYS[move.id] ? WeaveI18n.t(CAMELOT_KEYS[move.id][0]) : move.label;
   const moveHint = (move) =>
-    CAMELOT_KEYS[move.id] ? MixAppI18n.t(CAMELOT_KEYS[move.id][1]) : move.hint;
+    CAMELOT_KEYS[move.id] ? WeaveI18n.t(CAMELOT_KEYS[move.id][1]) : move.hint;
 
   const seedNames = (tracks || [])
     .filter((t) => seedUris?.includes(t.uri))
@@ -50,21 +50,21 @@ function MixAppSearchPanel(props) {
   return h(
     "section",
     {
-      className: "mixapp-search-panel",
-      "aria-label": MixAppI18n.t("search.filters"),
+      className: "weave-search-panel",
+      "aria-label": WeaveI18n.t("search.filters"),
     },
     h(
       "div",
-      { className: "mixapp-search-panel-header" },
+      { className: "weave-search-panel-header" },
       h(
         "div",
-        { className: "mixapp-search-panel-title-row" },
-        h("h2", null, MixAppI18n.t("search.title")),
+        { className: "weave-search-panel-title-row" },
+        h("h2", null, WeaveI18n.t("search.title")),
         h(
           "span",
-          { className: "mixapp-recommend-meta" },
+          { className: "weave-recommend-meta" },
           seedCount
-            ? MixAppI18n.t(seedCount === 1 ? "toolbar.seed" : "toolbar.seeds", {
+            ? WeaveI18n.t(seedCount === 1 ? "toolbar.seed" : "toolbar.seeds", {
                 count: seedCount,
               }) +
                 (seedNames.length
@@ -72,41 +72,41 @@ function MixAppSearchPanel(props) {
                   : "")
             : hasPlaylistTracks
               ? "No seeds — searching from this playlist"
-              : MixAppI18n.t("search.seedsNeeded")
+              : WeaveI18n.t("search.seedsNeeded")
         )
       ),
       h(
         "div",
-        { className: "mixapp-search-panel-header-actions" },
+        { className: "weave-search-panel-header-actions" },
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-btn mixapp-btn-ghost",
+            className: "weave-btn weave-btn-ghost",
             onClick: onFitToSeeds,
             disabled: !seedCount || fitting,
-            title: MixAppI18n.t("search.fitTitle"),
+            title: WeaveI18n.t("search.fitTitle"),
           },
-          fitting ? MixAppI18n.t("search.fitting") : MixAppI18n.t("search.fitToSeeds")
+          fitting ? WeaveI18n.t("search.fitting") : WeaveI18n.t("search.fitToSeeds")
         ),
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-btn mixapp-btn-ghost",
+            className: "weave-btn weave-btn-ghost",
             onClick: onResetFeatures,
           },
-          MixAppI18n.t("search.resetRanges")
+          WeaveI18n.t("search.resetRanges")
         ),
         h(
           "label",
-          { className: "mixapp-result-limit" },
-          MixAppI18n.t("search.maxResults"),
+          { className: "weave-result-limit" },
+          WeaveI18n.t("search.maxResults"),
           h(
             "select",
             {
-              className: "mixapp-select mixapp-select-compact",
-              value: resultLimit || MixAppRecommend.DEFAULT_LIMIT,
+              className: "weave-select weave-select-compact",
+              value: resultLimit || WeaveRecommend.DEFAULT_LIMIT,
               onChange: (e) => onResultLimitChange?.(Number(e.target.value)),
               disabled: loading,
             },
@@ -119,41 +119,41 @@ function MixAppSearchPanel(props) {
           "button",
           {
             type: "button",
-            className: "mixapp-btn mixapp-btn-primary",
+            className: "weave-btn weave-btn-primary",
             onClick: onSearch,
             disabled: loading || !canSearch,
             title: canSearch
               ? seedCount
                 ? "Search from marked seed tracks"
                 : "Search using this playlist as context (no seeds marked)"
-              : MixAppI18n.t("search.seedsNeeded"),
+              : WeaveI18n.t("search.seedsNeeded"),
           },
-          loading ? MixAppI18n.t("picker.loading") : MixAppI18n.t("common.search")
+          loading ? WeaveI18n.t("picker.loading") : WeaveI18n.t("common.search")
         ),
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-icon-btn",
+            className: "weave-icon-btn",
             onClick: onClose,
-            title: MixAppI18n.t("common.close"),
-            "aria-label": MixAppI18n.t("common.close"),
+            title: WeaveI18n.t("common.close"),
+            "aria-label": WeaveI18n.t("common.close"),
           },
           "✕"
         )
       )
     ),
 
-    error ? h("div", { className: "mixapp-error" }, error) : null,
+    error ? h("div", { className: "weave-error" }, error) : null,
 
     h(
       "div",
-      { className: "mixapp-search-panel-body" },
+      { className: "weave-search-panel-body" },
       h(
         "div",
-        { className: "mixapp-search-panel-block" },
-        h("h3", null, MixAppI18n.t("search.featureRanges")),
-        h(MixAppFeatureSliders, {
+        { className: "weave-search-panel-block" },
+        h("h3", null, WeaveI18n.t("search.featureRanges")),
+        h(WeaveFeatureSliders, {
           features,
           onChange: onFeaturesChange,
           disabled: loading,
@@ -167,26 +167,26 @@ function MixAppSearchPanel(props) {
 
       h(
         "div",
-        { className: "mixapp-search-panel-block mixapp-camelot-block" },
+        { className: "weave-search-panel-block weave-camelot-block" },
         h(
           "div",
-          { className: "mixapp-camelot-filters-head" },
+          { className: "weave-camelot-filters-head" },
           h(
             "h3",
             {
-              className: "mixapp-tip",
+              className: "weave-tip",
               "data-tip":
                 "Keep results that mix harmonically with your seed (or playlist) keys on the Camelot wheel. Select any combination — a track matches if any selected move reaches it. Leave all off to skip key filtering.",
             },
-            MixAppI18n.t("search.mixInKey")
+            WeaveI18n.t("search.mixInKey")
           ),
           h(
             "span",
-            { className: "mixapp-recommend-meta" },
+            { className: "weave-recommend-meta" },
             (() => {
               const seeds = (tracks || [])
                 .filter((t) => seedUris?.includes(t.uri))
-                .map((t) => MixAppFeatures.parseCamelot(t)?.label)
+                .map((t) => WeaveFeatures.parseCamelot(t)?.label)
                 .filter(Boolean);
               const unique = [...new Set(seeds)];
               return unique.length
@@ -202,11 +202,11 @@ function MixAppSearchPanel(props) {
         h(
           "div",
           {
-            className: "mixapp-camelot-moves",
+            className: "weave-camelot-moves",
             role: "group",
             "aria-label": "Camelot moves",
           },
-          MixAppFeatures.CAMELOT_MOVES.map((move) => {
+          WeaveFeatures.CAMELOT_MOVES.map((move) => {
             const selected = Array.isArray(filters.camelotMoves)
               ? filters.camelotMoves.includes(move.id)
               : false;
@@ -215,8 +215,7 @@ function MixAppSearchPanel(props) {
               {
                 key: move.id,
                 type: "button",
-                className:
-                  "mixapp-camelot-chip mixapp-tip" + (selected ? " is-on" : ""),
+                className: "weave-camelot-chip weave-tip" + (selected ? " is-on" : ""),
                 "data-tip": moveHint(move) + " · " + move.example,
                 "aria-pressed": selected,
                 onClick: () => {
@@ -229,8 +228,8 @@ function MixAppSearchPanel(props) {
                   onFiltersChange?.({ ...filters, camelotMoves: next });
                 },
               },
-              h("span", { className: "mixapp-camelot-chip-label" }, moveLabel(move)),
-              h("span", { className: "mixapp-camelot-chip-example" }, move.example)
+              h("span", { className: "weave-camelot-chip-label" }, moveLabel(move)),
+              h("span", { className: "weave-camelot-chip-example" }, move.example)
             );
           })
         )
@@ -238,30 +237,30 @@ function MixAppSearchPanel(props) {
 
       h(
         "div",
-        { className: "mixapp-search-panel-block mixapp-filters-bar" },
+        { className: "weave-search-panel-block weave-filters-bar" },
         h(
           "h3",
           {
-            className: "mixapp-tip",
+            className: "weave-tip",
             "data-tip":
               "Post-filters applied after candidates are fetched. They remove tracks that don’t match these rules.",
           },
-          MixAppI18n.t("search.filters")
+          WeaveI18n.t("search.filters")
         ),
         h(
           "div",
-          { className: "mixapp-filters-row" },
+          { className: "weave-filters-row" },
           h(
             "div",
             {
-              className: "mixapp-camelot-moves mixapp-filter-chips",
+              className: "weave-camelot-moves weave-filter-chips",
               role: "group",
               "aria-label": "Result filters",
             },
             [
               {
                 key: "hideExisting",
-                label: MixAppI18n.t("search.hideInPlaylist"),
+                label: WeaveI18n.t("search.hideInPlaylist"),
                 tip: "Hide tracks that are already in the current playlist so results only suggest new additions.",
                 on: !!filters.hideExisting,
                 toggle: () =>
@@ -272,7 +271,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "hideExistingArtists",
-                label: MixAppI18n.t("search.hideArtists"),
+                label: WeaveI18n.t("search.hideArtists"),
                 tip: "Hide any track by an artist who already appears on the playlist — useful for more variety.",
                 on: !!filters.hideExistingArtists,
                 toggle: () =>
@@ -283,7 +282,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "excludeExplicit",
-                label: MixAppI18n.t("search.noExplicit"),
+                label: WeaveI18n.t("search.noExplicit"),
                 tip: "Exclude tracks marked explicit by Spotify.",
                 on: !!filters.excludeExplicit,
                 toggle: () =>
@@ -294,7 +293,7 @@ function MixAppSearchPanel(props) {
               },
               {
                 key: "excludeAberrant",
-                label: MixAppI18n.t("search.noAberrant"),
+                label: WeaveI18n.t("search.noAberrant"),
                 tip: "Exclude odd versions and mix titles — sped up, slowed + reverb, nightcore, DJ/continuous mixes, TikTok edits, and similar.",
                 on: !!filters.excludeAberrant,
                 toggle: () =>
@@ -309,32 +308,32 @@ function MixAppSearchPanel(props) {
                 {
                   key: f.key,
                   type: "button",
-                  className: "mixapp-camelot-chip mixapp-tip" + (f.on ? " is-on" : ""),
+                  className: "weave-camelot-chip weave-tip" + (f.on ? " is-on" : ""),
                   "data-tip": f.tip,
                   "aria-pressed": f.on,
                   onClick: f.toggle,
                 },
-                h("span", { className: "mixapp-camelot-chip-label" }, f.label)
+                h("span", { className: "weave-camelot-chip-label" }, f.label)
               )
             )
           ),
           h(
             "div",
-            { className: "mixapp-filters-end" },
+            { className: "weave-filters-end" },
             h(
               "div",
               {
-                className: "mixapp-year-row mixapp-tip",
+                className: "weave-year-row weave-tip",
                 "data-tip":
                   "Only keep tracks whose album release year falls between these values. Leave blank for no year limit.",
               },
               h(
                 "label",
-                { className: "mixapp-feature-field" },
-                MixAppI18n.t("search.year"),
+                { className: "weave-feature-field" },
+                WeaveI18n.t("search.year"),
                 h("input", {
                   type: "number",
-                  placeholder: MixAppI18n.t("search.yearFrom"),
+                  placeholder: WeaveI18n.t("search.yearFrom"),
                   value: filters.yearMin,
                   onChange: (e) =>
                     onFiltersChange?.({ ...filters, yearMin: e.target.value }),
@@ -342,11 +341,11 @@ function MixAppSearchPanel(props) {
               ),
               h(
                 "label",
-                { className: "mixapp-feature-field" },
+                { className: "weave-feature-field" },
                 "\u00a0",
                 h("input", {
                   type: "number",
-                  placeholder: MixAppI18n.t("search.yearTo"),
+                  placeholder: WeaveI18n.t("search.yearTo"),
                   value: filters.yearMax,
                   onChange: (e) =>
                     onFiltersChange?.({ ...filters, yearMax: e.target.value }),

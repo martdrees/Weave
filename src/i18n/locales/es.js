@@ -1,6 +1,6 @@
 //@ts-check
 /** Español (Latinoamérica neutro) — cadenas de la interfaz de Weave. */
-MixAppI18n.register("es", {
+WeaveI18n.register("es", {
   // App chrome
   "app.name": "Weave",
   "app.subtitle": "Entrelaza tus playlists para Spotify",

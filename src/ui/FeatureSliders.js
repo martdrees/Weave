@@ -16,13 +16,13 @@
  *   seedAverages?: Record<string, number>,
  * }} props
  */
-function MixAppFeatureSliders(props) {
-  const t = MixAppI18n.t;
+function WeaveFeatureSliders(props) {
+  const t = WeaveI18n.t;
   const {
     features,
     onChange,
     disabled = false,
-    defs = MixAppRecommend.FEATURE_DEFS,
+    defs = WeaveRecommend.FEATURE_DEFS,
     className,
     seedTracks,
     seedAverages: seedAveragesProp,
@@ -30,7 +30,7 @@ function MixAppFeatureSliders(props) {
 
   const seedAverages =
     seedAveragesProp ||
-    (seedTracks?.length ? MixAppRecommend.averagesFromTracks(seedTracks) : {});
+    (seedTracks?.length ? WeaveRecommend.averagesFromTracks(seedTracks) : {});
 
   function updateFeature(id, patch) {
     onChange?.({
@@ -69,18 +69,18 @@ function MixAppFeatureSliders(props) {
       seedAvg != null && Number.isFinite(Number(seedAvg))
         ? ((Number(seedAvg) - def.min) / span) * 100
         : null;
-    const accent = MixAppFeatures.featureColor(def.id);
-    const fill = MixAppFeatures.featureTint(def.id, enabled ? 0.72 : 0.28);
+    const accent = WeaveFeatures.featureColor(def.id);
+    const fill = WeaveFeatures.featureTint(def.id, enabled ? 0.72 : 0.28);
 
     return h(
       "div",
       {
-        className: "mixapp-dual-range" + (enabled ? "" : " is-disabled"),
+        className: "weave-dual-range" + (enabled ? "" : " is-disabled"),
         style: { ["--mix-feature-accent"]: accent },
       },
-      h("div", { className: "mixapp-dual-range-track" }),
+      h("div", { className: "weave-dual-range-track" }),
       h("div", {
-        className: "mixapp-dual-range-fill",
+        className: "weave-dual-range-fill",
         style: {
           left: leftPct + "%",
           width: Math.max(0, rightPct - leftPct) + "%",
@@ -89,7 +89,7 @@ function MixAppFeatureSliders(props) {
       }),
       seedPct != null
         ? h("div", {
-            className: "mixapp-dual-range-seed",
+            className: "weave-dual-range-seed",
             style: {
               left: Math.min(100, Math.max(0, seedPct)) + "%",
               background: accent,
@@ -102,7 +102,7 @@ function MixAppFeatureSliders(props) {
         : null,
       h("input", {
         type: "range",
-        className: "mixapp-dual-range-input mixapp-dual-range-min",
+        className: "weave-dual-range-input weave-dual-range-min",
         min: def.min,
         max: def.max,
         step: def.step,
@@ -122,7 +122,7 @@ function MixAppFeatureSliders(props) {
       }),
       h("input", {
         type: "range",
-        className: "mixapp-dual-range-input mixapp-dual-range-max",
+        className: "weave-dual-range-input weave-dual-range-max",
         min: def.min,
         max: def.max,
         step: def.step,
@@ -147,24 +147,24 @@ function MixAppFeatureSliders(props) {
     "div",
     {
       className:
-        "mixapp-feature-sliders mixapp-feature-sliders-wide" +
+        "weave-feature-sliders weave-feature-sliders-wide" +
         (className ? " " + className : ""),
     },
     (defs || []).map((def) => {
       const range = features?.[def.id] || {};
       const seedAvg = seedAverages?.[def.id];
       const hasAvg = seedAvg != null && Number.isFinite(Number(seedAvg));
-      const accent = MixAppFeatures.featureColor(def.id);
+      const accent = WeaveFeatures.featureColor(def.id);
       return h(
         "div",
         {
           key: def.id,
-          className: "mixapp-feature-row" + (range.enabled ? " is-enabled" : ""),
+          className: "weave-feature-row" + (range.enabled ? " is-enabled" : ""),
           style: { ["--mix-feature-accent"]: accent },
         },
         h(
           "label",
-          { className: "mixapp-feature-enable" },
+          { className: "weave-feature-enable" },
           h("input", {
             type: "checkbox",
             checked: !!range.enabled,
@@ -179,20 +179,20 @@ function MixAppFeatureSliders(props) {
             },
           }),
           h("span", {
-            className: "mixapp-feature-swatch",
+            className: "weave-feature-swatch",
             style: { background: accent },
             "aria-hidden": "true",
           }),
-          h("span", null, MixAppI18n.featureLabel(def))
+          h("span", null, WeaveI18n.featureLabel(def))
         ),
         h(
           "div",
-          { className: "mixapp-feature-controls" },
+          { className: "weave-feature-controls" },
           dualRange(def, range, seedAvg),
           h(
             "span",
             {
-              className: "mixapp-feature-values",
+              className: "weave-feature-values",
               title:
                 seedAvg != null
                   ? t("search.minMaxAvg", {
@@ -207,7 +207,7 @@ function MixAppFeatureSliders(props) {
           h(
             "label",
             {
-              className: "mixapp-feature-around-toggle",
+              className: "weave-feature-around-toggle",
               title: hasAvg ? t("search.avgTitle") : t("search.avgUnavailable"),
             },
             h("input", {
@@ -216,7 +216,7 @@ function MixAppFeatureSliders(props) {
               checked: !!range.aroundAvg,
               onChange: (e) => {
                 if (e.target.checked) {
-                  const band = MixAppRecommend.rangeAroundValue(def, seedAvg);
+                  const band = WeaveRecommend.rangeAroundValue(def, seedAvg);
                   updateFeature(def.id, {
                     enabled: true,
                     aroundAvg: true,

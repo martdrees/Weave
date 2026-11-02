@@ -4,7 +4,7 @@
  * In-memory cache, track enrichment, relative coloring, aggregates, filters.
  */
 
-const MixAppFeatures = (() => {
+const WeaveFeatures = (() => {
   const CACHE = new Map(); // id -> feature sample | null
   const BATCH = 50;
   const SPCLIENT = "https://spclient.wg.spotify.com/audio-attributes/v1/audio-features";
@@ -250,7 +250,7 @@ const MixAppFeatures = (() => {
    */
   function parseAudioAttributesV2(raw) {
     if (!raw || typeof raw !== "object") return null;
-    const keyInfo = MixAppTrack.coerceSpotifyTrackKey(raw.key || raw.trackKey || raw);
+    const keyInfo = WeaveTrack.coerceSpotifyTrackKey(raw.key || raw.trackKey || raw);
     const bpm = raw.bpm != null ? Math.round(Number(raw.bpm)) : null;
     if (!keyInfo && (bpm == null || Number.isNaN(bpm))) return null;
     return {
@@ -455,7 +455,7 @@ const MixAppFeatures = (() => {
     const key = typeof feat.key === "number" ? feat.key : Number(feat.key);
     const mode = normalizeMode(feat.mode);
     // Some spclient payloads may already include Camelot / standard key.
-    const nativeKey = MixAppTrack.coerceSpotifyTrackKey(
+    const nativeKey = WeaveTrack.coerceSpotifyTrackKey(
       feat.trackKey ||
         feat.camelot_key ||
         feat.camelotKey ||
@@ -487,14 +487,14 @@ const MixAppFeatures = (() => {
     const missing = ids.filter((id) => !CACHE.has(id));
     for (let i = 0; i < missing.length; i += BATCH) {
       // Don't dig the Web API hole deeper while Spotify is cooling down.
-      if (MixAppHttp?.isCoolingDown?.()) break;
+      if (WeaveHttp?.isCoolingDown?.()) break;
 
       const chunk = missing.slice(i, i + BATCH);
       let list = null;
 
       try {
-        const res = MixAppHttp?.cosmosGet
-          ? await MixAppHttp.cosmosGet(SPCLIENT + "?ids=" + chunk.join(","), {
+        const res = WeaveHttp?.cosmosGet
+          ? await WeaveHttp.cosmosGet(SPCLIENT + "?ids=" + chunk.join(","), {
               retries: 2,
               label: "audio-attributes",
               notifyUser: false,
@@ -504,13 +504,13 @@ const MixAppFeatures = (() => {
         list = res?.audio_features || res?.audioFeatures || null;
       } catch (err) {
         console.warn("Weave: audio-attributes batch failed", err);
-        if (MixAppHttp?.isRateLimitError?.(err)) break;
+        if (WeaveHttp?.isRateLimitError?.(err)) break;
       }
 
-      if (!list && !MixAppHttp?.isCoolingDown?.()) {
+      if (!list && !WeaveHttp?.isCoolingDown?.()) {
         try {
-          const res = MixAppHttp?.cosmosGet
-            ? await MixAppHttp.cosmosGet(WEB_FEATURES + "?ids=" + chunk.join(","), {
+          const res = WeaveHttp?.cosmosGet
+            ? await WeaveHttp.cosmosGet(WEB_FEATURES + "?ids=" + chunk.join(","), {
                 retries: 2,
                 label: "audio-features",
                 notifyUser: false,
@@ -520,7 +520,7 @@ const MixAppFeatures = (() => {
           list = res?.audio_features || null;
         } catch (err) {
           console.warn("Weave: /v1/audio-features batch failed", err);
-          if (MixAppHttp?.isRateLimitError?.(err)) break;
+          if (WeaveHttp?.isRateLimitError?.(err)) break;
         }
       }
 
@@ -558,7 +558,7 @@ const MixAppFeatures = (() => {
 
   function applyNativeParsed(track, parsed) {
     if (!track || !parsed) return;
-    MixAppTrack.applyNativeAudioAttrs(track, parsed.keyInfo, parsed.bpm);
+    WeaveTrack.applyNativeAudioAttrs(track, parsed.keyInfo, parsed.bpm);
     if (track.key) {
       const idx = indexModeFromCamelotLabel(track.key);
       if (idx) {
@@ -652,7 +652,7 @@ const MixAppFeatures = (() => {
           t.standardMode = normalizeMode(t.keyMode) === 0 ? "minor" : "major";
         }
       } else if (feat.nativeKey) {
-        MixAppTrack.applyNativeAudioAttrs(t, feat.nativeKey, feat.bpmNative);
+        WeaveTrack.applyNativeAudioAttrs(t, feat.nativeKey, feat.bpmNative);
         if (t.key) {
           const idx = indexModeFromCamelotLabel(t.key);
           if (idx) {

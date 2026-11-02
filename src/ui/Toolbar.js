@@ -1,7 +1,7 @@
 //@ts-check
 
-function MixAppToolbar(props) {
-  const t = MixAppI18n.t;
+function WeaveToolbar(props) {
+  const t = WeaveI18n.t;
   const {
     playlist,
     tracks,
@@ -28,11 +28,11 @@ function MixAppToolbar(props) {
 
   return h(
     "div",
-    { className: "mixapp-toolbar" },
+    { className: "weave-toolbar" },
     h(
       "div",
-      { className: "mixapp-toolbar-left" },
-      h(MixAppPlaylistPicker, {
+      { className: "weave-toolbar-left" },
+      h(WeavePlaylistPicker, {
         playlists,
         selectedUri,
         loading: listLoading,
@@ -44,7 +44,7 @@ function MixAppToolbar(props) {
       seedCount > 0
         ? h(
             "span",
-            { className: "mixapp-badge mixapp-badge-seed" },
+            { className: "weave-badge weave-badge-seed" },
             seedCount === 1
               ? t("toolbar.seed", { count: seedCount })
               : t("toolbar.seeds", { count: seedCount })
@@ -53,12 +53,12 @@ function MixAppToolbar(props) {
     ),
     h(
       "div",
-      { className: "mixapp-toolbar-actions" },
+      { className: "weave-toolbar-actions" },
       h(
         "button",
         {
           type: "button",
-          className: "mixapp-btn",
+          className: "weave-btn",
           onClick: onOpenAddTrack,
           disabled: !hasPlaylist || saving,
           title: t("toolbar.addTrackTitle"),
@@ -69,7 +69,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn" + (searchOpen ? " mixapp-btn-active" : ""),
+          className: "weave-btn" + (searchOpen ? " weave-btn-active" : ""),
           onClick: onToggleSearch,
           disabled: !hasPlaylist || !hasTracks || saving,
           title: t("toolbar.recommendationsTitle"),
@@ -80,7 +80,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn",
+          className: "weave-btn",
           onClick: onOpenCopyPlaylist,
           disabled: !hasPlaylist || saving,
           title: t("toolbar.copyFromPlaylistTitle"),
@@ -91,7 +91,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn",
+          className: "weave-btn",
           onClick: onOpenFlowify,
           disabled: !hasPlaylist || !hasTracks || saving,
           title: t("toolbar.flowifyTitle"),
@@ -102,7 +102,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn",
+          className: "weave-btn",
           onClick: onOpenGenerator,
           disabled: !hasPlaylist || !hasTracks || saving,
           title: t("toolbar.generatorTitle"),
@@ -113,7 +113,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn" + (statsOpen ? " mixapp-btn-active" : ""),
+          className: "weave-btn" + (statsOpen ? " weave-btn-active" : ""),
           onClick: onToggleStats,
           disabled: !hasPlaylist || !hasTracks,
           title: t("toolbar.statsTitle"),
@@ -124,7 +124,7 @@ function MixAppToolbar(props) {
         "button",
         {
           type: "button",
-          className: "mixapp-btn mixapp-btn-primary",
+          className: "weave-btn weave-btn-primary",
           onClick: onSaveAsNew,
           disabled: !playlist || !hasTracks || saving,
           title: t("toolbar.saveAsNewTitle"),

@@ -1,7 +1,7 @@
 //@ts-check
 
 /** Phase 5 — MixMoose “Copy from Playlist”: import tracks from another list. */
-function MixAppCopyPlaylistModal(props) {
+function WeaveCopyPlaylistModal(props) {
   const react = Spicetify.React;
   const {
     open,
@@ -29,7 +29,7 @@ function MixAppCopyPlaylistModal(props) {
   const genRef = react.useRef(0);
 
   const existingIndex = react.useMemo(
-    () => MixAppPlaylistOps.buildExistingIndex(playlistTracks),
+    () => WeavePlaylistOps.buildExistingIndex(playlistTracks),
     [playlistTracks]
   );
 
@@ -50,7 +50,7 @@ function MixAppCopyPlaylistModal(props) {
   }, [open]);
 
   function isInPlaylist(track) {
-    return MixAppPlaylistOps.isInIndex(existingIndex, track);
+    return WeavePlaylistOps.isInIndex(existingIndex, track);
   }
 
   const libraryOptions = (libraryPlaylists || []).filter(
@@ -65,15 +65,15 @@ function MixAppCopyPlaylistModal(props) {
     setSearchLoading(true);
     setError(null);
     try {
-      const hits = await MixAppApi.searchPlaylists(q, { limit: 20 });
+      const hits = await WeaveApi.searchPlaylists(q, { limit: 20 });
       if (gen !== genRef.current) return;
       setSearchHits(hits.filter((p) => p.uri !== currentPlaylistUri));
-      if (!hits.length) setError(MixAppI18n.t("picker.empty"));
+      if (!hits.length) setError(WeaveI18n.t("picker.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setSearchHits([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setSearchLoading(false);
     }
@@ -83,29 +83,29 @@ function MixAppCopyPlaylistModal(props) {
     if (!pl?.uri) return;
     const gen = ++genRef.current;
     setSelectedUri(pl.uri);
-    setSourceName(pl.name || MixAppI18n.t("picker.playlist"));
+    setSourceName(pl.name || WeaveI18n.t("picker.playlist"));
     setSourceTracks([]);
     setSelected(new Set());
     setTracksLoading(true);
     setError(null);
     try {
-      let items = await MixAppApi.getPlaylistTracks(pl.uri);
+      let items = await WeaveApi.getPlaylistTracks(pl.uri);
       if (gen !== genRef.current) return;
       if (items.length) {
         try {
-          items = await MixAppFeatures.enrichTracks(items.slice());
+          items = await WeaveFeatures.enrichTracks(items.slice());
         } catch (enrichErr) {
           console.warn("Weave: copy-playlist enrich failed", enrichErr);
         }
       }
       if (gen !== genRef.current) return;
       setSourceTracks(items);
-      if (!items.length) setError(MixAppI18n.t("results.empty"));
+      if (!items.length) setError(WeaveI18n.t("results.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setSourceTracks([]);
-      setError(err?.message || MixAppI18n.t("notify.failedPlaylist"));
+      setError(err?.message || WeaveI18n.t("notify.failedPlaylist"));
     } finally {
       if (gen === genRef.current) setTracksLoading(false);
     }
@@ -138,7 +138,7 @@ function MixAppCopyPlaylistModal(props) {
       (t) => t?.uri && selected.has(t.uri) && !isInPlaylist(t)
     );
     if (!batch.length) {
-      MixAppApi.notify(MixAppI18n.t("copy.noSelection"), true);
+      WeaveApi.notify(WeaveI18n.t("copy.noSelection"), true);
       return;
     }
     onAddTracks?.(batch);
@@ -148,7 +148,7 @@ function MixAppCopyPlaylistModal(props) {
   function addAllNew() {
     const batch = sourceTracks.filter((t) => t?.uri && !isInPlaylist(t));
     if (!batch.length) {
-      MixAppApi.notify(MixAppI18n.t("copy.allExist"), true);
+      WeaveApi.notify(WeaveI18n.t("copy.allExist"), true);
       return;
     }
     onAddTracks?.(batch);
@@ -158,30 +158,30 @@ function MixAppCopyPlaylistModal(props) {
   const playlistList = mode === "library" ? libraryOptions : searchHits;
 
   return h(
-    MixAppModal,
+    WeaveModal,
     {
       open,
-      title: MixAppI18n.t("copy.title"),
+      title: WeaveI18n.t("copy.title"),
       onClose,
-      ariaLabel: MixAppI18n.t("copy.title"),
-      className: "mixapp-find-modal mixapp-copy-modal",
+      ariaLabel: WeaveI18n.t("copy.title"),
+      className: "weave-find-modal weave-copy-modal",
     },
     h(
       "div",
-      { className: "mixapp-copy-layout" },
+      { className: "weave-copy-layout" },
       h(
         "aside",
-        { className: "mixapp-copy-sidebar" },
+        { className: "weave-copy-sidebar" },
         h(
           "div",
-          { className: "mixapp-copy-tabs" },
+          { className: "weave-copy-tabs" },
           h(
             "button",
             {
               type: "button",
               className:
-                "mixapp-btn mixapp-btn-ghost" +
-                (mode === "library" ? " mixapp-btn-active" : ""),
+                "weave-btn weave-btn-ghost" +
+                (mode === "library" ? " weave-btn-active" : ""),
               onClick: () => setMode("library"),
             },
             "Your library"
@@ -191,24 +191,24 @@ function MixAppCopyPlaylistModal(props) {
             {
               type: "button",
               className:
-                "mixapp-btn mixapp-btn-ghost" +
-                (mode === "search" ? " mixapp-btn-active" : ""),
+                "weave-btn weave-btn-ghost" +
+                (mode === "search" ? " weave-btn-active" : ""),
               onClick: () => setMode("search"),
             },
-            MixAppI18n.t("common.search")
+            WeaveI18n.t("common.search")
           )
         ),
         mode === "search"
           ? h(
               "form",
               {
-                className: "mixapp-find-search-bar mixapp-find-search-bar-stack",
+                className: "weave-find-search-bar weave-find-search-bar-stack",
                 onSubmit: runPlaylistSearch,
               },
               h("input", {
                 type: "search",
-                className: "mixapp-find-input",
-                placeholder: MixAppI18n.t("copy.placeholder"),
+                className: "weave-find-input",
+                placeholder: WeaveI18n.t("copy.placeholder"),
                 value: query,
                 onChange: (e) => setQuery(e.target.value),
               }),
@@ -216,7 +216,7 @@ function MixAppCopyPlaylistModal(props) {
                 "button",
                 {
                   type: "submit",
-                  className: "mixapp-btn mixapp-btn-primary",
+                  className: "weave-btn weave-btn-primary",
                   disabled: searchLoading || !String(query || "").trim(),
                 },
                 searchLoading ? "…" : "Search"
@@ -225,11 +225,11 @@ function MixAppCopyPlaylistModal(props) {
           : null,
         h(
           "div",
-          { className: "mixapp-copy-playlist-list" },
+          { className: "weave-copy-playlist-list" },
           !playlistList.length
             ? h(
                 "div",
-                { className: "mixapp-recommend-meta" },
+                { className: "weave-recommend-meta" },
                 mode === "library"
                   ? "No other playlists in your library."
                   : "Search for a playlist to copy from."
@@ -241,16 +241,16 @@ function MixAppCopyPlaylistModal(props) {
                     key: pl.uri,
                     type: "button",
                     className:
-                      "mixapp-copy-playlist-item" +
+                      "weave-copy-playlist-item" +
                       (selectedUri === pl.uri ? " is-active" : ""),
                     onClick: () => loadSource(pl),
                   },
-                  h("span", { className: "mixapp-copy-playlist-name" }, pl.name),
+                  h("span", { className: "weave-copy-playlist-name" }, pl.name),
                   h(
                     "span",
-                    { className: "mixapp-recommend-meta" },
+                    { className: "weave-recommend-meta" },
                     pl.totalLength != null
-                      ? MixAppI18n.t("picker.tracks", { count: pl.totalLength })
+                      ? WeaveI18n.t("picker.tracks", { count: pl.totalLength })
                       : pl.ownerName || ""
                   )
                 )
@@ -259,18 +259,18 @@ function MixAppCopyPlaylistModal(props) {
       ),
       h(
         "section",
-        { className: "mixapp-copy-main" },
+        { className: "weave-copy-main" },
         h(
           "div",
-          { className: "mixapp-copy-main-head" },
+          { className: "weave-copy-main-head" },
           h(
             "div",
-            { className: "mixapp-search-panel-title-row" },
-            h("h3", null, sourceName || MixAppI18n.t("picker.select")),
+            { className: "weave-search-panel-title-row" },
+            h("h3", null, sourceName || WeaveI18n.t("picker.select")),
             sourceTracks.length
               ? h(
                   "span",
-                  { className: "mixapp-recommend-meta" },
+                  { className: "weave-recommend-meta" },
                   sourceTracks.length + " tracks · " + selected.size + " selected"
                 )
               : null
@@ -278,12 +278,12 @@ function MixAppCopyPlaylistModal(props) {
           sourceTracks.length
             ? h(
                 "div",
-                { className: "mixapp-copy-actions" },
+                { className: "weave-copy-actions" },
                 h(
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn mixapp-btn-ghost",
+                    className: "weave-btn weave-btn-ghost",
                     onClick: selectAddable,
                   },
                   "Select new"
@@ -292,7 +292,7 @@ function MixAppCopyPlaylistModal(props) {
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn mixapp-btn-ghost",
+                    className: "weave-btn weave-btn-ghost",
                     onClick: clearSelection,
                     disabled: !selected.size,
                   },
@@ -302,17 +302,17 @@ function MixAppCopyPlaylistModal(props) {
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn",
+                    className: "weave-btn",
                     onClick: addSelected,
                     disabled: !selected.size,
                   },
-                  MixAppI18n.t("results.addSelected")
+                  WeaveI18n.t("results.addSelected")
                 ),
                 h(
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn mixapp-btn-primary",
+                    className: "weave-btn weave-btn-primary",
                     onClick: addAllNew,
                   },
                   "Add all new"
@@ -320,35 +320,35 @@ function MixAppCopyPlaylistModal(props) {
               )
             : null
         ),
-        error ? h("div", { className: "mixapp-find-error" }, error) : null,
+        error ? h("div", { className: "weave-find-error" }, error) : null,
         h(
           "div",
-          { className: "mixapp-search-results-body" },
+          { className: "weave-search-results-body" },
           tracksLoading
             ? h(
                 "div",
-                { className: "mixapp-arranger-empty mixapp-search-waiting" },
+                { className: "weave-arranger-empty weave-search-waiting" },
                 h("div", {
-                  className: "mixapp-spinner",
+                  className: "weave-spinner",
                   "aria-hidden": "true",
                 }),
                 h(
                   "p",
-                  { className: "mixapp-search-waiting-label" },
-                  MixAppI18n.t("picker.loading")
+                  { className: "weave-search-waiting-label" },
+                  WeaveI18n.t("picker.loading")
                 )
               )
             : !selectedUri
               ? h(
                   "div",
-                  { className: "mixapp-arranger-empty" },
+                  { className: "weave-arranger-empty" },
                   "Pick a playlist on the left to browse its tracks."
                 )
               : !sourceTracks.length
-                ? h("div", { className: "mixapp-arranger-empty" }, "No tracks to show.")
+                ? h("div", { className: "weave-arranger-empty" }, "No tracks to show.")
                 : h(
                     "div",
-                    { className: "mixapp-find-list" },
+                    { className: "weave-find-list" },
                     sourceTracks.map((track, index) => {
                       const inPl = isInPlaylist(track);
                       const checked = !!(track.uri && selected.has(track.uri));
@@ -356,8 +356,7 @@ function MixAppCopyPlaylistModal(props) {
                         "div",
                         {
                           key: track.uid || track.uri || index,
-                          className:
-                            "mixapp-find-row" + (inPl ? " is-in-playlist" : ""),
+                          className: "weave-find-row" + (inPl ? " is-in-playlist" : ""),
                         },
                         h("input", {
                           type: "checkbox",
@@ -365,10 +364,10 @@ function MixAppCopyPlaylistModal(props) {
                           disabled: inPl || !track.uri,
                           onChange: () => toggleSelect(track.uri),
                           title: inPl
-                            ? MixAppI18n.t("notify.alreadyInPlaylist")
-                            : MixAppI18n.t("results.add"),
+                            ? WeaveI18n.t("notify.alreadyInPlaylist")
+                            : WeaveI18n.t("results.add"),
                         }),
-                        h(MixAppPlayButton, {
+                        h(WeavePlayButton, {
                           track,
                           playingUri,
                           isPlaying,
@@ -377,21 +376,21 @@ function MixAppCopyPlaylistModal(props) {
                         }),
                         h(
                           "div",
-                          { className: "mixapp-find-meta" },
+                          { className: "weave-find-meta" },
                           h(
                             "div",
-                            { className: "mixapp-find-title" },
-                            track.name || MixAppI18n.t("common.unknown")
+                            { className: "weave-find-title" },
+                            track.name || WeaveI18n.t("common.unknown")
                           ),
                           h(
                             "div",
-                            { className: "mixapp-find-sub" },
+                            { className: "weave-find-sub" },
                             [track.artists, track.album].filter(Boolean).join(" · ")
                           )
                         ),
                         (() => {
-                          const keyLabel = MixAppFeatures.formatDisplayKey(track);
-                          const keyBg = MixAppFeatures.camelotBackground(
+                          const keyLabel = WeaveFeatures.formatDisplayKey(track);
+                          const keyBg = WeaveFeatures.camelotBackground(
                             track.keyIndex,
                             track.keyMode,
                             track.key,
@@ -400,15 +399,14 @@ function MixAppCopyPlaylistModal(props) {
                           return h(
                             "div",
                             {
-                              className:
-                                "mixapp-col-feat mixapp-col-key mixapp-find-key",
-                              title: keyLabel || MixAppI18n.t("common.unknown"),
+                              className: "weave-col-feat weave-col-key weave-find-key",
+                              title: keyLabel || WeaveI18n.t("common.unknown"),
                             },
                             h(
                               "span",
                               {
                                 className:
-                                  "mixapp-key-circle" + (keyLabel ? "" : " is-empty"),
+                                  "weave-key-circle" + (keyLabel ? "" : " is-empty"),
                                 style: keyBg ? { background: keyBg } : undefined,
                               },
                               keyLabel || "—"
@@ -417,19 +415,18 @@ function MixAppCopyPlaylistModal(props) {
                         })(),
                         h(
                           "span",
-                          { className: "mixapp-find-dur" },
-                          MixAppApi.formatDuration(track.durationMs)
+                          { className: "weave-find-dur" },
+                          WeaveApi.formatDuration(track.durationMs)
                         ),
                         h(
                           "button",
                           {
                             type: "button",
-                            className:
-                              "mixapp-btn mixapp-btn-primary mixapp-btn-compact",
+                            className: "weave-btn weave-btn-primary weave-btn-compact",
                             disabled: inPl,
                             onClick: () => onAddTrack?.(track),
                           },
-                          inPl ? "In playlist" : MixAppI18n.t("results.add")
+                          inPl ? "In playlist" : WeaveI18n.t("results.add")
                         )
                       );
                     })

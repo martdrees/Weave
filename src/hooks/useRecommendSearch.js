@@ -8,7 +8,7 @@
  *   tracks: object[],
  * }} opts
  */
-function MixAppUseRecommendSearch(opts) {
+function WeaveUseRecommendSearch(opts) {
   const react = Spicetify.React;
   const saved = opts?.saved || null;
   const prefs = opts?.prefs || null;
@@ -22,12 +22,12 @@ function MixAppUseRecommendSearch(opts) {
     Array.isArray(saved?.seedUris) ? saved.seedUris : []
   );
   const [searchFeatures, setSearchFeatures] = react.useState(
-    () => saved?.searchFeatures || MixAppRecommend.defaultFeatureState()
+    () => saved?.searchFeatures || WeaveRecommend.defaultFeatureState()
   );
   // resultLimit + searchFilters: prefs only (ignore legacy session copies).
   const [searchFilters, setSearchFilters] = react.useState(() => {
     const base = {
-      ...(MixAppPrefs.defaults().searchFilters || {}),
+      ...(WeavePrefs.defaults().searchFilters || {}),
       ...(prefs?.searchFilters || {}),
     };
     return {
@@ -106,25 +106,25 @@ function MixAppUseRecommendSearch(opts) {
 
   async function handleFitToSeeds() {
     const ids = seedUris
-      .map((uri) => MixAppRecommend.trackIdFromUri(uri))
+      .map((uri) => WeaveRecommend.trackIdFromUri(uri))
       .filter(Boolean);
     if (!ids.length) {
-      MixAppApi.notify(MixAppI18n.t("notify.selectSeeds"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.selectSeeds"), true);
       return;
     }
     setSearchFitting(true);
     setSearchError(null);
     try {
-      const samples = await MixAppFeatures.getFeatureSamples(ids);
+      const samples = await WeaveFeatures.getFeatureSamples(ids);
       if (!samples.length) {
-        MixAppApi.notify(MixAppI18n.t("notify.noSeedFeatures"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.noSeedFeatures"), true);
         return;
       }
-      setSearchFeatures(MixAppRecommend.featuresFromSamples(samples));
-      MixAppApi.notify(MixAppI18n.t("notify.fittedSeeds"));
+      setSearchFeatures(WeaveRecommend.featuresFromSamples(samples));
+      WeaveApi.notify(WeaveI18n.t("notify.fittedSeeds"));
     } catch (err) {
       console.error(err);
-      setSearchError(err?.message || MixAppI18n.t("notify.fitFailed"));
+      setSearchError(err?.message || WeaveI18n.t("notify.fitFailed"));
     } finally {
       setSearchFitting(false);
     }
@@ -132,10 +132,10 @@ function MixAppUseRecommendSearch(opts) {
 
   async function handleSearch() {
     const seedTrackIds = seedUris
-      .map((uri) => MixAppRecommend.trackIdFromUri(uri))
+      .map((uri) => WeaveRecommend.trackIdFromUri(uri))
       .filter(Boolean);
     if (!seedTrackIds.length && !tracks.length) {
-      MixAppApi.notify(MixAppI18n.t("notify.needSeedsOrPlaylist"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.needSeedsOrPlaylist"), true);
       return;
     }
 
@@ -159,7 +159,7 @@ function MixAppUseRecommendSearch(opts) {
         : [];
       const excludeTrackIds = hideExistingOn
         ? (tracksSnap || [])
-            .map((t) => t.id || MixAppRecommend.trackIdFromUri(t.uri))
+            .map((t) => t.id || WeaveRecommend.trackIdFromUri(t.uri))
             .filter(Boolean)
         : [];
       const hideExistingTracks = hideExistingOn ? tracksSnap || [] : [];
@@ -183,10 +183,10 @@ function MixAppUseRecommendSearch(opts) {
       const camelotMoves = Array.isArray(filtersSnap.camelotMoves)
         ? filtersSnap.camelotMoves.filter(Boolean)
         : [];
-      const wantLimit = Number(resultLimitSnap) || MixAppRecommend.DEFAULT_LIMIT;
+      const wantLimit = Number(resultLimitSnap) || WeaveRecommend.DEFAULT_LIMIT;
       // Mild over-fetch for Camelot — collection stops early once enough in-key hits.
       const fetchLimit = camelotMoves.length
-        ? Math.min(MixAppRecommend.MAX_LIMIT, Math.max(wantLimit * 2, wantLimit + 40))
+        ? Math.min(WeaveRecommend.MAX_LIMIT, Math.max(wantLimit * 2, wantLimit + 40))
         : wantLimit;
 
       const postFilters = {
@@ -205,7 +205,7 @@ function MixAppUseRecommendSearch(opts) {
 
       const avoidUris = [...searchSeenUrisRef.current];
 
-      const result = await MixAppRecommend.recommend({
+      const result = await WeaveRecommend.recommend({
         seedTrackIds,
         seedTracks,
         contextTracks: tracksSnap,
@@ -226,26 +226,26 @@ function MixAppUseRecommendSearch(opts) {
       // Enrich again only for display fields when camelot wasn't applied upstream.
       if (!result?.camelotApplied) {
         try {
-          list = await MixAppFeatures.enrichTracks(list.slice());
+          list = await WeaveFeatures.enrichTracks(list.slice());
         } catch (featErr) {
           console.warn("Weave: result key enrich failed", featErr);
         }
         if (gen !== searchGenRef.current) return;
         if (camelotMoves.length) {
-          list = MixAppFeatures.filterTracksByCamelotMoves(
+          list = WeaveFeatures.filterTracksByCamelotMoves(
             list,
             camelotSeeds,
             camelotMoves
           );
         }
-        list = MixAppRecommend.applyPostFilters(list, postFilters);
+        list = WeaveRecommend.applyPostFilters(list, postFilters);
       } else if (gen !== searchGenRef.current) {
         return;
       }
 
       if (list.length > wantLimit) {
-        list = MixAppRecommend.sampleResults
-          ? MixAppRecommend.sampleResults(list, wantLimit, avoidUris)
+        list = WeaveRecommend.sampleResults
+          ? WeaveRecommend.sampleResults(list, wantLimit, avoidUris)
           : list.slice(0, wantLimit);
       }
 
@@ -258,14 +258,14 @@ function MixAppUseRecommendSearch(opts) {
 
       setSearchResults(list);
       if (!list.length) {
-        MixAppApi.notify(MixAppI18n.t("notify.noMatches"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.noMatches"), true);
       } else if (
         camelotMoves.length &&
         result?.rateLimited &&
         list.length < Math.min(wantLimit, 20)
       ) {
-        MixAppApi.notify(
-          MixAppI18n.t("notify.rateLimitPartialCamelot", {
+        WeaveApi.notify(
+          WeaveI18n.t("notify.rateLimitPartialCamelot", {
             count: list.length,
           }),
           true
@@ -275,12 +275,10 @@ function MixAppUseRecommendSearch(opts) {
       if (gen !== searchGenRef.current) return;
       console.error(err);
       const msg =
-        err?.message ||
-        err?.body?.error?.message ||
-        MixAppI18n.t("notify.searchFailed");
+        err?.message || err?.body?.error?.message || WeaveI18n.t("notify.searchFailed");
       setSearchError(msg);
       setSearchResults([]);
-      MixAppApi.notify(msg, true);
+      WeaveApi.notify(msg, true);
     } finally {
       if (gen === searchGenRef.current) setSearchLoading(false);
     }

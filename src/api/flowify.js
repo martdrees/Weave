@@ -4,7 +4,7 @@
  * Operates only on already-loaded feature vectors; no Spotify calls.
  */
 
-const MixAppFlowify = (() => {
+const WeaveFlowify = (() => {
   const FEATURE_IDS = [
     "energy",
     "danceability",
@@ -328,7 +328,7 @@ const MixAppFlowify = (() => {
   }
 
   function featureLabel(id) {
-    const m = MixAppFeatures?.METRICS?.find((x) => x.id === id);
+    const m = WeaveFeatures?.METRICS?.find((x) => x.id === id);
     return m?.label || id;
   }
 

@@ -5,11 +5,13 @@
  * Owns: resultLimit, searchFilters, preferSearchOpen, preferStatsOpen,
  *       flowify, generator, statsVisibleMetrics.
  * Does NOT own: tracks/undo/seeds/results (session) or column visibility
- * (MixAppColumnConfig). See docs/PERSISTENCE.md.
+ * (WeaveColumnConfig). See docs/PERSISTENCE.md.
  */
 
-const MixAppPrefs = (() => {
-  const KEY = "mixapp-prefs-v1";
+const WeavePrefs = (() => {
+  const KEY = "weave-prefs-v1";
+  /** Pre-rename key — read once and rewrite under KEY. */
+  const LEGACY_KEY = "mixapp-prefs-v1";
   /** Schema version written on save; raised when stored shape changes. */
   const SCHEMA_VERSION = 2;
 
@@ -46,14 +48,33 @@ const MixAppPrefs = (() => {
       if (api?.getItem) {
         const v = api.getItem(KEY);
         if (v != null) return v;
+        const legacy = api.getItem(LEGACY_KEY);
+        if (legacy != null) {
+          try {
+            api.setItem(KEY, legacy);
+            api.deleteItem?.(LEGACY_KEY);
+          } catch (_) {
+            /* ignore migrate write */
+          }
+          return legacy;
+        }
       }
     } catch (err) {
       console.warn("Weave: prefs LocalStorageAPI get failed", err);
     }
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
+      if (raw) return JSON.parse(raw);
+      const legacyRaw = localStorage.getItem(LEGACY_KEY);
+      if (!legacyRaw) return null;
+      const parsed = JSON.parse(legacyRaw);
+      try {
+        localStorage.setItem(KEY, legacyRaw);
+        localStorage.removeItem(LEGACY_KEY);
+      } catch (_) {
+        /* ignore migrate write */
+      }
+      return parsed;
     } catch (err) {
       console.warn("Weave: prefs localStorage get failed", err);
       return null;

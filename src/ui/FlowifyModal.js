@@ -1,27 +1,27 @@
 //@ts-check
 
 /** Flowify: live preview rearrange by curves/sets, then Apply or Save as new. */
-function MixAppFlowifyModal(props) {
+function WeaveFlowifyModal(props) {
   const react = Spicetify.React;
   const { open, tracks, onClose, onApply, onSaveAsNew, playingUri, isPlaying, onPlay } =
     props;
 
   const [options, setOptions] = react.useState(() => {
-    const saved = MixAppPrefs?.load?.()?.flowify;
+    const saved = WeavePrefs?.load?.()?.flowify;
     return saved
-      ? { ...MixAppFlowify.defaultOptions(), ...saved }
-      : MixAppFlowify.defaultOptions();
+      ? { ...WeaveFlowify.defaultOptions(), ...saved }
+      : WeaveFlowify.defaultOptions();
   });
   const [enriching, setEnriching] = react.useState(false);
   const [committing, setCommitting] = react.useState(false);
   const [error, setError] = react.useState(null);
-  /** @type {[MixAppTrackRow[]|null, Function]} */
+  /** @type {[WeaveTrackRow[]|null, Function]} */
   const [enriched, setEnriched] = react.useState(null);
-  /** @type {[MixAppTrackRow[]|null, Function]} */
+  /** @type {[WeaveTrackRow[]|null, Function]} */
   const [preview, setPreview] = react.useState(null);
 
   const count = Array.isArray(tracks) ? tracks.length : 0;
-  const active = MixAppFlowify.activeWeights(options.weights);
+  const active = WeaveFlowify.activeWeights(options.weights);
   const previewCount = Array.isArray(preview) ? preview.length : 0;
   const busy = enriching || committing;
   const tracksKey = react.useMemo(
@@ -49,7 +49,7 @@ function MixAppFlowifyModal(props) {
     if (!count) {
       setEnriched(null);
       setPreview(null);
-      setError(MixAppI18n.t("flowify.needPlaylist"));
+      setError(WeaveI18n.t("flowify.needPlaylist"));
       return undefined;
     }
     let cancelled = false;
@@ -59,7 +59,7 @@ function MixAppFlowifyModal(props) {
       let list = (tracks || []).map((t) => (t && typeof t === "object" ? { ...t } : t));
       try {
         try {
-          list = await MixAppFeatures.enrichTracks(list);
+          list = await WeaveFeatures.enrichTracks(list);
         } catch (err) {
           console.warn("Weave Flowify enrich", err);
         }
@@ -82,22 +82,22 @@ function MixAppFlowifyModal(props) {
     }
     if (!active.length) {
       setPreview(null);
-      setError(MixAppI18n.t("flowify.needWeight"));
+      setError(WeaveI18n.t("flowify.needWeight"));
       return undefined;
     }
     const timer = setTimeout(() => {
       try {
-        const next = MixAppFlowify.arrange(enriched, options);
+        const next = WeaveFlowify.arrange(enriched, options);
         setPreview(next);
         setError(null);
         try {
-          MixAppPrefs?.patch?.({ flowify: options });
+          WeavePrefs?.patch?.({ flowify: options });
         } catch (_) {
           /* ignore */
         }
       } catch (err) {
         console.error(err);
-        setError(err?.message || MixAppI18n.t("flowify.failed"));
+        setError(err?.message || WeaveI18n.t("flowify.failed"));
         setPreview(null);
       }
     }, 180);
@@ -123,12 +123,12 @@ function MixAppFlowifyModal(props) {
   }
 
   function resetOptions() {
-    setOptions(MixAppFlowify.defaultOptions());
+    setOptions(WeaveFlowify.defaultOptions());
   }
 
   async function handleApply() {
     if (!previewCount || committing) {
-      setError(MixAppI18n.t("flowify.needPreview"));
+      setError(WeaveI18n.t("flowify.needPreview"));
       return;
     }
     setCommitting(true);
@@ -139,7 +139,7 @@ function MixAppFlowifyModal(props) {
       if (ok !== false) onClose?.();
     } catch (err) {
       console.error(err);
-      setError(err?.message || MixAppI18n.t("flowify.failed"));
+      setError(err?.message || WeaveI18n.t("flowify.failed"));
     } finally {
       setCommitting(false);
     }
@@ -147,7 +147,7 @@ function MixAppFlowifyModal(props) {
 
   async function handleSaveAsNew() {
     if (!previewCount || committing) {
-      setError(MixAppI18n.t("flowify.needPreview"));
+      setError(WeaveI18n.t("flowify.needPreview"));
       return;
     }
     setCommitting(true);
@@ -157,66 +157,66 @@ function MixAppFlowifyModal(props) {
       if (ok !== false) onClose?.();
     } catch (err) {
       console.error(err);
-      setError(err?.message || MixAppI18n.t("flowify.failed"));
+      setError(err?.message || WeaveI18n.t("flowify.failed"));
     } finally {
       setCommitting(false);
     }
   }
 
   return h(
-    MixAppModal,
+    WeaveModal,
     {
       open,
-      title: MixAppI18n.t("flowify.title"),
-      meta: MixAppI18n.t("picker.tracks", { count }),
+      title: WeaveI18n.t("flowify.title"),
+      meta: WeaveI18n.t("picker.tracks", { count }),
       onClose,
-      ariaLabel: MixAppI18n.t("flowify.title"),
-      className: "mixapp-find-modal mixapp-flowify-modal",
+      ariaLabel: WeaveI18n.t("flowify.title"),
+      className: "weave-find-modal weave-flowify-modal",
       closeDisabled: busy,
     },
     h(
       "div",
-      { className: "mixapp-flowify-body" },
+      { className: "weave-flowify-body" },
       h(
         "div",
-        { className: "mixapp-flowify-settings" },
-        h("p", { className: "mixapp-recommend-meta" }, MixAppI18n.t("flowify.blurb")),
+        { className: "weave-flowify-settings" },
+        h("p", { className: "weave-recommend-meta" }, WeaveI18n.t("flowify.blurb")),
         h(
           "div",
-          { className: "mixapp-copy-tabs" },
+          { className: "weave-copy-tabs" },
           h(
             "button",
             {
               type: "button",
               className:
-                "mixapp-btn mixapp-btn-ghost" +
-                (options.method === "sets" ? " mixapp-btn-active" : ""),
+                "weave-btn weave-btn-ghost" +
+                (options.method === "sets" ? " weave-btn-active" : ""),
               onClick: () => patch({ method: "sets" }),
               disabled: busy,
             },
-            MixAppI18n.t("flowify.sets")
+            WeaveI18n.t("flowify.sets")
           ),
           h(
             "button",
             {
               type: "button",
               className:
-                "mixapp-btn mixapp-btn-ghost" +
-                (options.method === "curves" ? " mixapp-btn-active" : ""),
+                "weave-btn weave-btn-ghost" +
+                (options.method === "curves" ? " weave-btn-active" : ""),
               onClick: () => patch({ method: "curves" }),
               disabled: busy,
             },
-            MixAppI18n.t("flowify.curves")
+            WeaveI18n.t("flowify.curves")
           )
         ),
         options.method === "sets"
           ? h(
               "label",
-              { className: "mixapp-flowify-field" },
-              h("span", null, MixAppI18n.t("flowify.setSize")),
+              { className: "weave-flowify-field" },
+              h("span", null, WeaveI18n.t("flowify.setSize")),
               h("input", {
                 type: "number",
-                className: "mixapp-find-input",
+                className: "weave-find-input",
                 min: 2,
                 max: 20,
                 value: options.setSize,
@@ -232,33 +232,33 @@ function MixAppFlowifyModal(props) {
             )
           : h(
               "label",
-              { className: "mixapp-flowify-field" },
-              h("span", null, MixAppI18n.t("flowify.curveShape")),
+              { className: "weave-flowify-field" },
+              h("span", null, WeaveI18n.t("flowify.curveShape")),
               h(
                 "select",
                 {
-                  className: "mixapp-select mixapp-find-input",
+                  className: "weave-select weave-find-input",
                   value: options.curvePreset,
                   disabled: busy,
                   onChange: (e) => patch({ curvePreset: e.target.value }),
                 },
-                MixAppFlowify.CURVE_PRESETS.map((p) =>
+                WeaveFlowify.CURVE_PRESETS.map((p) =>
                   h("option", { key: p.id, value: p.id }, p.label)
                 )
               )
             ),
         h(
           "div",
-          { className: "mixapp-flowify-weights" },
-          h("h3", null, MixAppI18n.t("flowify.weights")),
-          MixAppFlowify.FEATURE_IDS.map((id) =>
+          { className: "weave-flowify-weights" },
+          h("h3", null, WeaveI18n.t("flowify.weights")),
+          WeaveFlowify.FEATURE_IDS.map((id) =>
             h(
               "div",
-              { key: id, className: "mixapp-flowify-weight-row" },
+              { key: id, className: "weave-flowify-weight-row" },
               h(
                 "span",
-                { className: "mixapp-flowify-weight-label" },
-                MixAppI18n.featureLabel(id)
+                { className: "weave-flowify-weight-label" },
+                WeaveI18n.featureLabel(id)
               ),
               h("input", {
                 type: "range",
@@ -268,11 +268,11 @@ function MixAppFlowifyModal(props) {
                 value: options.weights[id] || 0,
                 disabled: busy,
                 onChange: (e) => setWeight(id, e.target.value),
-                "aria-label": MixAppI18n.featureLabel(id),
+                "aria-label": WeaveI18n.featureLabel(id),
               }),
               h(
                 "span",
-                { className: "mixapp-flowify-weight-val" },
+                { className: "weave-flowify-weight-val" },
                 String(options.weights[id] || 0) + "%"
               ),
               options.method === "curves"
@@ -281,84 +281,84 @@ function MixAppFlowifyModal(props) {
                     {
                       type: "button",
                       className:
-                        "mixapp-btn mixapp-btn-ghost mixapp-btn-compact" +
-                        (options.invert?.[id] ? " mixapp-btn-active" : ""),
-                      title: MixAppI18n.t("flowify.invert"),
+                        "weave-btn weave-btn-ghost weave-btn-compact" +
+                        (options.invert?.[id] ? " weave-btn-active" : ""),
+                      title: WeaveI18n.t("flowify.invert"),
                       disabled: busy,
                       onClick: () => toggleInvert(id),
                     },
-                    MixAppI18n.t("flowify.inv")
+                    WeaveI18n.t("flowify.inv")
                   )
                 : null
             )
           )
         ),
-        error ? h("div", { className: "mixapp-find-error" }, error) : null,
+        error ? h("div", { className: "weave-find-error" }, error) : null,
         h(
           "div",
-          { className: "mixapp-flowify-actions" },
+          { className: "weave-flowify-actions" },
           h(
             "button",
             {
               type: "button",
-              className: "mixapp-btn mixapp-btn-ghost",
+              className: "weave-btn weave-btn-ghost",
               onClick: resetOptions,
               disabled: busy,
             },
-            MixAppI18n.t("common.reset")
+            WeaveI18n.t("common.reset")
           ),
           h(
             "button",
             {
               type: "button",
-              className: "mixapp-btn mixapp-btn-ghost",
+              className: "weave-btn weave-btn-ghost",
               onClick: handleSaveAsNew,
               disabled: busy || !previewCount,
-              title: MixAppI18n.t("flowify.saveAsNewTitle"),
+              title: WeaveI18n.t("flowify.saveAsNewTitle"),
             },
             committing
-              ? MixAppI18n.t("toolbar.saving")
-              : MixAppI18n.t("toolbar.saveAsNew")
+              ? WeaveI18n.t("toolbar.saving")
+              : WeaveI18n.t("toolbar.saveAsNew")
           ),
           h(
             "button",
             {
               type: "button",
-              className: "mixapp-btn mixapp-btn-primary",
+              className: "weave-btn weave-btn-primary",
               onClick: handleApply,
               disabled: busy || !previewCount,
-              title: MixAppI18n.t("flowify.applyTitle"),
+              title: WeaveI18n.t("flowify.applyTitle"),
             },
-            committing ? MixAppI18n.t("flowify.working") : MixAppI18n.t("flowify.apply")
+            committing ? WeaveI18n.t("flowify.working") : WeaveI18n.t("flowify.apply")
           )
         )
       ),
       h(
         "div",
-        { className: "mixapp-flowify-preview" },
+        { className: "weave-flowify-preview" },
         h(
           "div",
-          { className: "mixapp-flowify-preview-head" },
-          h("h3", null, MixAppI18n.t("flowify.preview")),
+          { className: "weave-flowify-preview-head" },
+          h("h3", null, WeaveI18n.t("flowify.preview")),
           previewCount
             ? h(
                 "span",
-                { className: "mixapp-recommend-meta" },
-                MixAppI18n.t("picker.tracks", { count: previewCount })
+                { className: "weave-recommend-meta" },
+                WeaveI18n.t("picker.tracks", { count: previewCount })
               )
             : null
         ),
         h(
           "div",
-          { className: "mixapp-search-results-body" },
-          h(MixAppTrackTable, {
+          { className: "weave-search-results-body" },
+          h(WeaveTrackTable, {
             tracks: preview || [],
             playingUri,
             isPlaying,
             onPlay,
             loading: enriching && !previewCount,
-            loadingLabel: MixAppI18n.t("flowify.working"),
-            emptyLabel: error || MixAppI18n.t("flowify.previewHint"),
+            loadingLabel: WeaveI18n.t("flowify.working"),
+            emptyLabel: error || WeaveI18n.t("flowify.previewHint"),
           })
         )
       )

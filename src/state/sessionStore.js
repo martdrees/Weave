@@ -6,12 +6,14 @@
  * Owns: selectedUri, playlist meta, seedUris, bannedUris, searchFeatures,
  *       searchResults, resultsOpen, searchOpen, statsOpen.
  * Does NOT own: tracks/dirty/undo (live view — refetch tracks),
- *       resultLimit / searchFilters (prefs), or columns (MixAppColumnConfig).
+ *       resultLimit / searchFilters (prefs), or columns (WeaveColumnConfig).
  * See docs/PERSISTENCE.md.
  */
 
-const MixAppSession = (() => {
-  const KEY = "mixapp-session-v1";
+const WeaveSession = (() => {
+  const KEY = "weave-session-v1";
+  /** Pre-rename key — read once and rewrite under KEY. */
+  const LEGACY_KEY = "mixapp-session-v1";
   /** Schema version written on save; raised when stored shape changes. */
   const SCHEMA_VERSION = 4;
 
@@ -21,14 +23,33 @@ const MixAppSession = (() => {
       if (api?.getItem) {
         const v = api.getItem(KEY);
         if (v != null) return v;
+        const legacy = api.getItem(LEGACY_KEY);
+        if (legacy != null) {
+          try {
+            api.setItem(KEY, legacy);
+            api.deleteItem?.(LEGACY_KEY);
+          } catch (_) {
+            /* ignore migrate write */
+          }
+          return legacy;
+        }
       }
     } catch (err) {
       console.warn("Weave: session LocalStorageAPI get failed", err);
     }
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
+      if (raw) return JSON.parse(raw);
+      const legacyRaw = localStorage.getItem(LEGACY_KEY);
+      if (!legacyRaw) return null;
+      const parsed = JSON.parse(legacyRaw);
+      try {
+        localStorage.setItem(KEY, legacyRaw);
+        localStorage.removeItem(LEGACY_KEY);
+      } catch (_) {
+        /* ignore migrate write */
+      }
+      return parsed;
     } catch (err) {
       console.warn("Weave: session localStorage get failed", err);
       return null;
@@ -94,7 +115,7 @@ const MixAppSession = (() => {
     if (!Number.isFinite(version) || version < 1) version = 1;
     let dirty = false;
 
-    // v1 → v2: resultLimit / searchFilters moved to MixAppPrefs (R4.1).
+    // v1 → v2: resultLimit / searchFilters moved to WeavePrefs (R4.1).
     if (version < 2) {
       delete data.searchFilters;
       delete data.resultLimit;

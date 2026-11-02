@@ -1,6 +1,6 @@
 //@ts-check
 /** Français (France) — chaînes d’interface Weave. */
-MixAppI18n.register("fr", {
+WeaveI18n.register("fr", {
   // App chrome
   "app.name": "Weave",
   "app.subtitle": "Tissez vos playlists pour Spotify",

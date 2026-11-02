@@ -14,7 +14,7 @@
  *   onPlay?: (track: object, index?: number) => void,
  * }} props
  */
-function MixAppAddTrackModal(props) {
+function WeaveAddTrackModal(props) {
   const react = Spicetify.React;
   const {
     open,
@@ -47,7 +47,7 @@ function MixAppAddTrackModal(props) {
   const suggestGenRef = react.useRef(0);
 
   const existingIndex = react.useMemo(
-    () => MixAppPlaylistOps.buildExistingIndex(playlistTracks),
+    () => WeavePlaylistOps.buildExistingIndex(playlistTracks),
     [playlistTracks]
   );
 
@@ -90,15 +90,15 @@ function MixAppAddTrackModal(props) {
     setSuggestLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const list = await MixAppApi.searchArtists(q, { limit: 30 });
+        const list = await WeaveApi.searchArtists(q, { limit: 30 });
         if (gen !== suggestGenRef.current) return;
         setArtistHits(list);
-        setError(list.length ? null : MixAppI18n.t("addTrack.noArtists"));
+        setError(list.length ? null : WeaveI18n.t("addTrack.noArtists"));
       } catch (err) {
         if (gen !== suggestGenRef.current) return;
         console.error(err);
         setArtistHits([]);
-        setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+        setError(err?.message || WeaveI18n.t("notify.searchFailed"));
       } finally {
         if (gen === suggestGenRef.current) setSuggestLoading(false);
       }
@@ -123,7 +123,7 @@ function MixAppAddTrackModal(props) {
   async function enrichList(list) {
     if (!list?.length) return list || [];
     try {
-      return await MixAppFeatures.enrichTracks(list.slice());
+      return await WeaveFeatures.enrichTracks(list.slice());
     } catch (enrichErr) {
       console.warn("Weave: add-track enrich failed", enrichErr);
       return list;
@@ -144,17 +144,17 @@ function MixAppAddTrackModal(props) {
     setAlbums([]);
     setSelectedAlbum(null);
     try {
-      let list = await MixAppApi.searchTracks(q, { limit: 30 });
+      let list = await WeaveApi.searchTracks(q, { limit: 30 });
       if (gen !== genRef.current) return;
       list = await enrichList(list);
       if (gen !== genRef.current) return;
       setResults(list);
-      if (!list.length) setError(MixAppI18n.t("results.empty"));
+      if (!list.length) setError(WeaveI18n.t("results.empty"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setResults([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -174,19 +174,19 @@ function MixAppAddTrackModal(props) {
     setLoading(true);
     setSuggestLoading(false);
     try {
-      let list = await MixAppApi.getArtistTopTracks(artist.id || artist.uri, {
+      let list = await WeaveApi.getArtistTopTracks(artist.id || artist.uri, {
         limit: 30,
       });
       if (gen !== genRef.current) return;
       list = await enrichList(list);
       if (gen !== genRef.current) return;
       setResults(list);
-      if (!list.length) setError(MixAppI18n.t("addTrack.noTopTracks"));
+      if (!list.length) setError(WeaveI18n.t("addTrack.noTopTracks"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setResults([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -201,18 +201,18 @@ function MixAppAddTrackModal(props) {
     setResults([]);
     setArtistView("albums");
     try {
-      const list = await MixAppApi.getArtistAlbums(
+      const list = await WeaveApi.getArtistAlbums(
         selectedArtist.id || selectedArtist.uri,
         { limit: 50 }
       );
       if (gen !== genRef.current) return;
       setAlbums(list);
-      if (!list.length) setError(MixAppI18n.t("addTrack.noAlbums"));
+      if (!list.length) setError(WeaveI18n.t("addTrack.noAlbums"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setAlbums([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -227,19 +227,19 @@ function MixAppAddTrackModal(props) {
     setError(null);
     setLoading(true);
     try {
-      let list = await MixAppApi.getAlbumTracks(album.uri || album.id, {
+      let list = await WeaveApi.getAlbumTracks(album.uri || album.id, {
         limit: 80,
       });
       if (gen !== genRef.current) return;
       list = await enrichList(list);
       if (gen !== genRef.current) return;
       setResults(list);
-      if (!list.length) setError(MixAppI18n.t("addTrack.noAlbumTracks"));
+      if (!list.length) setError(WeaveI18n.t("addTrack.noAlbumTracks"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setResults([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -255,7 +255,7 @@ function MixAppAddTrackModal(props) {
     setError(null);
     setLoading(true);
     try {
-      let list = await MixAppApi.getArtistTopTracks(
+      let list = await WeaveApi.getArtistTopTracks(
         selectedArtist.id || selectedArtist.uri,
         { limit: 30 }
       );
@@ -263,12 +263,12 @@ function MixAppAddTrackModal(props) {
       list = await enrichList(list);
       if (gen !== genRef.current) return;
       setResults(list);
-      if (!list.length) setError(MixAppI18n.t("addTrack.noTopTracks"));
+      if (!list.length) setError(WeaveI18n.t("addTrack.noTopTracks"));
     } catch (err) {
       if (gen !== genRef.current) return;
       console.error(err);
       setResults([]);
-      setError(err?.message || MixAppI18n.t("notify.searchFailed"));
+      setError(err?.message || WeaveI18n.t("notify.searchFailed"));
     } finally {
       if (gen === genRef.current) setLoading(false);
     }
@@ -279,7 +279,7 @@ function MixAppAddTrackModal(props) {
     setSelectedAlbum(null);
     setResults([]);
     setArtistView("albums");
-    setError(albums.length ? null : MixAppI18n.t("addTrack.noAlbums"));
+    setError(albums.length ? null : WeaveI18n.t("addTrack.noAlbums"));
     setLoading(false);
   }
 
@@ -307,17 +307,17 @@ function MixAppAddTrackModal(props) {
   }
 
   function artistBackLabel() {
-    if (artistView === "album") return MixAppI18n.t("addTrack.backToAlbums");
-    if (artistView === "albums") return MixAppI18n.t("addTrack.backToPopular");
-    return MixAppI18n.t("addTrack.backToArtists");
+    if (artistView === "album") return WeaveI18n.t("addTrack.backToAlbums");
+    if (artistView === "albums") return WeaveI18n.t("addTrack.backToPopular");
+    return WeaveI18n.t("addTrack.backToArtists");
   }
 
   function addAllNew() {
     const batch = (results || []).filter(
-      (t) => t?.uri && !MixAppPlaylistOps.isInIndex(existingIndex, t)
+      (t) => t?.uri && !WeavePlaylistOps.isInIndex(existingIndex, t)
     );
     if (!batch.length) {
-      MixAppApi.notify(MixAppI18n.t("addTrack.noNewTracks"), true);
+      WeaveApi.notify(WeaveI18n.t("addTrack.noNewTracks"), true);
       return;
     }
     if (typeof onAddTracks === "function") {
@@ -348,14 +348,12 @@ function MixAppAddTrackModal(props) {
     const parts = [];
     if (album?.year) parts.push(String(album.year));
     if (album?.group === "single" || album?.group === "singles") {
-      parts.push(MixAppI18n.t("addTrack.albumGroupSingle"));
+      parts.push(WeaveI18n.t("addTrack.albumGroupSingle"));
     } else if (album?.group === "compilation" || album?.group === "compilations") {
-      parts.push(MixAppI18n.t("addTrack.albumGroupCompilation"));
+      parts.push(WeaveI18n.t("addTrack.albumGroupCompilation"));
     }
     if (album?.totalTracks != null) {
-      parts.push(
-        MixAppI18n.t("addTrack.albumTrackCount", { count: album.totalTracks })
-      );
+      parts.push(WeaveI18n.t("addTrack.albumTrackCount", { count: album.totalTracks }));
     }
     return parts.join(" · ");
   }
@@ -365,49 +363,49 @@ function MixAppAddTrackModal(props) {
     (selectedArtist && (artistView === "popular" || artistView === "album"));
   const newCount = showingTrackTable
     ? (results || []).filter(
-        (t) => t?.uri && !MixAppPlaylistOps.isInIndex(existingIndex, t)
+        (t) => t?.uri && !WeavePlaylistOps.isInIndex(existingIndex, t)
       ).length
     : 0;
 
   let meta = null;
   if (selectedArtist && artistView === "album" && selectedAlbum) {
-    meta = MixAppI18n.t("addTrack.albumMeta", {
+    meta = WeaveI18n.t("addTrack.albumMeta", {
       album: selectedAlbum.name || "",
       count: results.length,
     });
   } else if (selectedArtist && artistView === "albums") {
-    meta = MixAppI18n.t("addTrack.albumsMeta", {
+    meta = WeaveI18n.t("addTrack.albumsMeta", {
       name: selectedArtist.name || "",
       count: albums.length,
     });
   } else if (selectedArtist) {
-    meta = MixAppI18n.t("addTrack.artistMeta", {
+    meta = WeaveI18n.t("addTrack.artistMeta", {
       name: selectedArtist.name || "",
       count: results.length,
     });
   } else if (results.length) {
-    meta = MixAppI18n.t("results.meta", { count: results.length });
+    meta = WeaveI18n.t("results.meta", { count: results.length });
   }
 
   return h(
-    MixAppModal,
+    WeaveModal,
     {
       open,
-      title: MixAppI18n.t("addTrack.title"),
+      title: WeaveI18n.t("addTrack.title"),
       meta,
       onClose,
-      ariaLabel: MixAppI18n.t("addTrack.title"),
-      className: "mixapp-find-modal mixapp-add-track-modal",
+      ariaLabel: WeaveI18n.t("addTrack.title"),
+      className: "weave-find-modal weave-add-track-modal",
     },
     h(
       "div",
-      { className: "mixapp-add-track-toolbar" },
+      { className: "weave-add-track-toolbar" },
       h(
         "div",
         {
-          className: "mixapp-add-track-modes",
+          className: "weave-add-track-modes",
           role: "tablist",
-          "aria-label": MixAppI18n.t("addTrack.modeLabel"),
+          "aria-label": WeaveI18n.t("addTrack.modeLabel"),
         },
         h(
           "button",
@@ -416,11 +414,11 @@ function MixAppAddTrackModal(props) {
             role: "tab",
             "aria-selected": mode === "songs",
             className:
-              "mixapp-btn mixapp-btn-ghost" +
-              (mode === "songs" ? " mixapp-btn-active" : ""),
+              "weave-btn weave-btn-ghost" +
+              (mode === "songs" ? " weave-btn-active" : ""),
             onClick: () => switchMode("songs"),
           },
-          MixAppI18n.t("addTrack.modeSongs")
+          WeaveI18n.t("addTrack.modeSongs")
         ),
         h(
           "button",
@@ -429,64 +427,64 @@ function MixAppAddTrackModal(props) {
             role: "tab",
             "aria-selected": mode === "artists",
             className:
-              "mixapp-btn mixapp-btn-ghost" +
-              (mode === "artists" ? " mixapp-btn-active" : ""),
+              "weave-btn weave-btn-ghost" +
+              (mode === "artists" ? " weave-btn-active" : ""),
             onClick: () => switchMode("artists"),
           },
-          MixAppI18n.t("addTrack.modeArtists")
+          WeaveI18n.t("addTrack.modeArtists")
         )
       ),
       selectedArtist
         ? h(
             "div",
-            { className: "mixapp-add-track-artist-bar" },
+            { className: "weave-add-track-artist-bar" },
             h(
               "button",
               {
                 type: "button",
-                className: "mixapp-btn mixapp-btn-ghost mixapp-add-track-back",
+                className: "weave-btn weave-btn-ghost weave-add-track-back",
                 onClick: handleArtistBack,
               },
               artistBackLabel()
             ),
             h(
               "div",
-              { className: "mixapp-add-track-artist-chip" },
+              { className: "weave-add-track-artist-chip" },
               selectedArtist.imageUrl
                 ? h("img", {
-                    className: "mixapp-add-track-artist-avatar",
+                    className: "weave-add-track-artist-avatar",
                     src: selectedArtist.imageUrl,
                     alt: "",
                   })
                 : h("div", {
                     className:
-                      "mixapp-add-track-artist-avatar mixapp-add-track-artist-avatar-fallback",
+                      "weave-add-track-artist-avatar weave-add-track-artist-avatar-fallback",
                     "aria-hidden": "true",
                   }),
               h(
                 "div",
-                { className: "mixapp-add-track-artist-meta" },
+                { className: "weave-add-track-artist-meta" },
                 h(
                   "span",
-                  { className: "mixapp-add-track-artist-name" },
+                  { className: "weave-add-track-artist-name" },
                   selectedArtist.name || ""
                 ),
                 selectedAlbum
                   ? h(
                       "span",
-                      { className: "mixapp-add-track-artist-sub" },
+                      { className: "weave-add-track-artist-sub" },
                       selectedAlbum.name || ""
                     )
                   : artistView === "albums"
                     ? h(
                         "span",
-                        { className: "mixapp-add-track-artist-sub" },
-                        MixAppI18n.t("addTrack.albumsHeading")
+                        { className: "weave-add-track-artist-sub" },
+                        WeaveI18n.t("addTrack.albumsHeading")
                       )
                     : h(
                         "span",
-                        { className: "mixapp-add-track-artist-sub" },
-                        MixAppI18n.t("addTrack.popularHeading")
+                        { className: "weave-add-track-artist-sub" },
+                        WeaveI18n.t("addTrack.popularHeading")
                       )
               )
             ),
@@ -495,11 +493,11 @@ function MixAppAddTrackModal(props) {
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn",
+                    className: "weave-btn",
                     disabled: loading,
                     onClick: loadAlbums,
                   },
-                  MixAppI18n.t("addTrack.loadAlbums")
+                  WeaveI18n.t("addTrack.loadAlbums")
                 )
               : null,
             artistView === "popular" || artistView === "album"
@@ -507,27 +505,27 @@ function MixAppAddTrackModal(props) {
                   "button",
                   {
                     type: "button",
-                    className: "mixapp-btn mixapp-btn-primary",
+                    className: "weave-btn weave-btn-primary",
                     disabled: loading || newCount === 0,
                     onClick: addAllNew,
                   },
-                  MixAppI18n.t("addTrack.addAllNew")
+                  WeaveI18n.t("addTrack.addAllNew")
                 )
               : null
           )
         : h(
             "form",
             {
-              className: "mixapp-find-search-bar mixapp-add-track-search",
+              className: "weave-find-search-bar weave-add-track-search",
               onSubmit: mode === "songs" ? runSongSearch : onArtistFormSubmit,
             },
             h("input", {
               type: "search",
-              className: "mixapp-find-input",
+              className: "weave-find-input",
               placeholder:
                 mode === "songs"
-                  ? MixAppI18n.t("addTrack.placeholder")
-                  : MixAppI18n.t("addTrack.placeholderArtist"),
+                  ? WeaveI18n.t("addTrack.placeholder")
+                  : WeaveI18n.t("addTrack.placeholderArtist"),
               value: query,
               autoFocus: true,
               "data-autofocus": true,
@@ -538,42 +536,42 @@ function MixAppAddTrackModal(props) {
                   "button",
                   {
                     type: "submit",
-                    className: "mixapp-btn mixapp-btn-primary",
+                    className: "weave-btn weave-btn-primary",
                     disabled: loading || !String(query || "").trim(),
                   },
                   loading
-                    ? MixAppI18n.t("picker.loading")
-                    : MixAppI18n.t("addTrack.search")
+                    ? WeaveI18n.t("picker.loading")
+                    : WeaveI18n.t("addTrack.search")
                 )
               : null
           )
     ),
-    error ? h("div", { className: "mixapp-find-error" }, error) : null,
+    error ? h("div", { className: "weave-find-error" }, error) : null,
     mode === "artists" && !selectedArtist
       ? h(
           "div",
-          { className: "mixapp-add-track-suggest" },
+          { className: "weave-add-track-suggest" },
           suggestLoading && !artistHits.length
             ? h(
                 "div",
-                { className: "mixapp-add-track-suggest-status" },
-                MixAppI18n.t("picker.loading")
+                { className: "weave-add-track-suggest-status" },
+                WeaveI18n.t("picker.loading")
               )
             : null,
           !suggestLoading && String(query || "").trim().length < 2 && !artistHits.length
             ? h(
                 "div",
-                { className: "mixapp-add-track-suggest-status" },
-                MixAppI18n.t("addTrack.artistSuggestHint")
+                { className: "weave-add-track-suggest-status" },
+                WeaveI18n.t("addTrack.artistSuggestHint")
               )
             : null,
           artistHits.length
             ? h(
                 "div",
                 {
-                  className: "mixapp-add-track-artist-list",
+                  className: "weave-add-track-artist-list",
                   role: "listbox",
-                  "aria-label": MixAppI18n.t("addTrack.modeArtists"),
+                  "aria-label": WeaveI18n.t("addTrack.modeArtists"),
                 },
                 artistHits.map((artist, index) => {
                   const followers = formatFollowers(artist.followers);
@@ -583,33 +581,33 @@ function MixAppAddTrackModal(props) {
                       type: "button",
                       key: artist.uri || artist.id || index,
                       role: "option",
-                      className: "mixapp-add-track-artist-row",
+                      className: "weave-add-track-artist-row",
                       onClick: () => openArtist(artist),
                     },
                     artist.imageUrl
                       ? h("img", {
-                          className: "mixapp-add-track-artist-avatar",
+                          className: "weave-add-track-artist-avatar",
                           src: artist.imageUrl,
                           alt: "",
                         })
                       : h("div", {
                           className:
-                            "mixapp-add-track-artist-avatar mixapp-add-track-artist-avatar-fallback",
+                            "weave-add-track-artist-avatar weave-add-track-artist-avatar-fallback",
                           "aria-hidden": "true",
                         }),
                     h(
                       "div",
-                      { className: "mixapp-add-track-artist-meta" },
+                      { className: "weave-add-track-artist-meta" },
                       h(
                         "div",
-                        { className: "mixapp-add-track-artist-name" },
+                        { className: "weave-add-track-artist-name" },
                         artist.name || ""
                       ),
                       followers
                         ? h(
                             "div",
-                            { className: "mixapp-add-track-artist-sub" },
-                            MixAppI18n.t("addTrack.followers", {
+                            { className: "weave-add-track-artist-sub" },
+                            WeaveI18n.t("addTrack.followers", {
                               count: followers,
                             })
                           )
@@ -623,21 +621,21 @@ function MixAppAddTrackModal(props) {
       : selectedArtist && artistView === "albums"
         ? h(
             "div",
-            { className: "mixapp-add-track-suggest" },
+            { className: "weave-add-track-suggest" },
             loading && !albums.length
               ? h(
                   "div",
-                  { className: "mixapp-add-track-suggest-status" },
-                  MixAppI18n.t("picker.loading")
+                  { className: "weave-add-track-suggest-status" },
+                  WeaveI18n.t("picker.loading")
                 )
               : null,
             albums.length
               ? h(
                   "div",
                   {
-                    className: "mixapp-add-track-album-list",
+                    className: "weave-add-track-album-list",
                     role: "listbox",
-                    "aria-label": MixAppI18n.t("addTrack.albumsHeading"),
+                    "aria-label": WeaveI18n.t("addTrack.albumsHeading"),
                   },
                   albums.map((album, index) => {
                     const sub = albumSubtitle(album);
@@ -647,30 +645,30 @@ function MixAppAddTrackModal(props) {
                         type: "button",
                         key: album.uri || album.id || index,
                         role: "option",
-                        className: "mixapp-add-track-album-row",
+                        className: "weave-add-track-album-row",
                         onClick: () => openAlbum(album),
                       },
                       album.imageUrl
                         ? h("img", {
-                            className: "mixapp-add-track-album-cover",
+                            className: "weave-add-track-album-cover",
                             src: album.imageUrl,
                             alt: "",
                           })
                         : h("div", {
                             className:
-                              "mixapp-add-track-album-cover mixapp-add-track-album-cover-fallback",
+                              "weave-add-track-album-cover weave-add-track-album-cover-fallback",
                             "aria-hidden": "true",
                           }),
                       h(
                         "div",
-                        { className: "mixapp-add-track-artist-meta" },
+                        { className: "weave-add-track-artist-meta" },
                         h(
                           "div",
-                          { className: "mixapp-add-track-artist-name" },
+                          { className: "weave-add-track-artist-name" },
                           album.name || ""
                         ),
                         sub
-                          ? h("div", { className: "mixapp-add-track-artist-sub" }, sub)
+                          ? h("div", { className: "weave-add-track-artist-sub" }, sub)
                           : null
                       )
                     );
@@ -680,27 +678,27 @@ function MixAppAddTrackModal(props) {
           )
         : h(
             "div",
-            { className: "mixapp-search-results-body" },
-            h(MixAppTrackTable, {
+            { className: "weave-search-results-body" },
+            h(WeaveTrackTable, {
               tracks: results,
               playingUri,
               isPlaying,
               onPlay,
               onAddTrack,
               disabledReason: (track) =>
-                MixAppPlaylistOps.isInIndex(existingIndex, track)
-                  ? MixAppI18n.t("notify.alreadyInPlaylist")
+                WeavePlaylistOps.isInIndex(existingIndex, track)
+                  ? WeaveI18n.t("notify.alreadyInPlaylist")
                   : null,
               rowClassName: (track) =>
-                MixAppPlaylistOps.isInIndex(existingIndex, track)
+                WeavePlaylistOps.isInIndex(existingIndex, track)
                   ? "is-in-playlist"
                   : "",
               loading,
-              loadingLabel: MixAppI18n.t("picker.loading"),
+              loadingLabel: WeaveI18n.t("picker.loading"),
               emptyLabel:
                 mode === "artists"
-                  ? MixAppI18n.t("addTrack.emptyArtist")
-                  : MixAppI18n.t("addTrack.empty"),
+                  ? WeaveI18n.t("addTrack.emptyArtist")
+                  : WeaveI18n.t("addTrack.empty"),
             })
           )
   );

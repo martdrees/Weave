@@ -1,12 +1,12 @@
 //@ts-check
 /**
  * Weave i18n — follows Spotify client locale, English fallback.
- * Locale catalogs register via MixAppI18n.register(code, dict).
+ * Locale catalogs register via WeaveI18n.register(code, dict).
  *
  * Detect: Spicetify.Locale.getLocale() → Platform.Session.locale → navigator.
  */
 
-const MixAppI18n = (() => {
+const WeaveI18n = (() => {
   const FALLBACK = "en";
   /** @type {Record<string, Record<string, string>>} */
   const catalogs = Object.create(null);

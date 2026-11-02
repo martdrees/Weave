@@ -1,6 +1,6 @@
 //@ts-check
 /** Italiano — stringhe UI di Weave. */
-MixAppI18n.register("it", {
+WeaveI18n.register("it", {
   // App chrome
   "app.name": "Weave",
   "app.subtitle": "Intreccia le tue playlist per Spotify",

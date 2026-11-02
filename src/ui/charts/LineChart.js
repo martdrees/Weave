@@ -9,21 +9,21 @@
  *   maWindow?: number,
  * }} props
  */
-function MixAppLineChart(props) {
+function WeaveLineChart(props) {
   const react = Spicetify.React;
   const { metric, tracks, agg, maWindow } = props || {};
   const list = Array.isArray(tracks) ? tracks : [];
   const n = list.length;
-  const windowSize = maWindow || MixAppChartConfig.MA_WINDOW;
-  const color = MixAppChartConfig.metricColor(metric.id);
-  const series = MixAppChartConfig.seriesForMetric(metric, list, agg);
+  const windowSize = maWindow || WeaveChartConfig.MA_WINDOW;
+  const color = WeaveChartConfig.metricColor(metric.id);
+  const series = WeaveChartConfig.seriesForMetric(metric, list, agg);
   const points = series.points;
   const rawValues = points.map((p) => p.value);
-  const maValues = MixAppChartConfig.movingAverage(rawValues, windowSize);
+  const maValues = WeaveChartConfig.movingAverage(rawValues, windowSize);
   const known = rawValues.filter((v) => v != null);
   const { avgV, minV, maxV, extraMeta } = series;
 
-  const domain = MixAppChartConfig.chartDomain(metric, known);
+  const domain = WeaveChartConfig.chartDomain(metric, known);
   const span = domain.max - domain.min || 1;
 
   const W = 560;
@@ -60,19 +60,19 @@ function MixAppLineChart(props) {
   const dotR = n > 80 ? 2 : n > 40 ? 2.5 : 3.2;
   const mid = domain.min + span / 2;
   const yTicks = [domain.max, mid, domain.min];
-  const hint = MixAppChartConfig.chartHint(metric);
+  const hint = WeaveChartConfig.chartHint(metric);
 
   return h(
     "div",
     {
       className:
-        "mixapp-stats-chart" +
-        (metric.id === "aggChange" ? " mixapp-stats-chart-agg" : ""),
+        "weave-stats-chart" +
+        (metric.id === "aggChange" ? " weave-stats-chart-agg" : ""),
     },
     h(
       "div",
       {
-        className: "mixapp-stats-chart-head mixapp-tip mixapp-stats-chart-tip",
+        className: "weave-stats-chart-head weave-tip weave-stats-chart-tip",
         "data-tip": hint,
         tabIndex: 0,
         role: "note",
@@ -82,21 +82,21 @@ function MixAppLineChart(props) {
       known.length
         ? h(
             "span",
-            { className: "mixapp-recommend-meta" },
+            { className: "weave-recommend-meta" },
             "avg " +
-              MixAppChartConfig.formatChartValue(metric, avgV) +
+              WeaveChartConfig.formatChartValue(metric, avgV) +
               " · " +
-              MixAppChartConfig.formatChartValue(metric, minV) +
+              WeaveChartConfig.formatChartValue(metric, minV) +
               "–" +
-              MixAppChartConfig.formatChartValue(metric, maxV) +
+              WeaveChartConfig.formatChartValue(metric, maxV) +
               (extraMeta || "")
           )
-        : h("span", { className: "mixapp-recommend-meta" }, "no data")
+        : h("span", { className: "weave-recommend-meta" }, "no data")
     ),
     !known.length
       ? h(
           "div",
-          { className: "mixapp-stats-line-empty" },
+          { className: "weave-stats-line-empty" },
           metric.id === "aggChange"
             ? "Need at least two enriched tracks for transition change."
             : "No feature values for these tracks yet."
@@ -104,14 +104,14 @@ function MixAppLineChart(props) {
       : h(
           "svg",
           {
-            className: "mixapp-stats-line-svg",
+            className: "weave-stats-line-svg",
             viewBox: "0 0 " + W + " " + H,
             preserveAspectRatio: "none",
             role: "img",
             "aria-label": metric.label + " across " + n + " tracks in playlist order",
           },
           h("rect", {
-            className: "mixapp-stats-line-frame",
+            className: "weave-stats-line-frame",
             x: padL,
             y: padT,
             width: plotW,
@@ -124,7 +124,7 @@ function MixAppLineChart(props) {
               "g",
               { key: "tick-" + ti },
               h("line", {
-                className: "mixapp-stats-line-grid",
+                className: "weave-stats-line-grid",
                 x1: padL,
                 x2: padL + plotW,
                 y1: y,
@@ -133,18 +133,18 @@ function MixAppLineChart(props) {
               h(
                 "text",
                 {
-                  className: "mixapp-stats-line-ylabel",
+                  className: "weave-stats-line-ylabel",
                   x: padL - 6,
                   y: y + 3,
                   textAnchor: "end",
                 },
-                MixAppChartConfig.formatChartValue(metric, tick)
+                WeaveChartConfig.formatChartValue(metric, tick)
               )
             );
           }),
           maPts.length > 1
             ? h("polyline", {
-                className: "mixapp-stats-line-ma",
+                className: "weave-stats-line-ma",
                 fill: "none",
                 points: maPts.join(" "),
                 style: { stroke: color },
@@ -152,7 +152,7 @@ function MixAppLineChart(props) {
             : null,
           rawPts.length > 1
             ? h("polyline", {
-                className: "mixapp-stats-line-path",
+                className: "weave-stats-line-path",
                 fill: "none",
                 points: rawPts.join(" "),
                 style: { stroke: color },
@@ -172,15 +172,15 @@ function MixAppLineChart(props) {
               "\n" +
               metric.label +
               ": " +
-              MixAppChartConfig.formatChartValue(metric, p.value) +
+              WeaveChartConfig.formatChartValue(metric, p.value) +
               (ma != null
-                ? "\n5-track avg: " + MixAppChartConfig.formatChartValue(metric, ma)
+                ? "\n5-track avg: " + WeaveChartConfig.formatChartValue(metric, ma)
                 : "");
             return h(
               "circle",
               {
                 key: metric.id + "-" + p.index,
-                className: "mixapp-stats-line-dot",
+                className: "weave-stats-line-dot",
                 cx,
                 cy,
                 r: dotR,
@@ -192,7 +192,7 @@ function MixAppLineChart(props) {
           h(
             "text",
             {
-              className: "mixapp-stats-line-xlabel",
+              className: "weave-stats-line-xlabel",
               x: padL,
               y: H - 4,
             },
@@ -201,7 +201,7 @@ function MixAppLineChart(props) {
           h(
             "text",
             {
-              className: "mixapp-stats-line-xlabel",
+              className: "weave-stats-line-xlabel",
               x: padL + plotW,
               y: H - 4,
               textAnchor: "end",

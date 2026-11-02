@@ -3,7 +3,7 @@
  * Stats chart config + pure series helpers (R2.3).
  */
 
-const MixAppChartConfig = (() => {
+const WeaveChartConfig = (() => {
   const AGG_METRIC = {
     id: "aggChange",
     label: "Abs. Aggregate",
@@ -13,8 +13,8 @@ const MixAppChartConfig = (() => {
 
   const MA_WINDOW = 5;
 
-  /** Soft accents — delegated to MixAppFeatures so tables/sliders/charts match. */
-  const METRIC_COLORS = MixAppFeatures.FEATURE_COLORS;
+  /** Soft accents — delegated to WeaveFeatures so tables/sliders/charts match. */
+  const METRIC_COLORS = WeaveFeatures.FEATURE_COLORS;
 
   const CHART_HINTS = {
     aggChange:
@@ -37,11 +37,11 @@ const MixAppChartConfig = (() => {
   };
 
   function allMetrics() {
-    return [AGG_METRIC].concat(MixAppFeatures.METRICS.slice());
+    return [AGG_METRIC].concat(WeaveFeatures.METRICS.slice());
   }
 
   function metricColor(id) {
-    return MixAppFeatures.featureColor(id);
+    return WeaveFeatures.featureColor(id);
   }
 
   function chartHint(metric) {
@@ -70,7 +70,7 @@ const MixAppChartConfig = (() => {
   function formatChartValue(metric, value) {
     if (value == null || Number.isNaN(Number(value))) return "—";
     if (metric.kind === "tempo" || metric.kind === "loudness") {
-      return MixAppFeatures.formatMetric(metric, value);
+      return WeaveFeatures.formatMetric(metric, value);
     }
     const n = Number(value);
     if (Math.abs(n - Math.round(n)) < 0.05) return Math.round(n) + "%";
@@ -131,7 +131,7 @@ const MixAppChartConfig = (() => {
     const points = [];
 
     if (metric.id === "aggChange") {
-      const a = agg || MixAppFeatures.absoluteAggregateChange(list);
+      const a = agg || WeaveFeatures.absoluteAggregateChange(list);
       for (let i = 0; i < n; i++) {
         const track = list[i];
         points.push({
@@ -155,7 +155,7 @@ const MixAppChartConfig = (() => {
 
     for (let i = 0; i < n; i++) {
       const track = list[i];
-      const raw = MixAppFeatures.metricValue(track, metric);
+      const raw = WeaveFeatures.metricValue(track, metric);
       points.push({
         index: i,
         value: toChartValue(metric, raw),

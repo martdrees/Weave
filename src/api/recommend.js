@@ -4,7 +4,7 @@
  * and optional feature-range filtering.
  */
 
-const MixAppRecommend = (() => {
+const WeaveRecommend = (() => {
   const DEFAULT_LIMIT = 100;
   const MAX_LIMIT = 200;
   /** Max inspiredby-mix playlist resolutions (track/artist/album). */
@@ -301,10 +301,10 @@ const MixAppRecommend = (() => {
 
   async function filterByLocalFeatures(tracks, features) {
     if (!anyFeatureEnabled(features) || !tracks?.length) return tracks;
-    if (typeof MixAppFeatures?.getFeatureSampleMap !== "function") return tracks;
+    if (typeof WeaveFeatures?.getFeatureSampleMap !== "function") return tracks;
 
     const ids = tracks.map((t) => t.id || trackIdFromUri(t.uri)).filter(Boolean);
-    const sampleMap = await MixAppFeatures.getFeatureSampleMap(ids);
+    const sampleMap = await WeaveFeatures.getFeatureSampleMap(ids);
 
     return tracks.filter((t) => {
       const id = t.id || trackIdFromUri(t.uri);
@@ -324,10 +324,10 @@ const MixAppRecommend = (() => {
   }
 
   async function cosmosGetRetry(url, label) {
-    // Prefer queued MixAppHttp (assert + spacing). Keep retries low — padding
+    // Prefer queued WeaveHttp (assert + spacing). Keep retries low — padding
     // calls must not burn the global Web API budget before create/save.
-    if (MixAppHttp?.cosmosGet) {
-      return MixAppHttp.cosmosGet(url, {
+    if (WeaveHttp?.cosmosGet) {
+      return WeaveHttp.cosmosGet(url, {
         retries: 2,
         label: label || "recommend",
         notifyUser: false,
@@ -346,7 +346,7 @@ const MixAppRecommend = (() => {
   function noteNetworkLimit() {
     networkLimited = true;
     rateLimitedPad = true;
-    MixAppHttp?.markRateLimited?.(4000);
+    WeaveHttp?.markRateLimited?.(4000);
     if (!loggedNetworkLimit) {
       loggedNetworkLimit = true;
       console.warn(
@@ -357,7 +357,7 @@ const MixAppRecommend = (() => {
 
   function networkBlocked() {
     if (networkLimited) return true;
-    if (MixAppHttp?.isCoolingDown?.()) {
+    if (WeaveHttp?.isCoolingDown?.()) {
       noteNetworkLimit();
       return true;
     }
@@ -379,7 +379,7 @@ const MixAppRecommend = (() => {
         if (uri && String(uri).includes(":playlist:")) return uri;
         if (uri && String(uri).includes("playlist")) return uri;
       } catch (err) {
-        if (MixAppHttp?.isRateLimitError?.(err)) {
+        if (WeaveHttp?.isRateLimitError?.(err)) {
           noteNetworkLimit();
           return null;
         }
@@ -443,13 +443,13 @@ const MixAppRecommend = (() => {
   async function getUserMarket() {
     if (cachedMarket) return cachedMarket;
     try {
-      const me = await MixAppHttp.getMeProfile();
+      const me = await WeaveHttp.getMeProfile();
       cachedMarket = me?.country || "US";
-      if (me?.source === "fallback" && MixAppHttp.isCoolingDown?.()) {
+      if (me?.source === "fallback" && WeaveHttp.isCoolingDown?.()) {
         noteNetworkLimit();
       }
     } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) noteNetworkLimit();
+      if (WeaveHttp?.isRateLimitError?.(err)) noteNetworkLimit();
       cachedMarket = "US";
     }
     return cachedMarket;
@@ -471,7 +471,7 @@ const MixAppRecommend = (() => {
       );
       return (res?.tracks || []).map((t, i) => normalizeWebTrack(t, i));
     } catch (err) {
-      if (MixAppHttp?.isRateLimitError?.(err)) {
+      if (WeaveHttp?.isRateLimitError?.(err)) {
         noteNetworkLimit();
       } else {
         console.warn("Weave: artist top-tracks failed", artistId, err);
@@ -485,24 +485,22 @@ const MixAppRecommend = (() => {
    * not the rate-limited Web API). Needed before Mix in Key can count matches.
    */
   async function ensureCamelotKeys(tracks) {
-    if (!MixAppFeatures?.fetchAudioAttributesV2Map || !MixAppFeatures?.parseCamelot) {
+    if (!WeaveFeatures?.fetchAudioAttributesV2Map || !WeaveFeatures?.parseCamelot) {
       return;
     }
     const need = [];
     for (const t of tracks || []) {
       if (!t?.uri) continue;
-      if (MixAppFeatures.parseCamelot(t)) continue;
+      if (WeaveFeatures.parseCamelot(t)) continue;
       need.push(t);
     }
     if (!need.length) return;
     try {
-      const map = await MixAppFeatures.fetchAudioAttributesV2Map(
-        need.map((t) => t.uri)
-      );
+      const map = await WeaveFeatures.fetchAudioAttributesV2Map(need.map((t) => t.uri));
       for (const t of need) {
         const parsed = map.get(t.uri);
         if (!parsed?.keyInfo) continue;
-        MixAppTrack.applyNativeAudioAttrs(t, parsed.keyInfo, parsed.bpm);
+        WeaveTrack.applyNativeAudioAttrs(t, parsed.keyInfo, parsed.bpm);
       }
     } catch (err) {
       console.warn("Weave: camelot key enrich failed", err);
@@ -571,11 +569,11 @@ const MixAppRecommend = (() => {
     function camelotMatchCount() {
       if (
         !camelotGoal ||
-        typeof MixAppFeatures?.filterTracksByCamelotMoves !== "function"
+        typeof WeaveFeatures?.filterTracksByCamelotMoves !== "function"
       ) {
         return usablePool().length;
       }
-      return MixAppFeatures.filterTracksByCamelotMoves(
+      return WeaveFeatures.filterTracksByCamelotMoves(
         usablePool(),
         camelotSeeds.length ? camelotSeeds : seedTracks,
         camelotMoves
@@ -596,16 +594,16 @@ const MixAppRecommend = (() => {
 
     async function waitOutCooldownOnce() {
       if (waitedForCooldown) return false;
-      if (!MixAppHttp?.isCoolingDown?.()) return false;
+      if (!WeaveHttp?.isCoolingDown?.()) return false;
       waitedForCooldown = true;
       const ms = Math.min(
-        Math.max(MixAppHttp.coolDownRemainingMs?.() || 3000, 1500),
+        Math.max(WeaveHttp.coolDownRemainingMs?.() || 3000, 1500),
         8000
       );
       console.warn(
         "Weave: waiting " + Math.ceil(ms / 1000) + "s for Spotify rate limit…"
       );
-      await MixAppHttp.sleep(ms + 250);
+      await WeaveHttp.sleep(ms + 250);
       networkLimited = false;
       rateLimitedPad = false;
       return true;
@@ -634,7 +632,7 @@ const MixAppRecommend = (() => {
       let added = 0;
       try {
         const items = shuffleInPlace(
-          (await MixAppApi.getPlaylistTracks(playlistUri)).slice()
+          (await WeaveApi.getPlaylistTracks(playlistUri)).slice()
         );
         const expand = shouldExpand();
         const freshlyAdded = [];
@@ -660,7 +658,7 @@ const MixAppRecommend = (() => {
           await ensureCamelotKeys(freshlyAdded);
         }
       } catch (err) {
-        if (MixAppHttp?.isRateLimitError?.(err)) {
+        if (WeaveHttp?.isRateLimitError?.(err)) {
           noteNetworkLimit();
         } else {
           console.warn("Weave: failed to load radio playlist", playlistUri, err);
@@ -760,13 +758,13 @@ const MixAppRecommend = (() => {
    * Song Radio candidates → local filters → sampled results.
    * @param {object} [opts]
    * @param {string[]} [opts.seedTrackIds]
-   * @param {MixAppTrackRow[]} [opts.seedTracks]
-   * @param {MixAppTrackRow[]} [opts.contextTracks]
+   * @param {WeaveTrackRow[]} [opts.seedTracks]
+   * @param {WeaveTrackRow[]} [opts.contextTracks]
    * @param {number} [opts.limit]
    * @param {object} [opts.filters]
    * @param {object} [opts.features]
    * @param {string[]} [opts.avoidUris]
-   * @returns {Promise<MixAppRecommendResult>}
+   * @returns {Promise<WeaveRecommendResult>}
    */
   async function recommend(opts = {}) {
     let seedTrackIds = [...new Set((opts.seedTrackIds || []).filter(Boolean))];
@@ -876,18 +874,14 @@ const MixAppRecommend = (() => {
     let pool = tracks.slice();
 
     // Keys first, then Mix in Key, then hide-existing / feature ranges.
-    if (camelotMoves.length && typeof MixAppFeatures?.enrichTracks === "function") {
+    if (camelotMoves.length && typeof WeaveFeatures?.enrichTracks === "function") {
       try {
-        pool = await MixAppFeatures.enrichTracks(pool);
+        pool = await WeaveFeatures.enrichTracks(pool);
       } catch (err) {
         console.warn("Weave: recommend enrich failed", err);
         await ensureCamelotKeys(pool);
       }
-      pool = MixAppFeatures.filterTracksByCamelotMoves(
-        pool,
-        camelotSeeds,
-        camelotMoves
-      );
+      pool = WeaveFeatures.filterTracksByCamelotMoves(pool, camelotSeeds, camelotMoves);
     }
 
     pool = applyPostFilters(pool, filters);

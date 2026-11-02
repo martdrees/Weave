@@ -3,7 +3,7 @@
  * Pure helpers for one-row playlist move positioning (mutation port).
  */
 
-const MixAppPlaylistMove = (() => {
+const WeavePlaylistMove = (() => {
   /**
    * Resolve after / before / index into Platform move opts + from/to for Web API reorder.
    * `after` / `before` values are Spotify item uids, or `after: "end"`.

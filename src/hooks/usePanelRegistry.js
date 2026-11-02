@@ -4,12 +4,12 @@
  * Exclusive modals share one slot; shortcuts / stats are independent overlays.
  */
 
-const MIXAPP_EXCLUSIVE_PANELS = ["addTrack", "copyPlaylist", "flowify", "generator"];
+const WEAVE_EXCLUSIVE_PANELS = ["addTrack", "copyPlaylist", "flowify", "generator"];
 
 /**
  * @param {{ initialStatsOpen?: boolean }} [opts]
  */
-function MixAppUsePanelRegistry(opts) {
+function WeaveUsePanelRegistry(opts) {
   const react = Spicetify.React;
   const initialStatsOpen = !!(opts && opts.initialStatsOpen);
 
@@ -19,7 +19,7 @@ function MixAppUsePanelRegistry(opts) {
   const [statsOpen, setStatsOpen] = react.useState(initialStatsOpen);
 
   function isExclusiveId(id) {
-    return MIXAPP_EXCLUSIVE_PANELS.indexOf(id) !== -1;
+    return WEAVE_EXCLUSIVE_PANELS.indexOf(id) !== -1;
   }
 
   /** Open a panel. Exclusive ids replace any other exclusive modal. */

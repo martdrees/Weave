@@ -9,7 +9,7 @@
  *   onClearPlaylist?: () => void,
  * }} opts
  */
-function MixAppUsePlaylistSession(opts) {
+function WeaveUsePlaylistSession(opts) {
   const react = Spicetify.React;
   const saved = opts?.saved || null;
   const onBeforePlaylistLoad = opts?.onBeforePlaylistLoad;
@@ -65,7 +65,7 @@ function MixAppUsePlaylistSession(opts) {
 
   function setLastRemoteFingerprint(trackList) {
     lastRemoteFingerprintRef.current =
-      MixAppPlaylistOps.fingerprintTrackOrder(trackList) || null;
+      WeavePlaylistOps.fingerprintTrackOrder(trackList) || null;
   }
 
   function beginWrite() {
@@ -80,13 +80,13 @@ function MixAppUsePlaylistSession(opts) {
     setListLoading(true);
     setError(null);
     try {
-      const items = await MixAppApi.listPlaylists();
+      const items = await WeaveApi.listPlaylists();
       items.sort((a, b) => a.name.localeCompare(b.name));
       setPlaylists(items);
     } catch (err) {
       console.error(err);
-      setError(err?.message || MixAppI18n.t("notify.failedPlaylists"));
-      MixAppApi.notify(MixAppI18n.t("notify.failedPlaylists"), true);
+      setError(err?.message || WeaveI18n.t("notify.failedPlaylists"));
+      WeaveApi.notify(WeaveI18n.t("notify.failedPlaylists"), true);
     } finally {
       setListLoading(false);
     }
@@ -133,7 +133,7 @@ function MixAppUsePlaylistSession(opts) {
       tracksRef.current = [];
       setTracks([]);
       lastRemoteFingerprintRef.current = null;
-      MixAppSession.clear();
+      WeaveSession.clear();
       return;
     }
 
@@ -161,11 +161,11 @@ function MixAppUsePlaylistSession(opts) {
           }
         : null;
 
-      const items = await MixAppApi.getPlaylistTracks(uri);
+      const items = await WeaveApi.getPlaylistTracks(uri);
       if (loadGen !== loadGenRef.current) return;
 
       if (!meta) {
-        meta = await MixAppApi.getPlaylistMeta(uri);
+        meta = await WeaveApi.getPlaylistMeta(uri);
         if (loadGen !== loadGenRef.current) return;
       } else if (listed?.canEdit === false) {
         meta.isOwnedBySelf = false;
@@ -178,7 +178,7 @@ function MixAppUsePlaylistSession(opts) {
       setLastRemoteFingerprint(items);
       setTracksLoading(false);
       try {
-        const enriched = await MixAppFeatures.enrichTracks(items.slice());
+        const enriched = await WeaveFeatures.enrichTracks(items.slice());
         if (loadGen !== loadGenRef.current) return;
         // Merge features into whatever the user currently has — never hard-replace
         // after enrich, or mid-load reorders/adds are wiped.
@@ -219,21 +219,21 @@ function MixAppUsePlaylistSession(opts) {
       if (loadGen !== loadGenRef.current) return;
       const unavailable =
         err?.code === "PLAYLIST_UNAVAILABLE" ||
-        MixAppPlaylists?.isPlaylistUnavailableError?.(err);
-      const rateLimited = !unavailable && MixAppHttp?.isRateLimitError?.(err);
+        WeavePlaylists?.isPlaylistUnavailableError?.(err);
+      const rateLimited = !unavailable && WeaveHttp?.isRateLimitError?.(err);
       const msg = unavailable
-        ? MixAppI18n.t("notify.playlistUnavailable")
+        ? WeaveI18n.t("notify.playlistUnavailable")
         : rateLimited
-          ? MixAppI18n.t("notify.rateLimit")
-          : err?.message || MixAppI18n.t("notify.failedPlaylist");
+          ? WeaveI18n.t("notify.rateLimit")
+          : err?.message || WeaveI18n.t("notify.failedPlaylist");
       if (!unavailable) console.error(err);
       else console.warn("Weave: playlist unavailable", err);
       setError(msg);
-      MixAppApi.notify(msg, true);
+      WeaveApi.notify(msg, true);
       setPlaylist(null);
       setTracks([]);
       if (unavailable && uri) {
-        MixAppPlaylists?.markPlaylistUnavailable?.(uri);
+        WeavePlaylists?.markPlaylistUnavailable?.(uri);
         setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
         setSelectedUri(null);
       }
@@ -283,8 +283,8 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Persist optimistic adds via mutation port; merge real uids or revert.
-   * @param {MixAppTrackRow[]} priorTracks
-   * @param {MixAppTrackRow[]} added
+   * @param {WeaveTrackRow[]} priorTracks
+   * @param {WeaveTrackRow[]} added
    */
   async function persistAddedTracks(priorTracks, added) {
     const uri = playlistRef.current?.uri;
@@ -297,16 +297,16 @@ function MixAppUsePlaylistSession(opts) {
     for (const id of pendingUids) pendingAddUidsRef.current.add(id);
     beginWrite();
     try {
-      const remote = await MixAppApi.addTracks(uri, uris, { after: "end" });
+      const remote = await WeaveApi.addTracks(uri, uris, { after: "end" });
       if (selectedUriRef.current !== uri) return;
-      const merged = MixAppPlaylistOps.mergeTracksAfterRemoteAdd(
+      const merged = WeavePlaylistOps.mergeTracksAfterRemoteAdd(
         tracksRef.current,
         remote
       );
       replaceTracksLocal(merged);
       setLastRemoteFingerprint(merged);
       const uriSet = new Set(uris);
-      MixAppPlaylistOps.enrichAdded(
+      WeavePlaylistOps.enrichAdded(
         merged.filter((t) => t?.uri && uriSet.has(t.uri)),
         setTracks
       );
@@ -314,7 +314,7 @@ function MixAppUsePlaylistSession(opts) {
       console.error(err);
       if (selectedUriRef.current === uri) {
         replaceTracksLocal(priorTracks);
-        MixAppApi.notify(err?.message || MixAppI18n.t("notify.addFailed"), true);
+        WeaveApi.notify(err?.message || WeaveI18n.t("notify.addFailed"), true);
       }
     } finally {
       for (const id of pendingUids) pendingAddUidsRef.current.delete(id);
@@ -324,8 +324,8 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Persist optimistic remove via mutation port; restore row on failure.
-   * @param {MixAppTrackRow[]} priorTracks
-   * @param {MixAppTrackRow} removed
+   * @param {WeaveTrackRow[]} priorTracks
+   * @param {WeaveTrackRow} removed
    * @param {number} index
    */
   async function persistRemovedTrack(priorTracks, removed, index) {
@@ -333,7 +333,7 @@ function MixAppUsePlaylistSession(opts) {
     if (!uri || !removed?.uri || !removed?.uid) return;
     beginWrite();
     try {
-      await MixAppApi.removeTracks(uri, [
+      await WeaveApi.removeTracks(uri, [
         { uri: String(removed.uri), uid: String(removed.uid) },
       ]);
       if (selectedUriRef.current !== uri) return;
@@ -345,7 +345,7 @@ function MixAppUsePlaylistSession(opts) {
         const at = Math.max(0, Math.min(index, cur.length));
         cur.splice(at, 0, removed);
         replaceTracksLocal(cur);
-        MixAppApi.notify(err?.message || MixAppI18n.t("notify.removeFailed"), true);
+        WeaveApi.notify(err?.message || WeaveI18n.t("notify.removeFailed"), true);
       }
     } finally {
       endWrite();
@@ -354,8 +354,8 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Persist optimistic single-row reorder; restore prior order on failure.
-   * @param {MixAppTrackRow[]} priorTracks
-   * @param {MixAppTrackRow} moved
+   * @param {WeaveTrackRow[]} priorTracks
+   * @param {WeaveTrackRow} moved
    * @param {number} toIndex final 0-based index after the move
    */
   async function persistMovedTrack(priorTracks, moved, toIndex) {
@@ -363,7 +363,7 @@ function MixAppUsePlaylistSession(opts) {
     if (!uri || !moved?.uri || !moved?.uid) return;
     beginWrite();
     try {
-      await MixAppApi.moveTrack(
+      await WeaveApi.moveTrack(
         uri,
         { uri: String(moved.uri), uid: String(moved.uid) },
         { index: toIndex }
@@ -374,7 +374,7 @@ function MixAppUsePlaylistSession(opts) {
       console.error(err);
       if (selectedUriRef.current === uri) {
         replaceTracksLocal(priorTracks);
-        MixAppApi.notify(err?.message || MixAppI18n.t("notify.reorderFailed"), true);
+        WeaveApi.notify(err?.message || WeaveI18n.t("notify.reorderFailed"), true);
       }
     } finally {
       endWrite();
@@ -385,7 +385,7 @@ function MixAppUsePlaylistSession(opts) {
     if (savingRef.current || tracksLoadingRef.current) return;
     // Serialize with in-flight add/move so Platform/Web reorder sees fresh live order.
     if (writeInFlightRef.current > 0) {
-      MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeReorder"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.waitAddBeforeReorder"), true);
       return;
     }
     if (from === to) return;
@@ -415,10 +415,10 @@ function MixAppUsePlaylistSession(opts) {
     }
 
     if (
-      MixAppPlaylistOps.isProvisionalPlaylistUid(moved.uid) ||
+      WeavePlaylistOps.isProvisionalPlaylistUid(moved.uid) ||
       pendingAddUidsRef.current.has(String(moved.uid))
     ) {
-      MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeReorder"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.waitAddBeforeReorder"), true);
       return;
     }
     if (!moved.uri || !moved.uid) return;
@@ -431,7 +431,7 @@ function MixAppUsePlaylistSession(opts) {
     if (savingRef.current) return null;
     if (!canWriteThroughPlaylist()) {
       if (playlistRef.current?.uri) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.cannotEditPlaylist"), true);
       }
       return null;
     }
@@ -440,9 +440,9 @@ function MixAppUsePlaylistSession(opts) {
     const removed = track || list[index];
     if (!removed) return null;
 
-    if (MixAppPlaylistOps.isProvisionalPlaylistUid(removed.uid)) {
+    if (WeavePlaylistOps.isProvisionalPlaylistUid(removed.uid)) {
       if (pendingAddUidsRef.current.has(String(removed.uid))) {
-        MixAppApi.notify(MixAppI18n.t("notify.waitAddBeforeRemove"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.waitAddBeforeRemove"), true);
         return null;
       }
       const nextLocal = list.slice();
@@ -461,7 +461,7 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Create a new playlist from current tracks or an explicit list (Flowify preview).
-   * @param {{ tracks?: MixAppTrackRow[], stayOnCurrent?: boolean }} [opts]
+   * @param {{ tracks?: WeaveTrackRow[], stayOnCurrent?: boolean }} [opts]
    * @returns {Promise<boolean>}
    */
   async function handleSaveAsNew(opts) {
@@ -480,25 +480,25 @@ function MixAppUsePlaylistSession(opts) {
     if (!source.length) return false;
     if (tracksLoadingRef.current || savingRef.current) return false;
     const stayOnCurrent = !!options?.stayOnCurrent;
-    const base = playlist?.name || MixAppI18n.t("playlist.defaultName");
-    const name = MixAppI18n.t("playlist.weaveSuffix", { name: base });
+    const base = playlist?.name || WeaveI18n.t("playlist.defaultName");
+    const name = WeaveI18n.t("playlist.weaveSuffix", { name: base });
     const uris = source.map((t) => t.uri).filter(Boolean);
     if (!uris.length) return false;
     savingRef.current = true;
     setSaving(true);
     try {
       if (tracksLoadingRef.current) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotSaveLoading"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.cannotSaveLoading"), true);
         return false;
       }
-      const uri = await MixAppApi.createPlaylist(name, uris);
-      MixAppApi.notify(MixAppI18n.t("notify.created", { name }));
+      const uri = await WeaveApi.createPlaylist(name, uris);
+      WeaveApi.notify(WeaveI18n.t("notify.created", { name }));
       await refreshPlaylists();
       if (!stayOnCurrent) await loadPlaylist(uri);
       return true;
     } catch (err) {
       console.error(err);
-      MixAppApi.notify(err?.message || MixAppI18n.t("notify.createFailed"), true);
+      WeaveApi.notify(err?.message || WeaveI18n.t("notify.createFailed"), true);
       return false;
     } finally {
       savingRef.current = false;
@@ -508,14 +508,14 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * Flowify Apply bridge: one applyBulk commit (no draft Save).
-   * @param {MixAppTrackRow[]} nextTracks
+   * @param {WeaveTrackRow[]} nextTracks
    * @returns {Promise<boolean>}
    */
   async function handleApplyBulk(nextTracks) {
     const uri = playlistRef.current?.uri;
     if (!uri || !Array.isArray(nextTracks) || !nextTracks.length) return false;
     if (!canWriteThroughPlaylist()) {
-      MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.cannotEditPlaylist"), true);
       return false;
     }
     if (savingRef.current) return false;
@@ -526,7 +526,7 @@ function MixAppUsePlaylistSession(opts) {
     setSaving(true);
     beginWrite();
     try {
-      const savedTracks = await MixAppApi.applyBulk(uri, nextTracks);
+      const savedTracks = await WeaveApi.applyBulk(uri, nextTracks);
       if (selectedUriRef.current !== uri) return true;
       let baseline = nextTracks;
       if (Array.isArray(savedTracks) && savedTracks.length) {
@@ -557,16 +557,13 @@ function MixAppUsePlaylistSession(opts) {
         replaceTracksLocal(baseline);
       }
       setLastRemoteFingerprint(baseline);
-      MixAppApi.notify(MixAppI18n.t("notify.flowifyApplied"));
+      WeaveApi.notify(WeaveI18n.t("notify.flowifyApplied"));
       return true;
     } catch (err) {
       console.error(err);
       if (selectedUriRef.current === uri) {
         replaceTracksLocal(prior);
-        MixAppApi.notify(
-          err?.message || MixAppI18n.t("notify.flowifyApplyFailed"),
-          true
-        );
+        WeaveApi.notify(err?.message || WeaveI18n.t("notify.flowifyApplyFailed"), true);
       }
       return false;
     } finally {
@@ -579,39 +576,39 @@ function MixAppUsePlaylistSession(opts) {
   function handleAddCatalogTrack(track) {
     if (!canWriteThroughPlaylist()) {
       if (playlistRef.current?.uri) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.cannotEditPlaylist"), true);
       }
       return;
     }
     const prior = tracksRef.current.slice();
-    const { next, added } = MixAppPlaylistOps.appendTracks(prior, [track]);
+    const { next, added } = WeavePlaylistOps.appendTracks(prior, [track]);
     if (!added.length) {
-      MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.alreadyInPlaylist"), true);
       return;
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
     // No success toast — Spotify already notifies on playlist add.
-    MixAppPlaylistOps.enrichAdded(added, setTracks);
+    WeavePlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
   }
 
   function handleAddCatalogTracks(batch) {
     if (!canWriteThroughPlaylist()) {
       if (playlistRef.current?.uri) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.cannotEditPlaylist"), true);
       }
       return;
     }
     const prior = tracksRef.current.slice();
-    const { next, added } = MixAppPlaylistOps.appendTracks(prior, batch);
+    const { next, added } = WeavePlaylistOps.appendTracks(prior, batch);
     if (!added.length) {
-      MixAppApi.notify(MixAppI18n.t("notify.noNewTracks"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.noNewTracks"), true);
       return;
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppPlaylistOps.enrichAdded(added, setTracks);
+    WeavePlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
   }
 
@@ -619,19 +616,19 @@ function MixAppUsePlaylistSession(opts) {
   function handleAddRecommendedTrack(track) {
     if (!canWriteThroughPlaylist()) {
       if (playlistRef.current?.uri) {
-        MixAppApi.notify(MixAppI18n.t("notify.cannotEditPlaylist"), true);
+        WeaveApi.notify(WeaveI18n.t("notify.cannotEditPlaylist"), true);
       }
       return false;
     }
     const prior = tracksRef.current.slice();
-    const { next, added } = MixAppPlaylistOps.appendTracks(prior, [track]);
+    const { next, added } = WeavePlaylistOps.appendTracks(prior, [track]);
     if (!added.length) {
-      MixAppApi.notify(MixAppI18n.t("notify.alreadyInPlaylist"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.alreadyInPlaylist"), true);
       return false;
     }
     replaceTracksLocal(next);
     flashRows(added.map((t) => t.uid || t.uri));
-    MixAppPlaylistOps.enrichAdded(added, setTracks);
+    WeavePlaylistOps.enrichAdded(added, setTracks);
     void persistAddedTracks(prior, added);
     return true;
   }
@@ -656,18 +653,18 @@ function MixAppUsePlaylistSession(opts) {
     try {
       let remoteTracks;
       try {
-        remoteTracks = await MixAppApi.getPlaylistTracks(uri);
+        remoteTracks = await WeaveApi.getPlaylistTracks(uri);
       } catch (err) {
         if (selectedUriRef.current !== uri) return;
         const unavailable =
           err?.code === "PLAYLIST_UNAVAILABLE" ||
-          MixAppPlaylists?.isPlaylistUnavailableError?.(err);
+          WeavePlaylists?.isPlaylistUnavailableError?.(err);
         if (!unavailable) {
           console.warn("Weave: remote sync check failed", err);
           return;
         }
-        MixAppApi.notify(MixAppI18n.t("notify.playlistUnavailable"), true);
-        MixAppPlaylists?.markPlaylistUnavailable?.(uri);
+        WeaveApi.notify(WeaveI18n.t("notify.playlistUnavailable"), true);
+        WeavePlaylists?.markPlaylistUnavailable?.(uri);
         setPlaylists((prev) => (prev || []).filter((p) => p.uri !== uri));
         onClearPlaylist?.();
         setSelectedUri(null);
@@ -686,7 +683,7 @@ function MixAppUsePlaylistSession(opts) {
           ? { name: listed.name, collaborative: listed.collaborative }
           : null;
         if (!remoteMeta) {
-          remoteMeta = await MixAppApi.getPlaylistMeta(uri);
+          remoteMeta = await WeaveApi.getPlaylistMeta(uri);
         }
         if (remoteMeta?.name && playlistRef.current?.uri === uri) {
           const cur = playlistRef.current;
@@ -716,9 +713,9 @@ function MixAppUsePlaylistSession(opts) {
         /* meta is best-effort */
       }
 
-      const remoteFp = MixAppPlaylistOps.fingerprintTrackOrder(remoteTracks);
+      const remoteFp = WeavePlaylistOps.fingerprintTrackOrder(remoteTracks);
       const baselineFp = lastRemoteFingerprintRef.current;
-      const currentFp = MixAppPlaylistOps.fingerprintTrackOrder(tracksRef.current);
+      const currentFp = WeavePlaylistOps.fingerprintTrackOrder(tracksRef.current);
 
       if (baselineFp != null && remoteFp === baselineFp) return;
       if (baselineFp == null && remoteFp === currentFp) {
@@ -726,7 +723,7 @@ function MixAppUsePlaylistSession(opts) {
         return;
       }
 
-      MixAppApi.notify(MixAppI18n.t("notify.playlistUpdatedFromSpotify"));
+      WeaveApi.notify(WeaveI18n.t("notify.playlistUpdatedFromSpotify"));
       await loadPlaylist(uri, { force: true });
     } finally {
       syncCheckInFlightRef.current = false;
@@ -742,11 +739,11 @@ function MixAppUsePlaylistSession(opts) {
 
   /**
    * True while a row still has a Weave-synthetic uid or an in-flight add.
-   * @param {MixAppTrackRow|null|undefined} track
+   * @param {WeaveTrackRow|null|undefined} track
    */
   function isTrackPlayPending(track) {
     if (!track) return false;
-    if (MixAppPlaylistOps.isProvisionalPlaylistUid(track.uid)) return true;
+    if (WeavePlaylistOps.isProvisionalPlaylistUid(track.uid)) return true;
     return pendingAddUidsRef.current.has(String(track.uid));
   }
 
@@ -754,7 +751,7 @@ function MixAppUsePlaylistSession(opts) {
    * Wait until add write-through attaches a real Spotify item uid (or timeout).
    * @param {string} uri
    * @param {number} [timeoutMs]
-   * @returns {Promise<MixAppTrackRow|null>}
+   * @returns {Promise<WeaveTrackRow|null>}
    */
   async function waitForReadyTrack(uri, timeoutMs) {
     if (!uri) return null;

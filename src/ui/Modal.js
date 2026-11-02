@@ -5,16 +5,16 @@
  * Inventory: docs/COMPONENTS.md — Modal shell.
  */
 
-const MIXAPP_MODAL_FOCUSABLE =
+const WEAVE_MODAL_FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * @param {Element|null} root
  * @returns {HTMLElement[]}
  */
-function mixappModalFocusables(root) {
+function weaveModalFocusables(root) {
   if (!root) return [];
-  return Array.from(root.querySelectorAll(MIXAPP_MODAL_FOCUSABLE)).filter((el) => {
+  return Array.from(root.querySelectorAll(WEAVE_MODAL_FOCUSABLE)).filter((el) => {
     if (!(el instanceof HTMLElement)) return false;
     if (el.getAttribute("aria-hidden") === "true") return false;
     return el.getClientRects().length > 0;
@@ -24,16 +24,16 @@ function mixappModalFocusables(root) {
 /**
  * @param {HTMLElement|null} dialog
  */
-function mixappModalFocusInitial(dialog) {
+function weaveModalFocusInitial(dialog) {
   if (!dialog) return;
   const marked = dialog.querySelector("[data-autofocus]");
   if (marked instanceof HTMLElement && marked.getClientRects().length) {
     marked.focus();
     return;
   }
-  const list = mixappModalFocusables(dialog);
+  const list = weaveModalFocusables(dialog);
   // Prefer first control in the body (skip header ✕) when content has inputs.
-  const inBody = list.filter((el) => !el.closest(".mixapp-recommend-header"));
+  const inBody = list.filter((el) => !el.closest(".weave-recommend-header"));
   const target = inBody[0] || list[0];
   if (target) {
     target.focus();
@@ -55,7 +55,7 @@ function mixappModalFocusInitial(dialog) {
  *   children?: any,
  * }} props
  */
-function MixAppModal(props) {
+function WeaveModal(props) {
   const react = Spicetify.React;
   const {
     open,
@@ -79,7 +79,7 @@ function MixAppModal(props) {
       document.activeElement instanceof Element ? document.activeElement : null;
 
     const frame = requestAnimationFrame(() => {
-      mixappModalFocusInitial(dialogRef.current);
+      weaveModalFocusInitial(dialogRef.current);
     });
 
     function onKey(e) {
@@ -94,7 +94,7 @@ function MixAppModal(props) {
 
       const dialog = dialogRef.current;
       if (!dialog) return;
-      const list = mixappModalFocusables(dialog);
+      const list = weaveModalFocusables(dialog);
       if (!list.length) {
         e.preventDefault();
         dialog.focus();
@@ -135,12 +135,12 @@ function MixAppModal(props) {
 
   if (!open) return null;
 
-  const dialogClass = ["mixapp-results-modal", className].filter(Boolean).join(" ");
+  const dialogClass = ["weave-results-modal", className].filter(Boolean).join(" ");
 
   return h(
     "div",
     {
-      className: "mixapp-results-overlay",
+      className: "weave-results-overlay",
       role: "presentation",
       onClick: (e) => {
         if (e.target === e.currentTarget && !closeDisabled) onClose?.();
@@ -153,29 +153,29 @@ function MixAppModal(props) {
         className: dialogClass,
         role: "dialog",
         "aria-modal": "true",
-        "aria-label": ariaLabel || title || MixAppI18n.t("common.dialog"),
+        "aria-label": ariaLabel || title || WeaveI18n.t("common.dialog"),
         tabIndex: -1,
       },
       h(
         "div",
-        { className: "mixapp-recommend-header" },
+        { className: "weave-recommend-header" },
         h(
           "div",
-          { className: "mixapp-search-panel-title-row" },
+          { className: "weave-search-panel-title-row" },
           h("h2", null, title),
           meta != null && meta !== ""
-            ? h("span", { className: "mixapp-recommend-meta" }, String(meta))
+            ? h("span", { className: "weave-recommend-meta" }, String(meta))
             : null
         ),
         h(
           "button",
           {
             type: "button",
-            className: "mixapp-icon-btn",
+            className: "weave-icon-btn",
             onClick: onClose,
             disabled: !!closeDisabled,
-            title: closeTitle || MixAppI18n.t("common.close"),
-            "aria-label": closeTitle || MixAppI18n.t("common.close"),
+            title: closeTitle || WeaveI18n.t("common.close"),
+            "aria-label": closeTitle || WeaveI18n.t("common.close"),
           },
           "✕"
         )

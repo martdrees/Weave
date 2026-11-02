@@ -1,9 +1,9 @@
 //@ts-check
 
 /** Phase 7 — keyboard shortcuts overlay. */
-function MixAppShortcutsHelp(props) {
+function WeaveShortcutsHelp(props) {
   const react = Spicetify.React;
-  const t = MixAppI18n.t;
+  const t = WeaveI18n.t;
   const { open, onClose } = props;
 
   const rows = [
@@ -23,20 +23,20 @@ function MixAppShortcutsHelp(props) {
   ];
 
   return h(
-    MixAppModal,
+    WeaveModal,
     {
       open,
       title: t("shortcuts.title"),
       onClose,
       ariaLabel: t("shortcuts.title"),
-      className: "mixapp-find-modal mixapp-shortcuts-modal",
+      className: "weave-find-modal weave-shortcuts-modal",
     },
     h(
       "div",
-      { className: "mixapp-shortcuts-body" },
+      { className: "weave-shortcuts-body" },
       h(
         "table",
-        { className: "mixapp-shortcuts-table" },
+        { className: "weave-shortcuts-table" },
         h(
           "tbody",
           null,
@@ -44,13 +44,13 @@ function MixAppShortcutsHelp(props) {
             h(
               "tr",
               { key: keys },
-              h("td", { className: "mixapp-shortcuts-keys" }, keys),
+              h("td", { className: "weave-shortcuts-keys" }, keys),
               h("td", null, action)
             )
           )
         )
       ),
-      h("p", { className: "mixapp-recommend-meta" }, t("shortcuts.note"))
+      h("p", { className: "weave-recommend-meta" }, t("shortcuts.note"))
     )
   );
 }

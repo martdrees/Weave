@@ -9,7 +9,7 @@
  * “improvements” — those regress playlist Next behavior).
  */
 
-function MixAppUsePlayback() {
+function WeaveUsePlayback() {
   const react = Spicetify.React;
   const [playingUri, setPlayingUri] = react.useState(null);
   const [isPlaying, setIsPlaying] = react.useState(false);
@@ -179,7 +179,7 @@ function MixAppUsePlayback() {
       if (tracks.length) {
         if (
           typeof ctx?.waitForReadyTrack === "function" &&
-          MixAppPlaylistOps.isProvisionalPlaylistUid(track?.uid)
+          WeavePlaylistOps.isProvisionalPlaylistUid(track?.uid)
         ) {
           const settled = await ctx.waitForReadyTrack(uri, 2000);
           if (settled && typeof ctx?.getTracks === "function") {
@@ -220,7 +220,7 @@ function MixAppUsePlayback() {
       setIsPlaying(true);
     } catch (err) {
       console.warn("Weave: play failed", err);
-      MixAppApi.notify(MixAppI18n.t("notify.playbackFailed"), true);
+      WeaveApi.notify(WeaveI18n.t("notify.playbackFailed"), true);
     }
   }
 

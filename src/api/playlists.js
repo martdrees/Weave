@@ -3,7 +3,7 @@
  * Playlist list / load / differential sync / create.
  */
 
-const MixAppPlaylists = (() => {
+const WeavePlaylists = (() => {
   /** URIs confirmed missing/private this session (load failed). */
   const unavailableUris = new Set();
   /** Prevent interleaved writes (mutations + differential sync) on the same playlist. */
@@ -30,7 +30,7 @@ const MixAppPlaylists = (() => {
   }
 
   function normalizeTrack(raw, index) {
-    return MixAppTrack.fromPlaylistItem(raw, index);
+    return WeaveTrack.fromPlaylistItem(raw, index);
   }
 
   function markPlaylistUnavailable(uri) {
@@ -116,7 +116,7 @@ const MixAppPlaylists = (() => {
     const playlists = [];
     let url = "https://api.spotify.com/v1/me/playlists?limit=50";
     while (url) {
-      const page = await MixAppHttp.cosmosGet(url);
+      const page = await WeaveHttp.cosmosGet(url);
       for (const p of page?.items || []) {
         if (isLibraryPlaylistUnavailable(p)) continue;
         const isOwnedBySelf = p.owner?.id === me;
@@ -138,7 +138,7 @@ const MixAppPlaylists = (() => {
   async function getCurrentUserId() {
     if (cachedUserId) return cachedUserId;
     try {
-      const me = await MixAppHttp.getMeProfile();
+      const me = await WeaveHttp.getMeProfile();
       cachedUserId = me?.id || null;
     } catch (err) {
       console.warn("Weave: failed to resolve user id", err);
@@ -168,8 +168,8 @@ const MixAppPlaylists = (() => {
       }
     }
 
-    const id = MixAppHttp.playlistIdFromUri(uri);
-    const meta = await MixAppHttp.cosmosGet(
+    const id = WeaveHttp.playlistIdFromUri(uri);
+    const meta = await WeaveHttp.cosmosGet(
       `https://api.spotify.com/v1/playlists/${id}`,
       { retries: 6, label: "playlist meta" }
     );
@@ -186,7 +186,7 @@ const MixAppPlaylists = (() => {
 
   function playlistUriCandidates(uri) {
     const raw = String(uri || "");
-    const id = MixAppHttp.playlistIdFromUri(raw);
+    const id = WeaveHttp.playlistIdFromUri(raw);
     const out = [];
     const push = (u) => {
       if (u && !out.includes(u)) out.push(u);
@@ -218,7 +218,7 @@ const MixAppPlaylists = (() => {
 
   function playlistUnavailableError(uri) {
     if (uri) markPlaylistUnavailable(uri);
-    const err = new Error(MixAppI18n.t("notify.playlistUnavailable"));
+    const err = new Error(WeaveI18n.t("notify.playlistUnavailable"));
     err.code = "PLAYLIST_UNAVAILABLE";
     return err;
   }
@@ -267,8 +267,8 @@ const MixAppPlaylists = (() => {
           sawInvalid = true;
           return { kind: "invalid" };
         }
-        if (MixAppHttp.isRateLimitError(err)) {
-          await MixAppHttp.sleep(1000);
+        if (WeaveHttp.isRateLimitError(err)) {
+          await WeaveHttp.sleep(1000);
           try {
             const contents = useOpts
               ? await PlaylistAPI.getContents(candidate, useOpts)
@@ -314,7 +314,7 @@ const MixAppPlaylists = (() => {
     const uri = data.uri || "";
     if (uri && !String(uri).includes(":track:")) return null;
 
-    const track = MixAppTrack.fromGraphqlTrack(data, index);
+    const track = WeaveTrack.fromGraphqlTrack(data, index);
     if (!track) return null;
     if (entry?.uid) track.uid = String(entry.uid);
     const added = entry?.addedAt?.isoString || entry?.addedAt || data?.addedAt || null;
@@ -400,21 +400,21 @@ const MixAppPlaylists = (() => {
       offset += items.length;
       if (!items.length || items.length < limit) break;
       if (total != null && offset >= total) break;
-      await MixAppHttp.sleep(120);
+      await WeaveHttp.sleep(120);
     }
 
     return { kind: "ok", tracks };
   }
 
   async function getPlaylistTracksViaWebApi(uri) {
-    const id = MixAppHttp.playlistIdFromUri(uri);
+    const id = WeaveHttp.playlistIdFromUri(uri);
     if (!id) throw new Error("Invalid playlist URI");
     const tracks = [];
     // Feb 2026: /tracks removed — use /items
     let url = `https://api.spotify.com/v1/playlists/${id}/items?limit=100`;
     let index = 0;
     while (url) {
-      const page = await MixAppHttp.cosmosGet(url, {
+      const page = await WeaveHttp.cosmosGet(url, {
         retries: 3,
         label: "playlist items",
       });
@@ -425,7 +425,7 @@ const MixAppPlaylists = (() => {
         tracks.push(normalizeTrack(row, index++));
       }
       url = page?.next || null;
-      if (url) await MixAppHttp.sleep(250);
+      if (url) await WeaveHttp.sleep(250);
     }
     return tracks;
   }
@@ -446,7 +446,7 @@ const MixAppPlaylists = (() => {
     try {
       return await getPlaylistTracksViaWebApi(uri);
     } catch (err) {
-      if (MixAppHttp.isNotFoundError(err) || MixAppHttp.isForbiddenError(err)) {
+      if (WeaveHttp.isNotFoundError(err) || WeaveHttp.isForbiddenError(err)) {
         throw playlistUnavailableError(uri);
       }
       throw err;
@@ -533,9 +533,9 @@ const MixAppPlaylists = (() => {
       range_length: 1,
     };
     if (snapshotId) body.snapshot_id = snapshotId;
-    const res = await MixAppHttp.withRetry(
+    const res = await WeaveHttp.withRetry(
       () =>
-        MixAppHttp.cosmosPut(
+        WeaveHttp.cosmosPut(
           `https://api.spotify.com/v1/playlists/${playlistId}/items`,
           body
         ),
@@ -598,7 +598,7 @@ const MixAppPlaylists = (() => {
 
   /** Web API fallback: same move-to-end strategy, with 429 retries + spacing. */
   async function reorderViaWebApi(playlistUri, targetUids) {
-    const id = MixAppHttp.playlistIdFromUri(playlistUri);
+    const id = WeaveHttp.playlistIdFromUri(playlistUri);
     if (!id) throw new Error("Invalid playlist URI");
 
     let live = await getLivePlaylistItems(playlistUri);
@@ -620,7 +620,7 @@ const MixAppPlaylists = (() => {
       const to = current.length - 1;
       if (from !== to) {
         snapshotId = await reorderItemByIndex(id, from, to, snapshotId);
-        await MixAppHttp.sleep(200);
+        await WeaveHttp.sleep(200);
         const [uid] = current.splice(from, 1);
         current.push(uid);
       }
@@ -735,7 +735,7 @@ const MixAppPlaylists = (() => {
    * @param {string} playlistUri
    * @param {string[]} trackUris
    * @param {{ after?: string }} [opts]
-   * @returns {Promise<MixAppTrackRow[]>}
+   * @returns {Promise<WeaveTrackRow[]>}
    */
   async function addTracks(playlistUri, trackUris, opts) {
     return withPlaylistWriteLock(playlistUri, async () => {
@@ -850,7 +850,7 @@ const MixAppPlaylists = (() => {
         throw new Error("moveTrack requires item { uri, uid }");
       }
       const live = await getLivePlaylistItems(playlistUri);
-      const resolved = MixAppPlaylistMove.resolveMovePosition(
+      const resolved = WeavePlaylistMove.resolveMovePosition(
         live,
         String(item.uid),
         position
@@ -861,7 +861,7 @@ const MixAppPlaylists = (() => {
         return;
       }
 
-      const id = MixAppHttp.playlistIdFromUri(playlistUri);
+      const id = WeaveHttp.playlistIdFromUri(playlistUri);
       if (!id) throw new Error("Invalid playlist URI");
       // Re-read live indices — a failed/partial Platform move may have shifted
       // order relative to the pre-move snapshot used for `resolved.from`.
@@ -924,19 +924,19 @@ const MixAppPlaylists = (() => {
 
   /** Full replace via Web API — last resort for brand-new playlists. */
   async function replacePlaylistTracks(uri, trackUris) {
-    const id = MixAppHttp.playlistIdFromUri(uri);
+    const id = WeaveHttp.playlistIdFromUri(uri);
     if (!id) throw new Error("Invalid playlist URI");
     const chunkSize = 100;
     for (let i = 0; i < Math.max(trackUris.length, 1); i += chunkSize) {
       const chunk = trackUris.slice(i, i + chunkSize);
       if (i === 0) {
-        await MixAppHttp.cosmosPut(
+        await WeaveHttp.cosmosPut(
           `https://api.spotify.com/v1/playlists/${id}/items`,
           { uris: chunk },
           { retries: 3, label: "playlist replace" }
         );
       } else if (chunk.length) {
-        await MixAppHttp.cosmosPost(
+        await WeaveHttp.cosmosPost(
           `https://api.spotify.com/v1/playlists/${id}/items`,
           { uris: chunk },
           { retries: 3, label: "playlist append" }
@@ -970,15 +970,15 @@ const MixAppPlaylists = (() => {
 
     if (!uri) {
       try {
-        const created = await MixAppHttp.cosmosPost(
+        const created = await WeaveHttp.cosmosPost(
           "https://api.spotify.com/v1/me/playlists",
           { name, public: false },
           { retries: 2, label: "create playlist", notifyUser: true }
         );
         uri = playlistUriFromCreateResult(created);
       } catch (err) {
-        if (MixAppHttp.isRateLimitError(err) || platformErr) {
-          throw new Error(MixAppI18n.t("notify.rateLimit"));
+        if (WeaveHttp.isRateLimitError(err) || platformErr) {
+          throw new Error(WeaveI18n.t("notify.rateLimit"));
         }
         throw err;
       }
@@ -990,8 +990,8 @@ const MixAppPlaylists = (() => {
         await fillNewPlaylist(uri, trackUris);
       } catch (err) {
         console.warn("Weave: failed to fill new playlist", err);
-        if (MixAppHttp.isRateLimitError(err)) {
-          MixAppNotify.notify(MixAppI18n.t("notify.fillPlaylistFailed"), true);
+        if (WeaveHttp.isRateLimitError(err)) {
+          WeaveNotify.notify(WeaveI18n.t("notify.fillPlaylistFailed"), true);
           return uri;
         }
         throw err;

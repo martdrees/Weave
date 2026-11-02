@@ -3,7 +3,7 @@
  * Cosmos / Web API transport: retry, assert, get/post/put.
  */
 
-const MixAppHttp = (() => {
+const WeaveHttp = (() => {
   function playlistIdFromUri(uri) {
     if (!uri) return null;
     const parts = String(uri).split(":");
@@ -162,8 +162,8 @@ const MixAppHttp = (() => {
         console.warn(`Weave: ${label} rate-limited, retry in ${delay}ms`);
         if (notifyUser && Date.now() - rateLimitNotifyAt > 4000) {
           rateLimitNotifyAt = Date.now();
-          MixAppNotify.notify(
-            MixAppI18n.t("notify.rateLimitBackoff", {
+          WeaveNotify.notify(
+            WeaveI18n.t("notify.rateLimitBackoff", {
               seconds: Math.ceil(delay / 1000),
             }),
             true

@@ -3,15 +3,15 @@
  * Playlist column visibility for Weave.
  * Sole owner of column visibility (not prefs/session). See docs/PERSISTENCE.md.
  *
- * Toggleable columns are stored under LocalStorageAPI "mixapp-feature-columns"
+ * Toggleable columns are stored under LocalStorageAPI "weave-feature-columns"
  * (with an in-memory cache) so Spotify’s own column-config cannot overwrite them.
  * On first run, Spotify playlist-tracklist values are used as defaults when present.
  */
 
-const MixAppColumnConfig = (() => {
+const WeaveColumnConfig = (() => {
   const SPOTIFY_KEY = "column-config";
   const SCOPE = "playlist-tracklist";
-  const MIXAPP_KEY = "mixapp-feature-columns";
+  const WEAVE_KEY = "weave-feature-columns";
 
   /** @type {Record<string, { visible: boolean }> | null} */
   let memory = null;
@@ -106,13 +106,13 @@ const MixAppColumnConfig = (() => {
   function readPersistedMix() {
     try {
       const api = Spicetify?.Platform?.LocalStorageAPI;
-      const all = api?.getItem?.(MIXAPP_KEY);
+      const all = api?.getItem?.(WEAVE_KEY);
       if (all && typeof all === "object") return all;
     } catch {
       /* ignore */
     }
     try {
-      const raw = localStorage.getItem("mixapp:" + MIXAPP_KEY);
+      const raw = localStorage.getItem("weave:" + WEAVE_KEY);
       if (raw) return JSON.parse(raw);
     } catch {
       /* ignore */
@@ -122,12 +122,12 @@ const MixAppColumnConfig = (() => {
 
   function writePersistedMix(all) {
     try {
-      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(MIXAPP_KEY, all);
+      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(WEAVE_KEY, all);
     } catch {
       /* ignore */
     }
     try {
-      localStorage.setItem("mixapp:" + MIXAPP_KEY, JSON.stringify(all));
+      localStorage.setItem("weave:" + WEAVE_KEY, JSON.stringify(all));
     } catch {
       /* ignore */
     }
@@ -237,13 +237,13 @@ const MixAppColumnConfig = (() => {
   function columnMetric(columnId) {
     const col = COLUMNS.find((c) => c.id === columnId);
     if (!col?.metricId) return null;
-    return MixAppFeatures.METRICS.find((m) => m.id === col.metricId) || null;
+    return WeaveFeatures.METRICS.find((m) => m.id === col.metricId) || null;
   }
 
   return {
-    STORAGE_KEY: MIXAPP_KEY,
+    STORAGE_KEY: WEAVE_KEY,
     SCOPE,
-    MIXAPP_KEY,
+    WEAVE_KEY,
     COLUMNS,
     getVisibility,
     isVisible,
@@ -257,10 +257,10 @@ const MixAppColumnConfig = (() => {
 
 /**
  * Column visibility for results / generator / catalog tables (not the playlist Arranger).
- * Separate storage from MixAppColumnConfig so playlist prefs stay untouched.
+ * Separate storage from WeaveColumnConfig so playlist prefs stay untouched.
  */
-const MixAppResultsColumnConfig = (() => {
-  const MIXAPP_KEY = "mixapp-results-columns";
+const WeaveResultsColumnConfig = (() => {
+  const WEAVE_KEY = "weave-results-columns";
 
   /** @type {Record<string, { visible: boolean }> | null} */
   let memory = null;
@@ -350,13 +350,13 @@ const MixAppResultsColumnConfig = (() => {
   function readPersisted() {
     try {
       const api = Spicetify?.Platform?.LocalStorageAPI;
-      const all = api?.getItem?.(MIXAPP_KEY);
+      const all = api?.getItem?.(WEAVE_KEY);
       if (all && typeof all === "object") return all;
     } catch {
       /* ignore */
     }
     try {
-      const raw = localStorage.getItem("mixapp:" + MIXAPP_KEY);
+      const raw = localStorage.getItem("weave:" + WEAVE_KEY);
       if (raw) return JSON.parse(raw);
     } catch {
       /* ignore */
@@ -366,12 +366,12 @@ const MixAppResultsColumnConfig = (() => {
 
   function writePersisted(all) {
     try {
-      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(MIXAPP_KEY, all);
+      Spicetify?.Platform?.LocalStorageAPI?.setItem?.(WEAVE_KEY, all);
     } catch {
       /* ignore */
     }
     try {
-      localStorage.setItem("mixapp:" + MIXAPP_KEY, JSON.stringify(all));
+      localStorage.setItem("weave:" + WEAVE_KEY, JSON.stringify(all));
     } catch {
       /* ignore */
     }
@@ -442,7 +442,7 @@ const MixAppResultsColumnConfig = (() => {
   }
 
   return {
-    MIXAPP_KEY,
+    WEAVE_KEY,
     COLUMNS,
     getVisibility,
     isVisible,

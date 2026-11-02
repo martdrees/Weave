@@ -4,7 +4,7 @@
  * See docs/TRACK.md.
  */
 
-const MixAppTrack = (() => {
+const WeaveTrack = (() => {
   /** @type {readonly string[]} */
   const CORE_KEYS = Object.freeze([
     "uri",
@@ -24,7 +24,7 @@ const MixAppTrack = (() => {
     "key",
   ]);
 
-  /** Enrichment keys written by MixAppFeatures.enrichTracks. */
+  /** Enrichment keys written by WeaveFeatures.enrichTracks. */
   const FEATURE_KEYS = Object.freeze([
     "featuresLoaded",
     "keyIndex",
@@ -214,8 +214,8 @@ const MixAppTrack = (() => {
 
   /**
    * Empty / default core track. Optional enrichment keys omitted.
-   * @param {Partial<MixAppTrackCore>} [partial]
-   * @returns {MixAppTrackRow}
+   * @param {Partial<WeaveTrackCore>} [partial]
+   * @returns {WeaveTrackRow}
    */
   function blank(partial) {
     const p = partial || {};
@@ -240,8 +240,8 @@ const MixAppTrack = (() => {
 
   /**
    * Coerce a partial into a full core track (keeps unknown extra keys).
-   * @param {Partial<MixAppTrackRow>|null|undefined} partial
-   * @returns {MixAppTrackRow}
+   * @param {Partial<WeaveTrackRow>|null|undefined} partial
+   * @returns {WeaveTrackRow}
    */
   function ensure(partial) {
     const base = blank(partial);
@@ -263,7 +263,7 @@ const MixAppTrack = (() => {
    * Platform playlist row or Web API playlist /items row.
    * @param {object} raw
    * @param {number} index
-   * @returns {MixAppTrackRow}
+   * @returns {WeaveTrackRow}
    */
   function fromPlaylistItem(raw, index) {
     const track = raw?.track || raw?.item || raw;
@@ -324,7 +324,7 @@ const MixAppTrack = (() => {
    * Web API search track object.
    * @param {object} raw
    * @param {number} index
-   * @returns {MixAppTrackRow}
+   * @returns {WeaveTrackRow}
    */
   function fromWebApiTrack(raw, index) {
     const track = raw?.track || raw;
@@ -375,7 +375,7 @@ const MixAppTrack = (() => {
    * Pathfinder / searchV2 track entity.
    * @param {object} data
    * @param {number} index
-   * @returns {MixAppTrackRow|null}
+   * @returns {WeaveTrackRow|null}
    */
   function fromGraphqlTrack(data, index) {
     if (!data) return null;
@@ -417,9 +417,9 @@ const MixAppTrack = (() => {
   /**
    * Catalog / recommendation row → playlist working-copy track.
    * Preserves enrichment fields when present.
-   * @param {Partial<MixAppTrackRow>|null|undefined} track
+   * @param {Partial<WeaveTrackRow>|null|undefined} track
    * @param {number} [stamp]
-   * @returns {MixAppTrackRow}
+   * @returns {WeaveTrackRow}
    */
   function forAppend(track, stamp) {
     const ts = stamp == null ? Date.now() : stamp;
