@@ -90,7 +90,7 @@ function MixAppAddTrackModal(props) {
     setSuggestLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const list = await MixAppApi.searchArtists(q, { limit: 8 });
+        const list = await MixAppApi.searchArtists(q, { limit: 30 });
         if (gen !== suggestGenRef.current) return;
         setArtistHits(list);
         setError(list.length ? null : MixAppI18n.t("addTrack.noArtists"));
