@@ -7,7 +7,11 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 
 ![Weave with a playlist open](assets/screenshot.png)
 
-## Features
+## Status (Creator Phase 0)
+
+The live custom app is a **Hello Weave** Creator scaffold. Full playlist editing UI is being ported from `legacy/` in later phases ([spec](../docs/specs/Implemented/creator-phase-0-scaffold.md)).
+
+## Features (target product; returning with Creator ports)
 
 - Load playlists; add / remove / drag-reorder write through to Spotify; Flowify live-preview then Apply (one bulk write) or Save as new; Save as new from toolbar
 - Arranger play prefers Spotify playlist context (Next continues the list); queue fallback if needed
@@ -26,33 +30,35 @@ Read the **[documentation](docs/README.md)** in the docs folder for more informa
 
 ## Install
 
-See Spicetify’s [Custom Apps](https://spicetify.app/docs/customization/custom-apps) guide.
+This folder is a **Spicetify Creator** project. Spicetify loads the **build output** in `dist/` (`nameId: weave`), not the TypeScript sources and not `legacy/`.
+
+For day-to-day work in the full Weave repo, prefer the Nix/dev shell: see [DEV-SHELL.md](../docs/DEV-SHELL.md) (`weave-setup` / `weave-run` / `weave-watch`).
 
 ### Manual installation
 
+See Spicetify’s [Custom Apps](https://spicetify.app/docs/customization/custom-apps) guide.
 
+#### 1. Build
 
-#### 1. Copy into CustomApps
+```bash
+cd /path/to/repo/app
+npm install
+npm run build-local   # writes dist/
+```
 
+#### 2. Link CustomApps to `dist/`
 
 | Platform          | Path                              |
 | ----------------- | --------------------------------- |
 | **Windows**       | `%appdata%\spicetify\CustomApps\` |
 | **Linux / macOS** | `~/.config/spicetify/CustomApps/` |
 
+```bash
+# Linux / macOS example — link the build output, not app/ itself
+ln -sfn /path/to/repo/app/dist ~/.config/spicetify/CustomApps/weave
+```
 
-Put this app there as a folder named `weave`:
-
-- If you cloned the full repo, copy or symlink the `app` directory:
-  ```bash
-  # Linux / macOS example
-  ln -sfn /path/to/repo/app ~/.config/spicetify/CustomApps/weave
-  ```
-- Or copy only this folder’s contents into `CustomApps/weave/`.
-
-
-
-#### 2. Enable and apply
+#### 3. Enable and apply
 
 ```bash
 spicetify config custom_apps weave
@@ -66,9 +72,7 @@ spicetify config custom_apps weave-
 spicetify apply
 ```
 
-You can also edit `config-xpui.ini` and set `custom_apps` under `[AdditionalOptions]` (names separated by `|`), then run `spicetify apply`.
-
-#### 3. Open Weave
+#### 4. Open Weave
 
 Restart Spotify if needed, then open **Weave** from the sidebar.
 
@@ -78,16 +82,13 @@ If the icon is hard to find (e.g. Global Navbar layouts), open DevTools (`Ctrl+S
 Spicetify.Platform.History.push("/weave")
 ```
 
-
-
 ### Troubleshooting
 
-From the [Spicetify docs](https://spicetify.app/docs/customization/custom-apps):
-
-1. Confirm the folder is under CustomApps and named `weave`
-2. Confirm `manifest.json` is valid JSON
-3. Run `spicetify apply` and restart Spotify
-4. If the page is blank, check the console for errors and that `index.js` defines `render()`
+1. Confirm `CustomApps/weave` points at **`app/dist`** (contains `index.js`, `manifest.json`, `style.css`)
+2. Re-run `npm run build-local` after source changes (or use `npm run watch` / `weave-watch`)
+3. Confirm `manifest.json` in `dist/` is valid JSON
+4. Run `spicetify apply` and restart Spotify
+5. If the page is blank, check the console for errors and that the bundle exposes `render()`
 
 
 

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.spicetify/
+*.log
+.DS_Store
