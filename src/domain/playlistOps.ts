@@ -37,7 +37,9 @@ export function isSameTrack(
  * Index of tracks already in the playlist for O(1) membership checks.
  * Keys: raw URI, `id:<id>`, `fp:<fingerprint>`.
  */
-export function buildExistingIndex(tracks: Array<Partial<TrackRow> | null | undefined>): Set<string> {
+export function buildExistingIndex(
+  tracks: Array<Partial<TrackRow> | null | undefined>
+): Set<string> {
   const s = new Set<string>();
   for (const t of tracks || []) {
     if (!t) continue;
@@ -135,7 +137,11 @@ export function enrichAdded(
   enrichTracks?: EnrichTracksFn
 ): void {
   const list = Array.isArray(addedTracks) ? addedTracks : [];
-  if (!list.length || typeof setTracks !== "function" || typeof enrichTracks !== "function") {
+  if (
+    !list.length ||
+    typeof setTracks !== "function" ||
+    typeof enrichTracks !== "function"
+  ) {
     return;
   }
   enrichTracks(list.slice())
@@ -223,7 +229,9 @@ export function trackOrderKey(track: Partial<TrackRow> | null | undefined): stri
 }
 
 /** Fingerprint of membership + order for sync checks. */
-export function fingerprintTrackOrder(tracks: Array<Partial<TrackRow> | null | undefined>): string {
+export function fingerprintTrackOrder(
+  tracks: Array<Partial<TrackRow> | null | undefined>
+): string {
   return (Array.isArray(tracks) ? tracks : [])
     .map(trackOrderKey)
     .filter(Boolean)

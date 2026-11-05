@@ -68,7 +68,10 @@ function normalizeFingerprintPart(s: unknown): string {
  * Lives in domain so playlistOps need not import Recommend (ADR 004).
  */
 export function trackFingerprint(
-  t: { name?: string; artists?: string | Array<{ name?: string } | string> } | null | undefined
+  t:
+    | { name?: string; artists?: string | Array<{ name?: string } | string> }
+    | null
+    | undefined
 ): string | null {
   if (!t) return null;
   const name = normalizeFingerprintPart(t.name);
@@ -86,7 +89,10 @@ export function trackFingerprint(
   return name + "|" + primary;
 }
 
-function pickAttr(obj: Record<string, unknown> | null | undefined, ...keys: string[]): unknown {
+function pickAttr(
+  obj: Record<string, unknown> | null | undefined,
+  ...keys: string[]
+): unknown {
   if (!obj) return null;
   for (const key of keys) {
     const v = obj[key];
@@ -291,14 +297,14 @@ export function ensure(partial?: Partial<TrackRow> | null): TrackRow {
 }
 
 /** Platform playlist row or Web API playlist /items row. */
-export function fromPlaylistItem(raw: Record<string, unknown> | null | undefined, index: number): TrackRow {
+export function fromPlaylistItem(
+  raw: Record<string, unknown> | null | undefined,
+  index: number
+): TrackRow {
   const track = (raw?.track || raw?.item || raw || {}) as Record<string, unknown>;
   const album = (track?.album || raw?.album || {}) as Record<string, unknown>;
   const artists =
-    track?.artists ||
-    raw?.artists ||
-    (track?.artist ? [track.artist] : []) ||
-    [];
+    track?.artists || raw?.artists || (track?.artist ? [track.artist] : []) || [];
   const uri = String(track?.uri || raw?.uri || "");
   const uid = String(raw?.uid || raw?.addTime || `${uri}:${index}`);
   const attrs = (raw?.formatListAttributes ||
@@ -393,8 +399,12 @@ export function fromWebApiTrack(
 
 function artistNamesFromGraphql(data: Record<string, unknown>): string[] {
   const raw = data?.artists;
-  if (raw && typeof raw === "object" && Array.isArray((raw as { items?: unknown[] }).items)) {
-    return ((raw as { items: unknown[] }).items)
+  if (
+    raw &&
+    typeof raw === "object" &&
+    Array.isArray((raw as { items?: unknown[] }).items)
+  ) {
+    return (raw as { items: unknown[] }).items
       .map((a) => {
         const o = a as { profile?: { name?: string }; name?: string };
         return o?.profile?.name || o?.name;
@@ -444,11 +454,9 @@ export function fromGraphqlTrack(
   const id = (typeof data.id === "string" ? data.id : null) || trackIdFromUri(uri);
   const album = (data.albumOfTrack || data.album || {}) as Record<string, unknown>;
   const durationObj = data.duration as
-    | { totalMilliseconds?: number; milliseconds?: number }
-    | undefined;
+    { totalMilliseconds?: number; milliseconds?: number } | undefined;
   const trackDuration = data.trackDuration as
-    | { totalMilliseconds?: number; milliseconds?: number }
-    | undefined;
+    { totalMilliseconds?: number; milliseconds?: number } | undefined;
   const durationMs =
     durationObj?.totalMilliseconds ??
     durationObj?.milliseconds ??
@@ -491,7 +499,10 @@ export function fromGraphqlTrack(
  * Catalog / recommendation row → playlist working-copy track.
  * Preserves enrichment fields when present.
  */
-export function forAppend(track: Partial<TrackRow> | null | undefined, stamp?: number): TrackRow {
+export function forAppend(
+  track: Partial<TrackRow> | null | undefined,
+  stamp?: number
+): TrackRow {
   const ts = stamp == null ? Date.now() : stamp;
   const id = track?.id || trackIdFromUri(track?.uri);
   const core = blank({

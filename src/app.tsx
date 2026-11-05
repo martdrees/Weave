@@ -9,8 +9,7 @@ export default function App(): React.ReactElement {
     <div className={styles.root}>
       <h1 className={styles.title}>Hello Weave</h1>
       <p className={styles.sub}>
-        Creator Phase 0 scaffold. Playlist editing returns in later migration
-        phases.
+        Creator Phase 0 scaffold. Playlist editing returns in later migration phases.
       </p>
     </div>
   );
