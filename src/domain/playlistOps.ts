@@ -6,7 +6,9 @@
 import type { AppendResult, TrackRow } from "../types/track.ts";
 import { forAppend, trackFingerprint, trackIdFromUri } from "./track.ts";
 
-export type EnrichTracksFn = (tracks: TrackRow[]) => Promise<void>;
+export type EnrichTracksFn = (
+  tracks: TrackRow[]
+) => Promise<void | TrackRow[] | null | undefined>;
 
 function trackId(track: Partial<TrackRow> | null | undefined): string | null {
   if (!track) return null;
@@ -129,12 +131,14 @@ export function appendTracks(
 
 /**
  * Background enrich of newly added rows.
- * Pass `enrichTracks` from api/features when wired (Phase 2+); no-op if omitted.
+ * Pass `enrichTracks` from api/features; no-op if omitted.
+ * Never swallows errors with an empty catch (ADR 006) — warn + optional onError.
  */
 export function enrichAdded(
   addedTracks: TrackRow[],
   setTracks: (updater: (prev: TrackRow[]) => TrackRow[]) => void,
-  enrichTracks?: EnrichTracksFn
+  enrichTracks?: EnrichTracksFn,
+  onError?: (err: unknown) => void
 ): void {
   const list = Array.isArray(addedTracks) ? addedTracks : [];
   if (
@@ -169,6 +173,11 @@ export function enrichAdded(
     })
     .catch((err: unknown) => {
       console.warn("Weave: enrichAdded failed", err);
+      try {
+        onError?.(err);
+      } catch (notifyErr) {
+        console.warn("Weave: enrichAdded onError failed", notifyErr);
+      }
     });
 }
 

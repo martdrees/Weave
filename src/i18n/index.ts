@@ -92,6 +92,47 @@ export function featureLabel(
   return typeof idOrDef === "object" && idOrDef?.label ? idOrDef.label : id;
 }
 
+/** Metric label — same catalogs as feature.* (Phase 3). */
+export function metricLabel(idOrDef: string | { id?: string; label?: string }): string {
+  return featureLabel(idOrDef);
+}
+
+/** Camelot move id → i18n key stem (label + Hint). */
+const CAMELOT_I18N: Record<string, string> = {
+  same: "harmonic",
+  plus1: "moreEnergy",
+  minus1: "lessEnergy",
+  brighter: "brighter",
+  darker: "darker",
+  plus2: "boost",
+  diagonal: "moodShift",
+  jaws: "harmonicShift",
+};
+
+/** Localized Camelot move label; falls back to English `label` on the move def. */
+export function camelotMoveLabel(move: { id?: string; label?: string }): string {
+  const id = move?.id;
+  if (!id) return move?.label || "";
+  const stem = CAMELOT_I18N[id];
+  if (!stem) return move.label || id;
+  const key = "camelot." + stem;
+  const translated = t(key);
+  if (translated !== key) return translated;
+  return move.label || id;
+}
+
+/** Localized Camelot move hint. */
+export function camelotMoveHint(move: { id?: string; hint?: string }): string {
+  const id = move?.id;
+  if (!id) return move?.hint || "";
+  const stem = CAMELOT_I18N[id];
+  if (!stem) return move.hint || "";
+  const key = "camelot." + stem + "Hint";
+  const translated = t(key);
+  if (translated !== key) return translated;
+  return move.hint || "";
+}
+
 // Register built-in catalogs at module load.
 register("en", en);
 register("de", de);

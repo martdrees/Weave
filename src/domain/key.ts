@@ -205,13 +205,13 @@ export const CAMELOT_MOVES = [
   },
   {
     id: "plus1",
-    label: "More Energie",
+    label: "More Energy",
     hint: "Number +1 · more energy",
     example: "7A → 8A",
   },
   {
     id: "minus1",
-    label: "Less Energie",
+    label: "Less Energy",
     hint: "Number −1 · less energy",
     example: "7A → 6A",
   },
@@ -229,7 +229,7 @@ export const CAMELOT_MOVES = [
   },
   {
     id: "plus2",
-    label: "Energie Boost",
+    label: "Energy Boost",
     hint: "Jump +2 · energy boost",
     example: "8A → 10A",
   },

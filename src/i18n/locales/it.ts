@@ -258,6 +258,7 @@ const dict: Record<string, string> = {
   "notify.rateLimitPartialCamelot":
     "Limite raggiunto — solo {count} brani in tonalità. Attendi qualche secondo e cerca di nuovo.",
   "notify.failedPlaylist": "Impossibile caricare la playlist",
+  "notify.enrichFailed": "Impossibile caricare tonalità / BPM per alcuni brani",
   "notify.cannotSaveLoading": "Impossibile salvare mentre la playlist è in caricamento",
   "notify.playlistUpdatedFromSpotify": "Playlist aggiornata da Spotify",
   "notify.flowifyApplied": "Flowify applicato a Spotify",
