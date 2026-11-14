@@ -7,9 +7,9 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 
 ![Weave with a playlist open](assets/screenshot.png)
 
-## Status (Creator Phase 4)
+## Status (Creator)
 
-The live custom app mounts the **Weave editor** (TSX) from `src/app.tsx` — playlist load, arranger, search/Flowify/Generator entry points, and shared Header / PlayButton / FeatureCells. Legacy IIFE under `legacy/` remains the port baseline only ([spec](../docs/specs/Approved/creator-phase-4-ui-jsx.md)).
+The live custom app mounts the **Weave editor** (TSX) from `src/app.tsx` — playlist load, arranger, search/Flowify/Generator entry points, and shared Header / PlayButton / FeatureCells ([Phase 4 spec](../docs/specs/Implemented/creator-phase-4-ui-jsx.md)).
 
 ## Features
 
@@ -30,7 +30,7 @@ Read the **[documentation](docs/README.md)** in the docs folder for more informa
 
 ## Install
 
-This folder is a **Spicetify Creator** project. Spicetify loads the **build output** in `dist/` (`nameId: weave`), not the TypeScript sources and not `legacy/`.
+This folder is a **Spicetify Creator** project. Spicetify loads the **build output** in `dist/` (`nameId: weave`), not the TypeScript sources.
 
 For day-to-day work in the full Weave repo, prefer the Nix/dev shell: see [DEV-SHELL.md](../docs/DEV-SHELL.md) (`weave-setup` / `weave-run` / `weave-watch`).
 

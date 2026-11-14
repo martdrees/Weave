@@ -147,8 +147,7 @@ const dict: Record<string, string> = {
   "results.add": "Ajouter",
   "results.addSelected": "Ajouter la sélection",
   "results.empty": "Aucun résultat",
-  "results.emptyHint":
-    "Aucun résultat. Ajustez les filtres et lancez une recherche.",
+  "results.emptyHint": "Aucun résultat. Ajustez les filtres et lancez une recherche.",
   "results.searching": "Recherche…",
   "results.meta": "{count} titres",
 

@@ -144,8 +144,7 @@ const dict: Record<string, string> = {
   "results.add": "Agregar",
   "results.addSelected": "Agregar seleccionadas",
   "results.empty": "Sin resultados",
-  "results.emptyHint":
-    "Sin resultados. Ajusta los filtros y pulsa Buscar.",
+  "results.emptyHint": "Sin resultados. Ajusta los filtros y pulsa Buscar.",
   "results.searching": "Buscando…",
   "results.meta": "{count} canciones",
 
