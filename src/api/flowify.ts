@@ -46,7 +46,7 @@ export function defaultOptions() {
     curvePreset: "peak",
     weights: defaultWeights(),
     /** Feature ids whose curve is inverted (anti-correlated). */
-    invert: {},
+    invert: {} as Record<string, boolean>,
   };
 }
 

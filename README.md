@@ -7,11 +7,11 @@ Runs inside a logged-in Spotify desktop session with [Spicetify](https://spiceti
 
 ![Weave with a playlist open](assets/screenshot.png)
 
-## Status (Creator Phase 0)
+## Status (Creator Phase 4)
 
-The live custom app is a **Hello Weave** Creator scaffold. Full playlist editing UI is being ported from `legacy/` in later phases ([spec](../docs/specs/Implemented/creator-phase-0-scaffold.md)).
+The live custom app mounts the **Weave editor** (TSX) from `src/app.tsx` — playlist load, arranger, search/Flowify/Generator entry points, and shared Header / PlayButton / FeatureCells. Legacy IIFE under `legacy/` remains the port baseline only ([spec](../docs/specs/Approved/creator-phase-4-ui-jsx.md)).
 
-## Features (target product; returning with Creator ports)
+## Features
 
 - Load playlists; add / remove / drag-reorder write through to Spotify; Flowify live-preview then Apply (one bulk write) or Save as new; Save as new from toolbar
 - Arranger play prefers Spotify playlist context (Next continues the list); queue fallback if needed

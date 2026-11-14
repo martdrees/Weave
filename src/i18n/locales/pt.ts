@@ -139,9 +139,14 @@ const dict: Record<string, string> = {
 
   // Search results
   "results.title": "Resultados",
+  "results.aria": "Resultados da pesquisa",
+  "results.close": "Fechar resultados",
   "results.add": "Adicionar",
   "results.addSelected": "Adicionar selecionadas",
   "results.empty": "Nenhum resultado",
+  "results.emptyHint":
+    "Nenhum resultado. Ajuste os filtros e pressione Pesquisar.",
+  "results.searching": "A pesquisar…",
   "results.meta": "{count} faixas",
 
   // Modals

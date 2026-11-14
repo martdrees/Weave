@@ -1,0 +1,2560 @@
+/* Weave styles — interactive primitives inventory: docs/COMPONENTS.md (R5.2) */
+
+.weave-root {
+  /* —— Design tokens (R5.1) — wrap Spotify spice vars where possible —— */
+  --mix-text: var(--spice-text);
+  --mix-subtext: var(--spice-subtext);
+  --mix-main: var(--spice-main);
+  --mix-surface: var(--spice-card);
+  --mix-accent: var(--spice-button, #1db954);
+  --mix-accent-text: var(--spice-button-text, #000);
+
+  --mix-border: rgba(255, 255, 255, 0.12);
+  --mix-border-subtle: rgba(255, 255, 255, 0.08);
+  --mix-border-strong: rgba(255, 255, 255, 0.14);
+  --mix-border-faint: rgba(255, 255, 255, 0.05);
+  --mix-hover: rgba(255, 255, 255, 0.06);
+  --mix-hover-strong: rgba(255, 255, 255, 0.1);
+  --mix-row-tint: rgba(255, 255, 255, 0.04);
+  --mix-scrim: rgba(0, 0, 0, 0.55);
+  --mix-danger-bg: rgba(255, 80, 80, 0.12);
+  --mix-warn-bg: rgba(255, 200, 60, 0.18);
+  --mix-accent-soft: rgba(29, 185, 84, 0.12);
+  --mix-accent-muted: rgba(29, 185, 84, 0.18);
+  --mix-accent-badge: rgba(29, 185, 84, 0.22);
+  --mix-accent-ring: rgba(29, 185, 84, 0.55);
+  --mix-accent-chip: rgba(29, 185, 84, 0.14);
+
+  --mix-space-1: 4px;
+  --mix-space-2: 8px;
+  --mix-space-3: 12px;
+  --mix-space-4: 16px;
+  --mix-space-5: 20px;
+  --mix-space-6: 24px;
+  --mix-space-8: 32px;
+  --mix-gap-tight: 6px;
+  --mix-gap: 10px;
+
+  --mix-radius-sm: 4px;
+  --mix-radius: 6px;
+  --mix-radius-md: 8px;
+  --mix-radius-pill: 999px;
+
+  --mix-font-2xs: 0.65rem;
+  --mix-font-xs: 0.75rem;
+  --mix-font-sm: 0.8rem;
+  --mix-font-md: 0.85rem;
+  --mix-font: 0.95rem;
+  --mix-font-lg: 1rem;
+  --mix-font-title: 1.75rem;
+
+  --mix-z-base: 1;
+  --mix-z-raised: 2;
+  --mix-z-sticky: 3;
+  --mix-z-tip: 40;
+  --mix-z-tip-above: 41;
+  --mix-z-menu: 10000;
+  --mix-z-overlay: 10050;
+
+  --weave-table-min-height: min(42vh, 360px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  height: 100%;
+  padding: var(--mix-space-6) var(--mix-space-8) var(--mix-space-8);
+  color: var(--mix-text);
+  box-sizing: border-box;
+}
+
+/* Search open: let the page grow so Spotify’s outer scroll shows all tracks */
+.weave-root:has(.weave-search-panel) {
+  height: auto;
+}
+
+.weave-header {
+  margin-bottom: 20px;
+}
+
+.weave-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.weave-logo {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.weave-header h1,
+.weave-title {
+  margin: 0;
+  font-size: var(--mix-font-title);
+  font-weight: 700;
+  line-height: 1.25;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+}
+
+.weave-title-sep {
+  font-size: var(--mix-font);
+  font-weight: 300;
+  color: var(--mix-subtext);
+  margin: 0 0.75em;
+  line-height: 1.45;
+  transform: scaleX(0.65);
+  display: inline-block;
+}
+
+.weave-subtitle {
+  margin: 0;
+  color: var(--mix-subtext);
+  font-size: var(--mix-font);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.weave-picker {
+  margin-bottom: 12px;
+}
+
+.weave-picker-compact {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
+  width: 100%;
+}
+
+.weave-picker-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--mix-font-sm);
+  letter-spacing: 0.02em;
+  color: var(--mix-subtext);
+}
+
+.weave-picker-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.weave-picker-count {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+  padding: 0 2px;
+}
+
+.weave-picker-compact .weave-picker-row {
+  gap: 4px;
+}
+
+.weave-select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border);
+  background: var(--mix-main);
+  color: var(--mix-text);
+  font-size: var(--mix-font);
+}
+
+.weave-select-toolbar {
+  flex: 1 1 auto;
+  min-width: 140px;
+  max-width: 100%;
+  padding: 5px 8px;
+  font-size: var(--mix-font-md);
+  line-height: 1.3;
+  border-radius: 5px;
+}
+
+.weave-select-compact {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 72px;
+  padding: 6px 8px;
+  font-size: var(--mix-font-md);
+}
+
+.weave-result-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+}
+
+.weave-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: var(--mix-radius-md);
+  background: var(--mix-surface);
+  border: 1px solid var(--mix-border-subtle);
+}
+
+.weave-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.weave-toolbar-left .weave-picker-compact {
+  flex: 0 1 320px;
+  max-width: 360px;
+}
+
+.weave-toolbar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-badge {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: var(--mix-radius-pill);
+  background: var(--mix-warn-bg);
+  color: var(--mix-text);
+}
+
+.weave-badge-seed {
+  background: var(--mix-accent-badge);
+}
+
+.weave-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.weave-toolbar-actions .weave-btn {
+  padding: 6px 10px;
+  font-size: var(--mix-font-sm);
+}
+
+/* —— Button: .weave-btn (+ primary / ghost / active / compact) —— */
+.weave-btn {
+  padding: 8px 12px;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
+  background: transparent;
+  color: var(--mix-text);
+  font-size: var(--mix-font-md);
+  cursor: pointer;
+}
+
+.weave-btn:hover:not(:disabled) {
+  background: var(--mix-hover);
+}
+
+.weave-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.weave-btn-ghost {
+  border-color: transparent;
+}
+
+.weave-btn-primary {
+  background: var(--mix-accent);
+  border-color: transparent;
+  color: var(--mix-accent-text);
+  font-weight: 600;
+}
+
+.weave-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  background: var(--mix-accent);
+}
+
+.weave-btn-active {
+  background: var(--mix-hover-strong);
+  border-color: var(--mix-accent);
+}
+
+.weave-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--mix-radius);
+  background: var(--mix-danger-bg);
+  color: var(--mix-text);
+  font-size: 0.9rem;
+}
+
+.weave-main {
+  flex: 1 1 auto;
+  min-height: var(--weave-table-min-height);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.weave-main-split {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.weave-main-arranger {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--weave-table-min-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-arranger-wrap {
+  flex: 1 1 auto;
+  min-height: var(--weave-table-min-height);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weave-arranger {
+  flex: 1 1 auto;
+  min-height: var(--weave-table-min-height);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
+  overflow: auto;
+  background: var(--mix-surface);
+}
+
+/* With search open, don’t trap scroll in a squeezed table — expand and scroll the view */
+.weave-root:has(.weave-search-panel) .weave-main,
+.weave-root:has(.weave-search-panel) .weave-main-arranger,
+.weave-root:has(.weave-search-panel) .weave-arranger-wrap {
+  flex: 1 0 auto;
+  min-height: var(--weave-table-min-height);
+}
+
+.weave-root:has(.weave-search-panel) .weave-arranger {
+  flex: 1 0 auto;
+  min-height: var(--weave-table-min-height);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.weave-col-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.weave-col-sort:hover,
+.weave-col-sort.is-active {
+  color: var(--mix-text);
+  text-decoration: underline;
+}
+
+.weave-col-feat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+  min-width: 0;
+}
+
+.weave-feat-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  max-width: 100%;
+  height: 1.15rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--mix-text);
+  box-sizing: border-box;
+}
+
+.weave-col-feat-head {
+  padding: 0 2px;
+  overflow: visible;
+}
+
+.weave-col-feat-head .weave-col-sort {
+  width: 100%;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.02em;
+  padding: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.weave-arranger-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--mix-subtext);
+}
+
+/* —— Track row / table (see WeaveTrackTable) —— */
+.weave-arranger-head,
+.weave-track-row {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  /* Same column sizing base for head + rows (avoids ch/font drift) */
+  font-variant-numeric: tabular-nums;
+}
+
+.weave-arranger-head {
+  font-size: var(--mix-font-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mix-subtext);
+  border-bottom: 1px solid var(--mix-border-subtle);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.weave-track-row {
+  border-bottom: 1px solid var(--mix-border-faint);
+  font-size: var(--mix-font-sm);
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+  cursor: grab;
+}
+
+.weave-arranger.is-reordering .weave-track-row {
+  cursor: grabbing;
+}
+
+.weave-track-row:hover {
+  background: var(--mix-row-tint);
+}
+
+.weave-arranger.is-reordering {
+  cursor: grabbing;
+}
+
+.weave-arranger.is-reordering .weave-track-row {
+  pointer-events: auto;
+}
+
+.weave-track-row.is-dragging {
+  opacity: 0.4;
+  background: var(--mix-accent-soft);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+  position: relative;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.weave-track-row.is-drag-over:not(.is-dragging) {
+  box-shadow: inset 0 2px 0 0 var(--mix-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weave-track-row {
+    transition: none;
+  }
+}
+
+.weave-track-row.is-seed {
+  background: var(--mix-accent-soft);
+}
+
+.weave-track-row.is-seed:hover {
+  background: var(--mix-accent-muted);
+}
+
+/* R6.2 — keyboard / click selection */
+.weave-arranger:focus {
+  outline: none;
+}
+
+.weave-arranger:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--mix-border-strong);
+}
+
+.weave-track-row.is-active {
+  outline: 2px solid var(--mix-accent-ring);
+  outline-offset: -2px;
+  background: var(--mix-hover);
+}
+
+.weave-track-row.is-active.is-seed {
+  background: var(--mix-accent-muted);
+}
+
+.weave-linkish.is-seed {
+  color: var(--mix-accent);
+  font-weight: 600;
+}
+
+.weave-col-num,
+.weave-col-dur,
+.weave-col-bpm,
+.weave-col-added {
+  color: var(--mix-subtext);
+  font-variant-numeric: tabular-nums;
+}
+
+.weave-col-bpm {
+  text-align: center;
+  background: transparent;
+  color: var(--mix-subtext);
+}
+
+.weave-col-key {
+  background: transparent;
+  padding: 2px 0;
+}
+
+.weave-key-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.62rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: #111;
+  text-shadow: none;
+  background: var(--mix-border);
+}
+
+.weave-key-circle.is-empty {
+  color: var(--mix-subtext);
+  text-shadow: none;
+  background: var(--mix-hover);
+}
+
+.weave-index-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.weave-index-num {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.weave-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--mix-radius-sm);
+  background: transparent;
+  color: var(--mix-subtext);
+  cursor: grab;
+  user-select: none;
+  opacity: 0.55;
+}
+
+.weave-drag-handle:hover,
+.weave-track-row:hover .weave-drag-handle,
+.weave-track-row.is-active .weave-drag-handle {
+  opacity: 1;
+  color: var(--mix-text);
+  background: var(--mix-hover);
+}
+
+.weave-drag-handle:active,
+.weave-arranger.is-reordering .weave-drag-handle {
+  cursor: grabbing;
+}
+
+.weave-col-title,
+.weave-col-added {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.weave-col-added {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-col-dur {
+  text-align: right;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+.weave-col-dur.is-current {
+  color: var(--mix-accent);
+  font-weight: 600;
+}
+
+.weave-col-title {
+  min-width: 0;
+}
+
+.weave-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.weave-track-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.weave-track-meta-title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--mix-text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-track-meta-title:hover {
+  text-decoration: underline;
+}
+
+.weave-track-meta-title.is-seed {
+  color: var(--mix-accent);
+}
+
+.weave-track-meta-sub {
+  color: var(--mix-subtext);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-play-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mix-subtext);
+  cursor: pointer;
+  font-size: var(--mix-font-xs);
+}
+
+.weave-play-btn:hover {
+  color: var(--mix-text);
+  background: var(--mix-hover-strong);
+}
+
+.weave-play-btn.is-playing {
+  color: var(--mix-accent);
+}
+
+.weave-track-row:hover .weave-play-btn {
+  color: var(--mix-text);
+}
+
+.weave-track-row:hover .weave-play-btn.is-playing {
+  color: var(--mix-accent);
+}
+
+.weave-column-menu {
+  position: fixed;
+  z-index: var(--mix-z-menu);
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border);
+  background: var(--mix-surface, #282828);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: var(--mix-text);
+}
+
+.weave-column-menu-title {
+  padding: 4px 14px 8px;
+  font-size: var(--mix-font-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mix-subtext);
+}
+
+.weave-column-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.weave-column-menu-item:hover {
+  background: var(--mix-border-subtle);
+}
+
+.weave-column-menu-item input {
+  accent-color: var(--mix-accent);
+}
+
+.weave-linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--mix-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.weave-linkish:hover {
+  text-decoration: underline;
+}
+
+.weave-col-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 96px;
+}
+
+.weave-col-actions .weave-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+/* Trash stays readable even before hover */
+.weave-col-actions .weave-icon-btn-danger {
+  color: rgba(255, 120, 120, 0.85);
+}
+
+/* Don't let action buttons start a row drag */
+.weave-col-actions,
+.weave-col-actions * {
+  -webkit-user-drag: none;
+}
+
+/* —— Icon button (companion to .weave-btn) —— */
+.weave-icon-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--mix-radius-sm);
+  background: transparent;
+  color: var(--mix-subtext);
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: var(--mix-font);
+  line-height: 1;
+}
+
+.weave-icon-btn-compact {
+  width: 26px;
+  height: 26px;
+  font-size: 0.9rem;
+}
+
+.weave-icon-btn:hover:not(:disabled) {
+  background: var(--mix-border-subtle);
+  color: var(--mix-text);
+}
+
+.weave-icon-btn-danger:hover:not(:disabled) {
+  background: rgba(255, 80, 80, 0.18);
+  color: #ff6b6b;
+}
+
+.weave-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.weave-footer-hint {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+}
+
+/* Stretch past Spicetify’s default content column when present */
+.main-view-container__scroll-node-child:has(> .weave-root),
+.main-view-container__scroll-node-child:has(> .weave-root) > div {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+/* Allow outer Spotify scroll when Weave grows past the viewport (search open) */
+.main-view-container__scroll-node-child:has(> .weave-root:has(.weave-search-panel)),
+.main-view-container__scroll-node-child:has(> .weave-root:has(.weave-search-panel)) > div {
+  height: auto;
+  min-height: 100%;
+}
+
+.weave-search-panel {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px 10px 10px;
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
+  background: var(--mix-surface);
+  box-sizing: border-box;
+}
+
+.weave-search-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.weave-search-panel-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.weave-search-panel-title-row h2,
+.weave-recommend-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.weave-search-panel-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.weave-search-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weave-search-panel-block h3 {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mix-subtext);
+}
+
+.weave-feature-sliders-wide {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2px 10px;
+  max-height: none;
+  overflow: visible;
+}
+
+/* —— Modal shell: overlay + dialog (WeaveModal) —— */
+.weave-results-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mix-z-overlay);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  background: var(--mix-scrim);
+}
+
+.weave-results-modal {
+  width: 100%;
+  flex: 1 1 auto;
+  max-width: none;
+  max-height: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1px solid var(--mix-border);
+  background: var(--mix-surface, #282828);
+  box-shadow: 0 16px 48px var(--mix-scrim);
+  overflow: hidden;
+  color: var(--mix-text);
+}
+
+/* Phase 5 — Add Track / Copy from Playlist */
+.weave-find-modal {
+  max-width: min(1200px, 100%);
+  max-height: min(900px, 94vh);
+  height: auto;
+  margin: auto;
+  width: min(1200px, 100%);
+}
+
+.weave-add-track-modal {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.weave-add-track-modal .weave-track-row.is-in-playlist {
+  opacity: 0.55;
+}
+
+.weave-add-track-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-add-track-modes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 18px 0;
+}
+
+.weave-add-track-search {
+  border-bottom: none;
+  padding-top: 10px;
+}
+
+.weave-add-track-artist-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 12px;
+  flex-wrap: wrap;
+}
+
+.weave-add-track-back {
+  flex: 0 0 auto;
+}
+
+.weave-add-track-artist-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.weave-add-track-artist-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--mix-hover);
+}
+
+.weave-add-track-artist-avatar-fallback {
+  background: var(--mix-hover-strong);
+}
+
+.weave-add-track-artist-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weave-add-track-artist-sub {
+  font-size: 0.78rem;
+  color: var(--mix-subtext);
+}
+
+.weave-add-track-suggest {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 0 16px;
+}
+
+.weave-add-track-suggest-status {
+  padding: 16px 18px;
+  color: var(--mix-subtext);
+  font-size: 0.9rem;
+}
+
+.weave-add-track-artist-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-add-track-artist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 1px solid var(--mix-border-faint);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.weave-add-track-artist-row:hover {
+  background: var(--mix-hover);
+}
+
+.weave-add-track-artist-row .weave-add-track-artist-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.weave-add-track-artist-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weave-add-track-album-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-add-track-album-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 1px solid var(--mix-border-faint);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.weave-add-track-album-row:hover {
+  background: var(--mix-hover);
+}
+
+.weave-add-track-album-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--mix-hover);
+}
+
+.weave-add-track-album-cover-fallback {
+  background: var(--mix-hover-strong);
+}
+
+.weave-badge-remote {
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #fde68a;
+}
+
+.weave-sync-conflict-modal {
+  max-width: 480px;
+  width: min(480px, 100%);
+  height: auto;
+  max-height: min(80vh, 520px);
+}
+
+.weave-sync-conflict-body {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weave-sync-conflict-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--mix-text);
+}
+
+.weave-sync-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.weave-copy-modal {
+  max-width: 1080px;
+  width: min(1080px, 100%);
+}
+
+/* Phase 6 — Flowify / Generator */
+.weave-flowify-modal {
+  max-width: min(1200px, 100%);
+  width: min(1200px, 100%);
+  max-height: min(94vh, 920px);
+  height: min(94vh, 920px);
+}
+
+.weave-generator-modal {
+  max-width: min(1200px, 100%);
+  width: min(1200px, 100%);
+  max-height: min(94vh, 920px);
+  height: min(94vh, 920px);
+}
+
+.weave-flowify-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.weave-flowify-settings {
+  flex: 0 0 auto;
+  overflow: auto;
+  max-height: 48%;
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-generator-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-generator-settings {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-generator-error {
+  padding: 0;
+}
+
+.weave-generator-features {
+  gap: 6px;
+}
+
+.weave-generator-features .weave-feature-sliders-wide {
+  max-height: none;
+  overflow: visible;
+}
+
+.weave-generator-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem;
+  gap: 10px 14px;
+  align-items: end;
+}
+
+.weave-generator-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.weave-generator-preview-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px 6px;
+}
+
+.weave-generator-preview .weave-search-results-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.weave-flowify-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--mix-font-md);
+}
+
+.weave-flowify-weights,
+.weave-generator-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weave-flowify-weights h3,
+.weave-generator-features h3,
+.weave-generator-preview-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.weave-flowify-weight-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 2.6rem auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.weave-flowify-weight-label {
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+  white-space: nowrap;
+}
+
+.weave-flowify-weight-val {
+  font-size: var(--mix-font-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--mix-subtext);
+}
+
+.weave-flowify-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.weave-flowify-preview-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px 6px;
+}
+
+.weave-flowify-preview-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.weave-flowify-preview .weave-search-results-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.weave-flowify-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.weave-generator-checks {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: var(--mix-font-md);
+}
+
+.weave-generator-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .weave-generator-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phase 7 — empty states / shortcuts / header */
+.weave-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.weave-empty-state {
+  flex-direction: column;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.weave-empty-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.weave-empty-hint {
+  margin: 0;
+  max-width: 36rem;
+  color: var(--mix-subtext);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.weave-shortcuts-modal {
+  max-width: 480px;
+  width: min(480px, 100%);
+  height: auto;
+  max-height: min(720px, 90vh);
+}
+
+.weave-shortcuts-body {
+  padding: 12px 18px 18px;
+  overflow: auto;
+}
+
+.weave-shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.weave-shortcuts-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--mix-hover);
+  vertical-align: top;
+}
+
+.weave-shortcuts-keys {
+  width: 48%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--mix-subtext);
+  white-space: nowrap;
+}
+
+.weave-find-search-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-find-search-bar-stack {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 0 12px;
+  border-bottom: none;
+}
+
+.weave-find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--mix-text);
+  font-size: 0.9rem;
+}
+
+/* Native <option> popup often inherits dark-on-dark from the closed control. */
+.weave-find-input option,
+.weave-select option {
+  background-color: var(--mix-main, #121212);
+  color: var(--mix-text, #fff);
+}
+
+.weave-find-input:focus {
+  outline: none;
+  border-color: var(--mix-accent);
+}
+
+.weave-find-error {
+  flex: 0 0 auto;
+  padding: 8px 18px;
+  color: #f87171;
+  font-size: var(--mix-font-md);
+}
+
+.weave-find-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 12px;
+}
+
+.weave-find-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 3.2rem auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--mix-border-faint);
+}
+
+.weave-copy-modal .weave-find-row {
+  grid-template-columns: 22px 36px minmax(0, 1fr) 2.4rem 3.2rem auto;
+}
+
+.weave-find-key {
+  justify-self: center;
+}
+
+.weave-find-row.is-in-playlist {
+  opacity: 0.55;
+}
+
+.weave-find-meta {
+  min-width: 0;
+}
+
+.weave-find-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weave-find-sub {
+  font-size: 0.78rem;
+  color: var(--mix-subtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weave-find-dur {
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.weave-btn-compact {
+  padding: 5px 10px;
+  font-size: var(--mix-font-xs);
+}
+
+.weave-copy-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+}
+
+.weave-copy-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--mix-border-subtle);
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.weave-copy-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.weave-copy-playlist-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weave-copy-playlist-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--mix-radius);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.weave-copy-playlist-item:hover {
+  background: var(--mix-hover);
+}
+
+.weave-copy-playlist-item.is-active {
+  background: var(--mix-accent-muted);
+}
+
+.weave-copy-playlist-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.weave-copy-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.weave-copy-main-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-copy-main-head h3 {
+  margin: 0;
+  font-size: var(--mix-font);
+}
+
+.weave-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weave-recommend-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--mix-border-subtle);
+}
+
+.weave-search-results-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-search-waiting {
+  flex-direction: column;
+  gap: 14px;
+}
+
+.weave-search-waiting-label {
+  margin: 0;
+  color: var(--mix-subtext);
+  font-size: var(--mix-font);
+}
+
+.weave-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--mix-accent);
+  animation: weave-spin 0.75s linear infinite;
+}
+
+@keyframes weave-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* R5.4 — purposeful flashes (track add / Flowify); theme-safe via --mix-accent-* */
+@keyframes weave-row-flash {
+  0% {
+    background-color: var(--mix-accent-muted);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes weave-list-flash {
+  0% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+  25% {
+    box-shadow: inset 0 0 0 2px var(--mix-accent-ring);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+}
+
+.weave-track-row.is-flash {
+  animation: weave-row-flash 0.65s ease-out;
+}
+
+.weave-arranger.is-flash {
+  border-radius: var(--mix-radius-md);
+  animation: weave-list-flash 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weave-track-row.is-flash,
+  .weave-arranger.is-flash {
+    animation: none;
+  }
+
+  .weave-track-row.is-flash {
+    background-color: var(--mix-accent-soft);
+  }
+}
+
+.weave-results-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 42rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.weave-results-table-head {
+  position: sticky;
+  top: 0;
+  z-index: var(--mix-z-base);
+  background: var(--mix-surface, #282828);
+}
+
+.weave-results-table .weave-track-row:last-child {
+  border-bottom: none;
+}
+
+.weave-results-table-row .weave-col-key {
+  color: var(--mix-text);
+}
+
+.weave-results-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.weave-results-actions .weave-btn {
+  padding: 6px 10px;
+  font-size: var(--mix-font-xs);
+}
+
+.weave-explicit-mark {
+  color: var(--mix-subtext);
+  font-size: var(--mix-font-xs);
+  font-weight: 700;
+}
+
+.weave-recommend-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.weave-recommend-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--mix-hover);
+}
+
+.weave-recommend-section h3 {
+  margin: 0 0 8px;
+  font-size: var(--mix-font-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mix-subtext);
+}
+
+.weave-recommend-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.weave-recommend-section-head h3 {
+  margin: 0;
+}
+
+.weave-recommend-meta {
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
+}
+
+.weave-recommend-seed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.weave-seed-list {
+  max-height: 120px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-hover);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.weave-seed-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 0;
+  align-items: center;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: var(--mix-font-md);
+  cursor: pointer;
+}
+
+.weave-seed-item input {
+  grid-row: 1 / span 2;
+  accent-color: var(--mix-accent);
+}
+
+.weave-seed-item.is-selected {
+  background: var(--mix-accent-soft);
+}
+
+.weave-seed-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-seed-artists {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
+}
+
+.weave-feature-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: none;
+  overflow: visible;
+}
+
+.weave-feature-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px;
+  border-radius: var(--mix-radius-sm);
+  opacity: 0.55;
+  min-height: 22px;
+}
+
+.weave-feature-row.is-enabled {
+  opacity: 1;
+  background: var(--mix-row-tint);
+}
+
+.weave-feature-enable {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 108px;
+  width: 108px;
+  min-width: 0;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.weave-feature-swatch {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.weave-camelot-chip .weave-feature-swatch {
+  margin-right: 2px;
+}
+
+.weave-feature-enable span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-feature-enable input {
+  flex: 0 0 auto;
+  accent-color: var(--mix-accent);
+}
+
+.weave-feature-controls {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+/* —— Dual-range slider (Search feature filters) —— */
+.weave-dual-range {
+  position: relative;
+  flex: 1 1 auto;
+  height: 18px;
+  min-width: 80px;
+}
+
+.weave-dual-range-track,
+.weave-dual-range-fill {
+  position: absolute;
+  top: 50%;
+  height: 3px;
+  border-radius: var(--mix-radius-pill);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.weave-dual-range-track {
+  left: 0;
+  right: 0;
+  background: var(--mix-border-strong);
+}
+
+.weave-dual-range-fill {
+  background: var(--mix-feature-accent, var(--mix-accent));
+}
+
+.weave-dual-range.is-disabled .weave-dual-range-fill {
+  opacity: 0.55;
+}
+
+/* Seed / playlist average marker on the range track */
+.weave-dual-range-seed {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 14px;
+  margin-left: -1.5px;
+  transform: translateY(-50%);
+  border-radius: 1px;
+  background: var(--mix-feature-accent, var(--mix-text, #fff));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: calc(var(--mix-z-sticky) + 1);
+}
+
+.weave-dual-range.is-disabled .weave-dual-range-seed {
+  opacity: 0.7;
+}
+
+.weave-dual-range-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.weave-dual-range-input::-webkit-slider-runnable-track {
+  height: 3px;
+  background: transparent;
+  border: none;
+}
+
+.weave-dual-range-input::-moz-range-track {
+  height: 3px;
+  background: transparent;
+  border: none;
+}
+
+.weave-dual-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  border: 2px solid var(--mix-feature-accent, var(--mix-accent));
+  background: var(--mix-main, #121212);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.weave-dual-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--mix-feature-accent, var(--mix-accent));
+  background: var(--mix-main, #121212);
+  cursor: pointer;
+}
+
+.weave-dual-range-input:disabled::-webkit-slider-thumb,
+.weave-dual-range-input:disabled::-moz-range-thumb {
+  border-color: rgba(255, 255, 255, 0.35);
+  cursor: default;
+}
+
+.weave-dual-range-max {
+  z-index: var(--mix-z-raised);
+}
+
+.weave-dual-range-min {
+  z-index: var(--mix-z-sticky);
+}
+
+.weave-feature-values {
+  flex: 0 0 64px;
+  width: 64px;
+  text-align: right;
+  font-size: var(--mix-font-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--mix-subtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weave-feature-row.is-enabled .weave-feature-values {
+  color: var(--mix-text);
+}
+
+.weave-feature-around-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  font-size: var(--mix-font-2xs);
+  font-weight: 600;
+  color: var(--mix-subtext);
+  cursor: pointer;
+  user-select: none;
+}
+
+.weave-feature-around-toggle input {
+  margin: 0;
+  accent-color: var(--mix-feature-accent, var(--mix-accent));
+}
+
+.weave-feature-around-toggle:has(input:disabled) {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.weave-feature-row.is-enabled .weave-feature-around-toggle {
+  color: var(--mix-text);
+}
+
+.weave-feature-field input,
+.weave-year-row input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--mix-border);
+  background: var(--mix-main);
+  color: var(--mix-text);
+  font-size: var(--mix-font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* —— Tip: .weave-tip[data-tip] —— */
+.weave-tip {
+  position: relative;
+}
+
+.weave-tip[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: var(--mix-z-tip);
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 7px 9px;
+  border-radius: var(--mix-radius);
+  border: 1px solid var(--mix-border-strong);
+  background: rgba(18, 18, 18, 0.96);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: var(--mix-text, #fff);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.weave-tip[data-tip]::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 2px);
+  z-index: var(--mix-z-tip-above);
+  border: 5px solid transparent;
+  border-top-color: rgba(18, 18, 18, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.weave-tip[data-tip]:hover::after,
+.weave-tip[data-tip]:hover::before,
+.weave-tip[data-tip]:focus-within::after,
+.weave-tip[data-tip]:focus-within::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.weave-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  width: 100%;
+}
+
+.weave-filters-bar .weave-filter-chips {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.weave-filters-end {
+  flex: 0 0 200px;
+  margin-left: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.weave-filters-bar .weave-year-row {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+.weave-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--mix-font-md);
+  cursor: pointer;
+}
+
+.weave-check-compact {
+  gap: 5px;
+  font-size: var(--mix-font-xs);
+  white-space: nowrap;
+}
+
+.weave-check input {
+  accent-color: var(--mix-accent);
+}
+
+.weave-camelot-block {
+  padding-top: 2px;
+  border-top: 1px solid var(--mix-hover);
+}
+
+.weave-camelot-filters-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.weave-camelot-filters-head h3 {
+  margin: 0;
+}
+
+.weave-camelot-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* —— Chip: .weave-camelot-chip (+ is-on) — filters, Camelot, stats toggles —— */
+.weave-camelot-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: var(--mix-radius-sm);
+  border: 1px solid var(--mix-border);
+  background: transparent;
+  color: var(--mix-text);
+  cursor: pointer;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.weave-camelot-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: var(--mix-row-tint);
+}
+
+.weave-camelot-chip.is-on {
+  border-color: var(--mix-accent-ring);
+  background: var(--mix-accent-chip);
+}
+
+.weave-camelot-chip-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.weave-camelot-chip-example {
+  font-size: 0.62rem;
+  color: var(--mix-subtext);
+  font-variant-numeric: tabular-nums;
+}
+
+.weave-camelot-chip.is-on .weave-camelot-chip-example {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.weave-filters-bar {
+  padding-top: 2px;
+  border-top: 1px solid var(--mix-hover);
+}
+
+.weave-year-row {
+  display: grid;
+  grid-template-columns: 72px 72px;
+  gap: 6px;
+  margin-top: 2px;
+  width: max-content;
+}
+
+.weave-year-row .weave-feature-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--mix-font-2xs);
+  color: var(--mix-subtext);
+}
+
+.weave-recommend-generate {
+  padding: 12px 14px;
+}
+
+.weave-recommend-generate .weave-btn {
+  width: 100%;
+}
+
+.weave-recommend-status {
+  margin: 0 0 8px;
+  font-size: var(--mix-font-sm);
+  color: var(--mix-subtext);
+}
+
+.weave-recommend-empty {
+  margin: 0;
+  font-size: var(--mix-font-md);
+  color: var(--mix-subtext);
+}
+
+.weave-recommend-results {
+  flex: 1 1 auto;
+  min-height: 220px;
+  border-bottom: none;
+}
+
+.weave-recommend-results .weave-rec-list {
+  padding-bottom: 12px;
+}
+
+.weave-rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weave-rec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--mix-radius);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.weave-rec-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weave-rec-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.weave-rec-artists {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
+}
+
+.weave-rec-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+.weave-rec-actions .weave-btn {
+  padding: 6px 8px;
+  font-size: var(--mix-font-xs);
+}
+
+.weave-stats-panel {
+  flex: 0 0 auto;
+  width: 100%;
+  max-height: min(70vh, 720px);
+  margin-bottom: 12px;
+  padding: 12px 14px 14px;
+  border-radius: var(--mix-radius-md);
+  border: 1px solid var(--mix-border-subtle);
+  background: var(--mix-surface);
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.weave-stats-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.weave-stats-metric-toggles {
+  margin: 0 0 12px;
+}
+
+.weave-stats-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.weave-stats-legend-item {
+  font-size: var(--mix-font-xs);
+  color: var(--mix-subtext);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weave-stats-legend-raw::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--mix-text);
+  box-shadow: 0 0 0 1.5px var(--mix-text);
+}
+
+.weave-stats-legend-ma::before {
+  content: "";
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed rgba(255, 255, 255, 0.55);
+}
+
+.weave-stats-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.weave-stats-chart {
+  min-width: 0;
+  margin: 0;
+  padding: 10px 10px 8px;
+  border-radius: var(--mix-radius-md);
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--mix-hover);
+}
+
+.weave-stats-chart-agg {
+  border-color: rgba(232, 121, 249, 0.28);
+}
+
+.weave-stats-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: var(--mix-font-md);
+}
+
+.weave-stats-chart-tip {
+  cursor: help;
+  border-radius: var(--mix-radius-sm);
+  padding: 2px 4px;
+  margin: -2px -4px 2px;
+}
+
+.weave-stats-chart-tip:hover,
+.weave-stats-chart-tip:focus-within {
+  background: var(--mix-row-tint);
+}
+
+.weave-stats-chart-tip[data-tip]::after {
+  max-width: min(340px, 80vw);
+  left: 0;
+  right: auto;
+}
+
+.weave-stats-line-svg {
+  display: block;
+  width: 100%;
+  height: 176px;
+  overflow: visible;
+}
+
+.weave-stats-line-frame {
+  fill: rgba(0, 0, 0, 0.22);
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+}
+
+.weave-stats-line-grid {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.weave-stats-line-path {
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.95;
+}
+
+.weave-stats-line-ma {
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 5 4;
+  opacity: 0.55;
+}
+
+.weave-stats-line-dot {
+  stroke-width: 1.25;
+  cursor: default;
+  opacity: 0.95;
+}
+
+.weave-stats-line-dot:hover {
+  fill: #fff !important;
+  stroke-width: 2;
+  opacity: 1;
+}
+
+.weave-stats-line-ylabel,
+.weave-stats-line-xlabel {
+  fill: var(--mix-subtext);
+  font-size: 12px;
+}
+
+.weave-stats-line-empty {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  color: var(--mix-subtext);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .weave-stats-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .weave-toolbar-left .weave-picker-compact {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  .weave-toolbar-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 800px) {
+  .weave-arranger-head .weave-col-album,
+  .weave-track-row .weave-col-album,
+  .weave-arranger-head .weave-col-added,
+  .weave-track-row .weave-col-added {
+    display: none;
+  }
+
+  .weave-feature-sliders-wide {
+    grid-template-columns: 1fr;
+  }
+
+  .weave-results-overlay {
+    padding: 8px;
+  }
+
+  .weave-results-table-head,
+  .weave-results-table-row {
+    grid-template-columns: 36px minmax(120px, 1fr) minmax(80px, 0.9fr) 2.6rem 2.4rem 84px !important;
+  }
+
+  .weave-results-optional {
+    display: none !important;
+  }
+
+  .weave-copy-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(140px, 32%) minmax(0, 1fr);
+  }
+
+  .weave-copy-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--mix-border-subtle);
+  }
+
+  .weave-find-modal {
+    max-height: 96vh;
+  }
+}
